@@ -2,7 +2,11 @@ module github.com/denden-dr/go-shop-yourself
 
 go 1.26.1
 
-require github.com/gofiber/fiber/v2 v2.52.12
+require (
+	github.com/gofiber/fiber/v2 v2.52.12
+	github.com/joho/godotenv v1.5.1
+	github.com/lib/pq v1.12.2
+)
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
