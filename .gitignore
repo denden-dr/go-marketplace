@@ -1,3 +1,5 @@
 .agent/
 go.sum
 README.md
+.env
+.vscode/
