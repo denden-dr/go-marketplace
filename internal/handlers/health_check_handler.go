@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 
+	"github.com/denden-dr/go-shop-yourself/internal/dto"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -24,15 +25,11 @@ func (h *HealthCheckHandler) RegisterRoutes(app *fiber.App) {
 func (h *HealthCheckHandler) healthCheckHandler(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		if err := db.Ping(); err != nil {
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-				"status":  "unhealthy",
-				"message": "database connection lost",
-			})
+			return c.Status(fiber.StatusServiceUnavailable).JSON(dto.NewErrorResponse("database connection lost", fiber.StatusServiceUnavailable))
 		}
 
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"status":  "healthy",
-			"message": "database connection active",
-		})
+		return c.Status(fiber.StatusOK).JSON(dto.NewSuccessResponse("database connection active", fiber.StatusOK, fiber.Map{
+			"status": "healthy",
+		}))
 	}
 }

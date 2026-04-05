@@ -3,3 +3,4 @@ go.sum
 README.md
 .env
 .vscode/
+internal/database/migrations/
