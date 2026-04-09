@@ -24,11 +24,18 @@ func main() {
 
 	// Initialize Layers
 	userRepo := repos.NewUserRepository(database.DB)
+	merchantRepo := repos.NewMerchantRepository(database.DB)
+	productRepo := repos.NewProductRepository(database.DB)
+
 	authService := services.NewAuthService(userRepo)
 	userService := services.NewUserService(userRepo)
+	merchantService := services.NewMerchantService(merchantRepo, userRepo)
+	productService := services.NewProductService(productRepo, merchantRepo)
 
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
+	merchantHandler := handlers.NewMerchantHandler(merchantService)
+	productHandler := handlers.NewProductHandler(productService)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
@@ -46,10 +53,16 @@ func main() {
 	auth := app.Group("/auth")
 	auth.Post("/register", authHandler.Register)
 	auth.Post("/login", authHandler.Login)
+	auth.Post("/register-merchant", merchantHandler.RegisterMerchant)
 
 	// User routes
 	users := app.Group("/users")
 	users.Get("/:id", userHandler.GetUserByID)
+
+	// Product routes
+	products := app.Group("/products")
+	products.Post("/", productHandler.CreateProduct)
+	products.Put("/:id", productHandler.UpdateProduct)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)
