@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS wallets (
     id UUID PRIMARY KEY,
-    user_id UUID NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id),
     wallet_number VARCHAR(100) UNIQUE NOT NULL,
     balance DECIMAL(15, 2) DEFAULT 0.00,
     currency VARCHAR(10) DEFAULT 'IDR',

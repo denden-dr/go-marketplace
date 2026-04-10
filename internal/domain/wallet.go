@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type WalletStatus string
@@ -43,7 +44,7 @@ type Wallet struct {
 	ID           uuid.UUID    `json:"id" db:"id"`
 	UserID       uuid.UUID    `json:"user_id" db:"user_id"`
 	WalletNumber string       `json:"wallet_number" db:"wallet_number"`
-	Balance      float64      `json:"balance" db:"balance"`
+	Balance      decimal.Decimal `json:"balance" db:"balance"`
 	Currency     string       `json:"currency" db:"currency"`
 	Status       WalletStatus `json:"status" db:"status"`
 	CreatedAt    time.Time    `json:"created_at" db:"created_at"`
@@ -53,12 +54,12 @@ type Wallet struct {
 type WalletTransaction struct {
 	ID           uuid.UUID            `json:"id" db:"id"`
 	WalletID     uuid.UUID            `json:"wallet_id" db:"wallet_id"`
-	Amount       float64              `json:"amount" db:"amount"`
+	Amount       decimal.Decimal      `json:"amount" db:"amount"`
 	Direction    TransactionDirection `json:"direction" db:"direction"`
 	Type         TransactionType      `json:"type" db:"type"`
 	Status       TransactionStatus    `json:"status" db:"status"`
 	ReferenceID  string               `json:"reference_id" db:"reference_id"`
-	BalanceAfter float64              `json:"balance_after" db:"balance_after"`
+	BalanceAfter decimal.Decimal      `json:"balance_after" db:"balance_after"`
 	Description  string               `json:"description" db:"description"`
 	CreatedAt    time.Time            `json:"created_at" db:"created_at"`
 }
