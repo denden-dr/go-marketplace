@@ -10,15 +10,17 @@ import (
 	"go-shop-yourself/internal/repos"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type MerchantService struct {
-	repo     *repos.MerchantRepository
-	userRepo *repos.UserRepository
+	repo       *repos.MerchantRepository
+	userRepo   *repos.UserRepository
+	walletRepo *repos.WalletRepository
 }
 
-func NewMerchantService(repo *repos.MerchantRepository, userRepo *repos.UserRepository) *MerchantService {
-	return &MerchantService{repo: repo, userRepo: userRepo}
+func NewMerchantService(repo *repos.MerchantRepository, userRepo *repos.UserRepository, walletRepo *repos.WalletRepository) *MerchantService {
+	return &MerchantService{repo: repo, userRepo: userRepo, walletRepo: walletRepo}
 }
 
 func (s *MerchantService) RegisterMerchant(ctx context.Context, req dtos.MerchantRegisterRequest) (*dtos.MerchantResponse, error) {
@@ -49,7 +51,37 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, req dtos.Merchan
 		CreatedAt: time.Now(),
 	}
 
-	if err := s.repo.Create(ctx, merchant); err != nil {
+	// Prepare wallet data
+	wallet := &domain.Wallet{
+		ID:           uuid.New(),
+		UserID:       req.UserID,
+		WalletNumber: "WAL-" + uuid.New().String()[:8],
+		Balance:      decimal.NewFromInt(0),
+		Currency:     "IDR",
+		Status:       domain.WalletStatusActive,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	// Start transaction
+	tx, err := s.repo.GetPool().Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Create Merchant
+	if err := s.repo.CreateTx(ctx, tx, merchant); err != nil {
+		return nil, err
+	}
+
+	// Create Wallet
+	if err := s.walletRepo.CreateTx(ctx, tx, wallet); err != nil {
+		return nil, err
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 

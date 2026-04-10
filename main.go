@@ -30,7 +30,7 @@ func main() {
 
 	authService := services.NewAuthService(userRepo)
 	userService := services.NewUserService(userRepo)
-	merchantService := services.NewMerchantService(merchantRepo, userRepo)
+	merchantService := services.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := services.NewProductService(productRepo, merchantRepo)
 	walletService := services.NewWalletService(walletRepo)
 
@@ -69,6 +69,7 @@ func main() {
 
 	// Wallet routes
 	wallets := app.Group("/wallets")
+	wallets.Post("/", walletHandler.CreateWallet)
 	wallets.Get("/", walletHandler.GetWallet)
 	wallets.Get("/history", walletHandler.GetHistory)
 	wallets.Post("/withdraw", walletHandler.Withdraw)
