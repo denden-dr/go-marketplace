@@ -41,7 +41,15 @@ func (s *WalletService) GetWalletByUserID(ctx context.Context, userID uuid.UUID)
 	}, nil
 }
 
-func (s *WalletService) GetWalletHistory(ctx context.Context, userID uuid.UUID) ([]dtos.TransactionResponse, error) {
+func (s *WalletService) GetWalletHistory(ctx context.Context, userID uuid.UUID, page, limit int) ([]dtos.TransactionResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
 	wallet, err := s.walletRepo.GetWalletByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -50,12 +58,12 @@ func (s *WalletService) GetWalletHistory(ctx context.Context, userID uuid.UUID) 
 		return nil, errors.New("wallet not found")
 	}
 
-	transactions, err := s.walletRepo.GetWalletHistory(ctx, wallet.ID)
+	transactions, err := s.walletRepo.GetWalletHistory(ctx, wallet.ID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	var res []dtos.TransactionResponse
+	res := []dtos.TransactionResponse{}
 	for _, t := range transactions {
 		res = append(res, dtos.TransactionResponse{
 			ID:           t.ID,
@@ -82,22 +90,28 @@ func (s *WalletService) Withdraw(ctx context.Context, userID uuid.UUID, req dtos
 		return errors.New("wallet not found")
 	}
 
-	if wallet.Balance < req.Amount {
+	// Double check status before attempting (Repo will also check)
+	if wallet.Status != domain.WalletStatusActive {
+		return errors.New("wallet is not active")
+	}
+
+	// Fast-fail if balance is clearly insufficient (Repo will also check atomically)
+	if wallet.Balance.LessThan(req.Amount) {
 		return errors.New("insufficient balance")
 	}
 
 	txData := domain.WalletTransaction{
-		ID:           uuid.New(),
-		WalletID:     wallet.ID,
-		Amount:       req.Amount,
-		Direction:    domain.TransactionDirectionOut,
-		Type:         domain.TransactionTypeWithdraw,
-		Status:       domain.TransactionStatusSuccess,
-		ReferenceID:  "WD-" + time.Now().Format("20060102150405"),
-		BalanceAfter: wallet.Balance - req.Amount,
-		Description:  req.Description,
-		CreatedAt:    time.Now(),
+		ID:          uuid.New(),
+		WalletID:    wallet.ID,
+		Amount:      req.Amount,
+		Direction:   domain.TransactionDirectionOut,
+		Type:        domain.TransactionTypeWithdraw,
+		Status:      domain.TransactionStatusSuccess,
+		ReferenceID: "WD-" + time.Now().Format("20060102150405") + "-" + uuid.New().String()[:8],
+		Description: req.Description,
+		CreatedAt:   time.Now(),
 	}
 
+	// BalanceAfter will be set by the repo during the atomic transaction
 	return s.walletRepo.Withdraw(ctx, wallet.ID, req.Amount, txData)
 }
