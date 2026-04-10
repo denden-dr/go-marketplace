@@ -2,12 +2,14 @@ package repos
 
 import (
 	"context"
+	"errors"
 
 	"go-shop-yourself/internal/domain"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
 )
 
 type WalletRepository struct {
@@ -34,16 +36,16 @@ func (r *WalletRepository) GetWalletByUserID(ctx context.Context, userID uuid.UU
 	return &w, nil
 }
 
-func (r *WalletRepository) GetWalletHistory(ctx context.Context, walletID uuid.UUID) ([]domain.WalletTransaction, error) {
+func (r *WalletRepository) GetWalletHistory(ctx context.Context, walletID uuid.UUID, limit, offset int) ([]domain.WalletTransaction, error) {
 	query := `SELECT id, wallet_id, amount, direction, type, status, reference_id, balance_after, description, created_at 
-	          FROM wallets_transaction WHERE wallet_id = $1 ORDER BY created_at DESC`
-	rows, err := r.db.Query(ctx, query, walletID)
+	          FROM wallets_transaction WHERE wallet_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+	rows, err := r.db.Query(ctx, query, walletID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var transactions []domain.WalletTransaction
+	transactions := []domain.WalletTransaction{}
 	for rows.Next() {
 		var t domain.WalletTransaction
 		err := rows.Scan(
@@ -57,28 +59,46 @@ func (r *WalletRepository) GetWalletHistory(ctx context.Context, walletID uuid.U
 	return transactions, nil
 }
 
-func (r *WalletRepository) Withdraw(ctx context.Context, walletID uuid.UUID, amount float64, txData domain.WalletTransaction) error {
+func (r *WalletRepository) Withdraw(ctx context.Context, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
 
-	// Update balance
-	updateQuery := `UPDATE wallets SET balance = balance - $1, updated_at = NOW() WHERE id = $2 AND balance >= $1`
-	tag, err := tx.Exec(ctx, updateQuery, amount, walletID)
+	// Get current balance and lock row
+	var currentBalance decimal.Decimal
+	var status domain.WalletStatus
+	query := `SELECT balance, status FROM wallets WHERE id = $1 FOR UPDATE`
+	err = tx.QueryRow(ctx, query, walletID).Scan(&currentBalance, &status)
 	if err != nil {
 		return err
 	}
-	if tag.RowsAffected() == 0 {
-		return pgx.ErrNoRows // Or a custom insufficient balance error
+
+	// Check status
+	if status != domain.WalletStatusActive {
+		return errors.New("wallet is not active")
+	}
+
+	// Check balance
+	if currentBalance.LessThan(amount) {
+		return errors.New("insufficient balance")
+	}
+
+	// Update balance
+	newBalance := currentBalance.Sub(amount)
+	updateQuery := `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE id = $2`
+	_, err = tx.Exec(ctx, updateQuery, newBalance, walletID)
+	if err != nil {
+		return err
 	}
 
 	// Create transaction record
+	txData.BalanceAfter = newBalance // Ensure balance_after is accurate
 	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, description, created_at) 
 	                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-	_, err = tx.Exec(ctx, insertQuery, 
-		txData.ID, txData.WalletID, txData.Amount, txData.Direction, txData.Type, txData.Status, 
+	_, err = tx.Exec(ctx, insertQuery,
+		txData.ID, txData.WalletID, txData.Amount, txData.Direction, txData.Type, txData.Status,
 		txData.ReferenceID, txData.BalanceAfter, txData.Description, txData.CreatedAt,
 	)
 	if err != nil {
