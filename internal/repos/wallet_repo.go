@@ -107,3 +107,21 @@ func (r *WalletRepository) Withdraw(ctx context.Context, walletID uuid.UUID, amo
 
 	return tx.Commit(ctx)
 }
+
+func (r *WalletRepository) Create(ctx context.Context, w *domain.Wallet) error {
+	query := `INSERT INTO wallets (id, user_id, wallet_number, balance, currency, status, created_at, updated_at) 
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := r.db.Exec(ctx, query, w.ID, w.UserID, w.WalletNumber, w.Balance, w.Currency, w.Status, w.CreatedAt, w.UpdatedAt)
+	return err
+}
+
+func (r *WalletRepository) CreateTx(ctx context.Context, tx pgx.Tx, w *domain.Wallet) error {
+	query := `INSERT INTO wallets (id, user_id, wallet_number, balance, currency, status, created_at, updated_at) 
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := tx.Exec(ctx, query, w.ID, w.UserID, w.WalletNumber, w.Balance, w.Currency, w.Status, w.CreatedAt, w.UpdatedAt)
+	return err
+}
+
+func (r *WalletRepository) GetPool() *pgxpool.Pool {
+	return r.db
+}

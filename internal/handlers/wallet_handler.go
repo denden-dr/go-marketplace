@@ -97,3 +97,25 @@ func (h *WalletHandler) Withdraw(c *fiber.Ctx) error {
 
 	return dtos.NewResponse(c, http.StatusOK, "Withdrawal successful", nil)
 }
+
+func (h *WalletHandler) CreateWallet(c *fiber.Ctx) error {
+	var req dtos.CreateWalletRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dtos.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+	}
+
+	if req.UserID == uuid.Nil {
+		return dtos.NewResponse(c, http.StatusBadRequest, "Missing or invalid user_id", nil)
+	}
+
+	wallet, err := h.walletService.CreateWallet(c.Context(), req.UserID)
+	if err != nil {
+		if err.Error() == "wallet already exists for this user" {
+			return dtos.NewResponse(c, http.StatusConflict, err.Error(), nil)
+		}
+		log.Printf("Error creating wallet for user %s: %v", req.UserID, err)
+		return dtos.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+	}
+
+	return dtos.NewResponse(c, http.StatusCreated, "Wallet created successfully", wallet)
+}

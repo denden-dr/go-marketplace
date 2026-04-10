@@ -50,3 +50,14 @@ func (r *MerchantRepository) GetByUserID(ctx context.Context, userID uuid.UUID) 
 	}
 	return &m, nil
 }
+
+func (r *MerchantRepository) CreateTx(ctx context.Context, tx pgx.Tx, m *domain.Merchant) error {
+	query := `INSERT INTO merchants (id, user_id, name, about, tax_id, created_at) 
+	          VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := tx.Exec(ctx, query, m.ID, m.UserID, m.Name, m.About, m.TaxID, m.CreatedAt)
+	return err
+}
+
+func (r *MerchantRepository) GetPool() *pgxpool.Pool {
+	return r.db
+}
