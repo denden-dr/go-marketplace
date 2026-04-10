@@ -26,16 +26,19 @@ func main() {
 	userRepo := repos.NewUserRepository(database.DB)
 	merchantRepo := repos.NewMerchantRepository(database.DB)
 	productRepo := repos.NewProductRepository(database.DB)
+	walletRepo := repos.NewWalletRepository(database.DB)
 
 	authService := services.NewAuthService(userRepo)
 	userService := services.NewUserService(userRepo)
 	merchantService := services.NewMerchantService(merchantRepo, userRepo)
 	productService := services.NewProductService(productRepo, merchantRepo)
+	walletService := services.NewWalletService(walletRepo)
 
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
 	merchantHandler := handlers.NewMerchantHandler(merchantService)
 	productHandler := handlers.NewProductHandler(productService)
+	walletHandler := handlers.NewWalletHandler(walletService)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
@@ -63,6 +66,12 @@ func main() {
 	products := app.Group("/products")
 	products.Post("/", productHandler.CreateProduct)
 	products.Put("/:id", productHandler.UpdateProduct)
+
+	// Wallet routes
+	wallets := app.Group("/wallets")
+	wallets.Get("/", walletHandler.GetWallet)
+	wallets.Get("/history", walletHandler.GetHistory)
+	wallets.Post("/withdraw", walletHandler.Withdraw)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)
