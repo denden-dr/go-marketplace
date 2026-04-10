@@ -10,6 +10,7 @@ import (
 	"go-shop-yourself/internal/repos"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type WalletService struct {
@@ -114,4 +115,35 @@ func (s *WalletService) Withdraw(ctx context.Context, userID uuid.UUID, req dtos
 
 	// BalanceAfter will be set by the repo during the atomic transaction
 	return s.walletRepo.Withdraw(ctx, wallet.ID, req.Amount, txData)
+}
+
+func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*domain.Wallet, error) {
+	// Check if wallet already exists
+	existing, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, errors.New("wallet already exists for this user")
+	}
+
+	// Generate wallet number: WAL- + first 8 characters of UUID
+	walletNumber := "WAL-" + uuid.New().String()[:8]
+
+	wallet := &domain.Wallet{
+		ID:           uuid.New(),
+		UserID:       userID,
+		WalletNumber: walletNumber,
+		Balance:      decimal.NewFromInt(0),
+		Currency:     "IDR",
+		Status:       domain.WalletStatusActive,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	if err := s.walletRepo.Create(ctx, wallet); err != nil {
+		return nil, err
+	}
+
+	return wallet, nil
 }

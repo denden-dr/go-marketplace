@@ -35,3 +35,7 @@ type WithdrawRequest struct {
 	Amount      decimal.Decimal `json:"amount"`
 	Description string  `json:"description"`
 }
+
+type CreateWalletRequest struct {
+	UserID uuid.UUID `json:"user_id"`
+}
