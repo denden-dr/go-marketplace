@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
 	"go-shop-yourself/internal/services"
 
@@ -22,8 +24,15 @@ func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
 		return dtos.NewResponse(c, fiber.StatusBadRequest, "Invalid request payload", nil)
 	}
 
+	if err := req.Validate(); err != nil {
+		return dtos.NewResponse(c, fiber.StatusBadRequest, err.Error(), nil)
+	}
+
 	res, err := h.service.CreateProduct(c.Context(), req)
 	if err != nil {
+		if errors.Is(err, domain.ErrMerchantNotFound) {
+			return dtos.NewResponse(c, fiber.StatusNotFound, err.Error(), nil)
+		}
 		return dtos.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
 	}
 
@@ -42,8 +51,15 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 		return dtos.NewResponse(c, fiber.StatusBadRequest, "Invalid request payload", nil)
 	}
 
+	if err := req.Validate(); err != nil {
+		return dtos.NewResponse(c, fiber.StatusBadRequest, err.Error(), nil)
+	}
+
 	res, err := h.service.UpdateProduct(c.Context(), id, req)
 	if err != nil {
+		if errors.Is(err, domain.ErrProductNotFound) {
+			return dtos.NewResponse(c, fiber.StatusNotFound, err.Error(), nil)
+		}
 		return dtos.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
 	}
 

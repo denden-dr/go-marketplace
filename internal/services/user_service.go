@@ -2,19 +2,18 @@ package services
 
 import (
 	"context"
-	"errors"
 
+	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/repos"
 
 	"github.com/google/uuid"
 )
 
 type UserService struct {
-	userRepo *repos.UserRepository
+	userRepo domain.UserRepository
 }
 
-func NewUserService(userRepo *repos.UserRepository) *UserService {
+func NewUserService(userRepo domain.UserRepository) *UserService {
 	return &UserService{userRepo: userRepo}
 }
 
@@ -24,7 +23,7 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*dtos.User
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, domain.ErrUserNotFound
 	}
 
 	return &dtos.UserResponse{

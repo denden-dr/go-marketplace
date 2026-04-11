@@ -2,22 +2,20 @@ package services
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/repos"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
 type WalletService struct {
-	walletRepo *repos.WalletRepository
+	walletRepo domain.WalletRepository
 }
 
-func NewWalletService(walletRepo *repos.WalletRepository) *WalletService {
+func NewWalletService(walletRepo domain.WalletRepository) *WalletService {
 	return &WalletService{walletRepo: walletRepo}
 }
 
@@ -27,7 +25,7 @@ func (s *WalletService) GetWalletByUserID(ctx context.Context, userID uuid.UUID)
 		return nil, err
 	}
 	if wallet == nil {
-		return nil, errors.New("wallet not found")
+		return nil, domain.ErrWalletNotFound
 	}
 
 	return &dtos.WalletResponse{
@@ -56,7 +54,7 @@ func (s *WalletService) GetWalletHistory(ctx context.Context, userID uuid.UUID, 
 		return nil, err
 	}
 	if wallet == nil {
-		return nil, errors.New("wallet not found")
+		return nil, domain.ErrWalletNotFound
 	}
 
 	transactions, err := s.walletRepo.GetWalletHistory(ctx, wallet.ID, limit, offset)
@@ -88,17 +86,17 @@ func (s *WalletService) Withdraw(ctx context.Context, userID uuid.UUID, req dtos
 		return err
 	}
 	if wallet == nil {
-		return errors.New("wallet not found")
+		return domain.ErrWalletNotFound
 	}
 
 	// Double check status before attempting (Repo will also check)
 	if wallet.Status != domain.WalletStatusActive {
-		return errors.New("wallet is not active")
+		return domain.ErrWalletNotActive
 	}
 
 	// Fast-fail if balance is clearly insufficient (Repo will also check atomically)
 	if wallet.Balance.LessThan(req.Amount) {
-		return errors.New("insufficient balance")
+		return domain.ErrInsufficientBalance
 	}
 
 	txData := domain.WalletTransaction{
@@ -124,7 +122,7 @@ func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*do
 		return nil, err
 	}
 	if existing != nil {
-		return nil, errors.New("wallet already exists for this user")
+		return nil, domain.ErrWalletAlreadyExists
 	}
 
 	// Generate wallet number: WAL- + first 8 characters of UUID
