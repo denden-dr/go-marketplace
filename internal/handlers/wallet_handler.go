@@ -4,7 +4,6 @@ import (
 	"errors"
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/services"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,10 +13,10 @@ import (
 )
 
 type WalletHandler struct {
-	walletService *services.WalletService
+	walletService domain.WalletServiceInterface
 }
 
-func NewWalletHandler(walletService *services.WalletService) *WalletHandler {
+func NewWalletHandler(walletService domain.WalletServiceInterface) *WalletHandler {
 	return &WalletHandler{walletService: walletService}
 }
 
