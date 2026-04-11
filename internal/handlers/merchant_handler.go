@@ -4,17 +4,16 @@ import (
 	"errors"
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
 type MerchantHandler struct {
-	service *services.MerchantService
+	service domain.MerchantServiceInterface
 }
 
-func NewMerchantHandler(service *services.MerchantService) *MerchantHandler {
+func NewMerchantHandler(service domain.MerchantServiceInterface) *MerchantHandler {
 	return &MerchantHandler{service: service}
 }
 

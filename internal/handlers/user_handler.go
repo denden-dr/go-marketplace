@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/services"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,10 +10,10 @@ import (
 )
 
 type UserHandler struct {
-	userService *services.UserService
+	userService domain.UserServiceInterface
 }
 
-func NewUserHandler(userService *services.UserService) *UserHandler {
+func NewUserHandler(userService domain.UserServiceInterface) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
