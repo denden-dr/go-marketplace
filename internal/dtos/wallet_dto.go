@@ -1,6 +1,7 @@
 package dtos
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,4 +35,11 @@ type TransactionResponse struct {
 type WithdrawRequest struct {
 	Amount      decimal.Decimal `json:"amount"`
 	Description string          `json:"description"`
+}
+
+func (r WithdrawRequest) Validate() error {
+	if r.Amount.IsZero() || r.Amount.IsNegative() {
+		return errors.New("amount must be greater than 0")
+	}
+	return nil
 }
