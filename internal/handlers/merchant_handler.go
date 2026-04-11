@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
 	"go-shop-yourself/internal/services"
 
@@ -24,8 +26,18 @@ func (h *MerchantHandler) RegisterMerchant(c *fiber.Ctx) error {
 		return dtos.NewResponse(c, fiber.StatusBadRequest, "Invalid request payload", nil)
 	}
 
+	if err := req.Validate(); err != nil {
+		return dtos.NewResponse(c, fiber.StatusBadRequest, err.Error(), nil)
+	}
+
 	res, err := h.service.RegisterMerchant(c.Context(), userID, req)
 	if err != nil {
+		if errors.Is(err, domain.ErrUserNotFound) {
+			return dtos.NewResponse(c, fiber.StatusNotFound, err.Error(), nil)
+		}
+		if errors.Is(err, domain.ErrMerchantAlreadyExists) {
+			return dtos.NewResponse(c, fiber.StatusConflict, err.Error(), nil)
+		}
 		return dtos.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
 	}
 

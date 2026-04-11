@@ -2,22 +2,20 @@ package services
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/repos"
 
 	"github.com/google/uuid"
 )
 
 type ProductService struct {
-	repo         *repos.ProductRepository
-	merchantRepo *repos.MerchantRepository
+	repo         domain.ProductRepository
+	merchantRepo domain.MerchantRepository
 }
 
-func NewProductService(repo *repos.ProductRepository, merchantRepo *repos.MerchantRepository) *ProductService {
+func NewProductService(repo domain.ProductRepository, merchantRepo domain.MerchantRepository) *ProductService {
 	return &ProductService{repo: repo, merchantRepo: merchantRepo}
 }
 
@@ -28,7 +26,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, req dtos.ProductCrea
 		return nil, err
 	}
 	if merchant == nil {
-		return nil, errors.New("merchant not found")
+		return nil, domain.ErrMerchantNotFound
 	}
 
 	product := &domain.Product{
@@ -67,7 +65,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id uuid.UUID, req dt
 		return nil, err
 	}
 	if product == nil {
-		return nil, errors.New("product not found")
+		return nil, domain.ErrProductNotFound
 	}
 
 	product.Name = req.Name

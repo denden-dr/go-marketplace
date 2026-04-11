@@ -2,24 +2,22 @@ package services
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/repos"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
 type MerchantService struct {
-	repo       *repos.MerchantRepository
-	userRepo   *repos.UserRepository
-	walletRepo *repos.WalletRepository
+	repo       domain.MerchantRepository
+	userRepo   domain.UserRepository
+	walletRepo domain.WalletRepository
 }
 
-func NewMerchantService(repo *repos.MerchantRepository, userRepo *repos.UserRepository, walletRepo *repos.WalletRepository) *MerchantService {
+func NewMerchantService(repo domain.MerchantRepository, userRepo domain.UserRepository, walletRepo domain.WalletRepository) *MerchantService {
 	return &MerchantService{repo: repo, userRepo: userRepo, walletRepo: walletRepo}
 }
 
@@ -30,7 +28,7 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, domain.ErrUserNotFound
 	}
 
 	// Check if merchant profile already exists for this user
@@ -39,7 +37,7 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 	if existing != nil {
-		return nil, errors.New("merchant already exists for this user")
+		return nil, domain.ErrMerchantAlreadyExists
 	}
 
 	merchant := &domain.Merchant{
