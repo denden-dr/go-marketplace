@@ -9,7 +9,17 @@ type RegisterRequest struct {
 }
 
 type AuthResponse struct {
-	ID uuid.UUID `json:"id"`
+	ID           uuid.UUID `json:"id"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+}
+
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
 }
 
 type LoginRequest struct {
