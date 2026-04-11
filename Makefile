@@ -8,7 +8,11 @@ endif
 DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_PATH=internal/database/migrations
 
-.PHONY: help build run clean fmt tidy migrate-up migrate-down migrate-create
+.PHONY: help build run clean fmt tidy migrate-up migrate-down migrate-create test
+
+test: ## Run all tests
+	@echo "Running tests..."
+	go test ./... -v -count=1
 
 help: ## Show this help message
 	@echo 'Usage:'
