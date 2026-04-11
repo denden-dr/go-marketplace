@@ -2,25 +2,23 @@ package services
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go-shop-yourself/internal/auth"
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/repos"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	userRepo         *repos.UserRepository
-	refreshTokenRepo *repos.RefreshTokenRepository
+	userRepo         domain.UserRepository
+	refreshTokenRepo domain.RefreshTokenRepository
 	jwtSecret        string
 }
 
-func NewAuthService(userRepo *repos.UserRepository, refreshTokenRepo *repos.RefreshTokenRepository, jwtSecret string) *AuthService {
+func NewAuthService(userRepo domain.UserRepository, refreshTokenRepo domain.RefreshTokenRepository, jwtSecret string) *AuthService {
 	return &AuthService{
 		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
@@ -29,15 +27,12 @@ func NewAuthService(userRepo *repos.UserRepository, refreshTokenRepo *repos.Refr
 }
 
 func (s *AuthService) Register(ctx context.Context, email, password, username string) (uuid.UUID, error) {
-	// ... (Register method remains largely the same, but I'll keeping it for completeness in this view)
-	// Actually, I'll just keep the existing implementation and only update Login and add others.
-	// But since I'm replacing the whole file's bottom part, I'll rewrite it clearly.
 	existingUser, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return uuid.Nil, err
 	}
 	if existingUser != nil {
-		return uuid.Nil, errors.New("user with this email already exists")
+		return uuid.Nil, domain.ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -66,11 +61,11 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*dtos.
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("invalid email or password")
+		return nil, domain.ErrInvalidCredentials
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return nil, errors.New("invalid email or password")
+		return nil, domain.ErrInvalidCredentials
 	}
 
 	// Generate tokens
@@ -116,7 +111,7 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*dtos
 	}
 
 	if rt == nil {
-		return nil, errors.New("invalid refresh token")
+		return nil, domain.ErrInvalidRefreshToken
 	}
 
 	// Reuse detection
@@ -124,12 +119,12 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*dtos
 		// Someone is trying to reuse a revoked token - potential attack!
 		// Revoke the entire family
 		_ = s.refreshTokenRepo.RevokeAllByFamilyID(ctx, rt.FamilyID)
-		return nil, errors.New("token reuse detected - all tokens in family revoked")
+		return nil, domain.ErrRefreshTokenReused
 	}
 
 	// Expiration check
 	if time.Now().After(rt.ExpiresAt) {
-		return nil, errors.New("refresh token expired")
+		return nil, domain.ErrRefreshTokenExpired
 	}
 
 	// Revoke the old token
@@ -178,7 +173,7 @@ func (s *AuthService) Logout(ctx context.Context, rawToken string) error {
 		return err
 	}
 	if rt == nil {
-		return errors.New("invalid refresh token")
+		return domain.ErrInvalidRefreshToken
 	}
 
 	// Revoke the entire family for safety on logout

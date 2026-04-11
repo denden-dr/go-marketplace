@@ -1,14 +1,16 @@
 package handlers
 
 import (
+	"errors"
+	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
 	"go-shop-yourself/internal/services"
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"log"
-	"strconv"
 )
 
 type WalletHandler struct {
@@ -24,6 +26,9 @@ func (h *WalletHandler) GetWallet(c *fiber.Ctx) error {
 
 	wallet, err := h.walletService.GetWalletByUserID(c.Context(), userID)
 	if err != nil {
+		if errors.Is(err, domain.ErrWalletNotFound) {
+			return dtos.NewResponse(c, http.StatusNotFound, err.Error(), nil)
+		}
 		log.Printf("Error getting wallet for user %s: %v", userID, err)
 		return dtos.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
@@ -39,6 +44,9 @@ func (h *WalletHandler) GetHistory(c *fiber.Ctx) error {
 
 	history, err := h.walletService.GetWalletHistory(c.Context(), userID, page, limit)
 	if err != nil {
+		if errors.Is(err, domain.ErrWalletNotFound) {
+			return dtos.NewResponse(c, http.StatusNotFound, err.Error(), nil)
+		}
 		log.Printf("Error getting wallet history for user %s: %v", userID, err)
 		return dtos.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
@@ -54,13 +62,9 @@ func (h *WalletHandler) Withdraw(c *fiber.Ctx) error {
 		return dtos.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
 	}
 
-	if req.Amount.IsZero() || req.Amount.IsNegative() {
-		return dtos.NewResponse(c, http.StatusBadRequest, "Amount must be greater than 0", nil)
-	}
-
 	err := h.walletService.Withdraw(c.Context(), userID, req)
 	if err != nil {
-		if err.Error() == "insufficient balance" || err.Error() == "wallet is not active" || err.Error() == "wallet not found" {
+		if errors.Is(err, domain.ErrInsufficientBalance) || errors.Is(err, domain.ErrWalletNotActive) || errors.Is(err, domain.ErrWalletNotFound) {
 			return dtos.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
 		}
 		log.Printf("Internal error during withdrawal for user %s: %v", userID, err)
@@ -75,7 +79,7 @@ func (h *WalletHandler) CreateWallet(c *fiber.Ctx) error {
 
 	wallet, err := h.walletService.CreateWallet(c.Context(), userID)
 	if err != nil {
-		if err.Error() == "wallet already exists for this user" {
+		if errors.Is(err, domain.ErrWalletAlreadyExists) {
 			return dtos.NewResponse(c, http.StatusConflict, err.Error(), nil)
 		}
 		log.Printf("Error creating wallet for user %s: %v", userID, err)
