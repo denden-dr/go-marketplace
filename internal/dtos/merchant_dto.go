@@ -3,10 +3,9 @@ package dtos
 import "github.com/google/uuid"
 
 type MerchantRegisterRequest struct {
-	UserID uuid.UUID `json:"user_id"`
-	Name   string    `json:"name"`
-	About  string    `json:"about"`
-	TaxID  string    `json:"tax_id"`
+	Name  string `json:"name"`
+	About string `json:"about"`
+	TaxID string `json:"tax_id"`
 }
 
 type MerchantResponse struct {

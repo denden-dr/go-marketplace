@@ -36,10 +36,38 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return dtos.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
 	}
 
-	userId, err := h.authService.Login(c.Context(), req.Email, req.Password)
+	res, err := h.authService.Login(c.Context(), req.Email, req.Password)
 	if err != nil {
 		return dtos.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 	}
 
-	return dtos.NewResponse(c, http.StatusOK, "Login successful", dtos.AuthResponse{ID: userId})
+	return dtos.NewResponse(c, http.StatusOK, "Login successful", res)
+}
+
+func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
+	var req dtos.RefreshRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dtos.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+	}
+
+	res, err := h.authService.RefreshTokens(c.Context(), req.RefreshToken)
+	if err != nil {
+		return dtos.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
+	}
+
+	return dtos.NewResponse(c, http.StatusOK, "Token refreshed successfully", res)
+}
+
+func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	var req dtos.LogoutRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dtos.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+	}
+
+	err := h.authService.Logout(c.Context(), req.RefreshToken)
+	if err != nil {
+		return dtos.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
+	}
+
+	return dtos.NewResponse(c, http.StatusOK, "Logout successful", nil)
 }
