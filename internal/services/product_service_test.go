@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"go-shop-yourself/internal/domain"
@@ -40,6 +41,19 @@ func TestCreateProduct_Success(t *testing.T) {
 	assert.Equal(t, req.Name, res.Name)
 }
 
+func TestCreateProduct_Fail_MerchantNotFound(t *testing.T) {
+	mockMerchantRepo := mocks.NewMerchantRepository(t)
+	service := NewProductService(nil, mockMerchantRepo)
+
+	storeID := uuid.New()
+	mockMerchantRepo.On("GetByID", mock.Anything, storeID).Return(nil, nil)
+
+	_, err := service.CreateProduct(context.Background(), dtos.ProductCreateRequest{StoreID: storeID, Name: "Product"})
+
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, domain.ErrMerchantNotFound))
+}
+
 func TestUpdateProduct_Success(t *testing.T) {
 	mockRepo := mocks.NewProductRepository(t)
 	service := NewProductService(mockRepo, nil)
@@ -61,4 +75,17 @@ func TestUpdateProduct_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, "New Name", res.Name)
+}
+
+func TestUpdateProduct_Fail_NotFound(t *testing.T) {
+	mockRepo := mocks.NewProductRepository(t)
+	service := NewProductService(mockRepo, nil)
+
+	productID := uuid.New()
+	mockRepo.On("GetByID", mock.Anything, productID).Return(nil, nil)
+
+	_, err := service.UpdateProduct(context.Background(), productID, dtos.ProductUpdateRequest{Name: "New"})
+
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, domain.ErrProductNotFound))
 }
