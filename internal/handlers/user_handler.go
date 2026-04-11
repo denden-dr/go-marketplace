@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
 	"net/http"
@@ -26,7 +27,10 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 
 	user, err := h.userService.GetUserByID(c.Context(), id)
 	if err != nil {
-		return dtos.NewResponse(c, http.StatusNotFound, err.Error(), nil)
+		if errors.Is(err, domain.ErrUserNotFound) {
+			return dtos.NewResponse(c, http.StatusNotFound, err.Error(), nil)
+		}
+		return dtos.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
 	}
 
 	return dtos.NewResponse(c, http.StatusOK, "User profile retrieved", user)
