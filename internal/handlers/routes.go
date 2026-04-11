@@ -15,11 +15,11 @@ func SetupRoutes(
 	walletHandler *WalletHandler,
 	jwtSecret string,
 ) {
-	// Map initial route
-	app.Get("/", HelloHandler)
+	// Create API base group
+	apiBase := app.Group("/api")
 
 	// Public Auth routes
-	authRoutes := app.Group("/auth")
+	authRoutes := apiBase.Group("/auth")
 	authRoutes.Post("/register", authHandler.Register)
 	authRoutes.Post("/login", authHandler.Login)
 	authRoutes.Post("/refresh", authHandler.RefreshTokens)
@@ -27,8 +27,8 @@ func SetupRoutes(
 	// Middleware for protected routes
 	authMiddleware := middleware.AuthMiddleware(jwtSecret)
 
-	// Protected routes
-	api := app.Group("", authMiddleware)
+	// Protected routes (under /api)
+	api := apiBase.Group("", authMiddleware)
 
 	// Logout and Merchant registration
 	api.Post("/auth/logout", authHandler.Logout)

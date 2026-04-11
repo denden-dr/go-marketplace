@@ -64,10 +64,7 @@ func main() {
 		app,
 		authHandler,
 		userHandler,
-		merchantHandler,
-		productHandler,
-		walletHandler,
-		jwtSecret)
+		merchantHandler, productHandler, walletHandler, jwtSecret)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)
