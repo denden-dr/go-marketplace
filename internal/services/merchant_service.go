@@ -23,9 +23,9 @@ func NewMerchantService(repo *repos.MerchantRepository, userRepo *repos.UserRepo
 	return &MerchantService{repo: repo, userRepo: userRepo, walletRepo: walletRepo}
 }
 
-func (s *MerchantService) RegisterMerchant(ctx context.Context, req dtos.MerchantRegisterRequest) (*dtos.MerchantResponse, error) {
+func (s *MerchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID, req dtos.MerchantRegisterRequest) (*dtos.MerchantResponse, error) {
 	// Check if user exists
-	user, err := s.userRepo.GetUserByID(ctx, req.UserID)
+	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, req dtos.Merchan
 	}
 
 	// Check if merchant profile already exists for this user
-	existing, err := s.repo.GetByUserID(ctx, req.UserID)
+	existing, err := s.repo.GetByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, req dtos.Merchan
 
 	merchant := &domain.Merchant{
 		ID:        uuid.New(),
-		UserID:    req.UserID,
+		UserID:    userID,
 		Name:      req.Name,
 		About:     req.About,
 		TaxID:     req.TaxID,
@@ -54,7 +54,7 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, req dtos.Merchan
 	// Prepare wallet data
 	wallet := &domain.Wallet{
 		ID:           uuid.New(),
-		UserID:       req.UserID,
+		UserID:       userID,
 		WalletNumber: "WAL-" + uuid.New().String()[:8],
 		Balance:      decimal.NewFromInt(0),
 		Currency:     "IDR",
