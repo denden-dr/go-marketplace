@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"go-shop-yourself/internal/domain"
@@ -64,5 +65,43 @@ func TestRegisterMerchant_Fail_UserNotFound(t *testing.T) {
 	_, err := service.RegisterMerchant(context.Background(), userID, dtos.MerchantRegisterRequest{})
 
 	assert.Error(t, err)
-	assert.True(t, assert.ObjectsAreEqual(domain.ErrUserNotFound, err) || err.Error() == domain.ErrUserNotFound.Error())
+	assert.True(t, errors.Is(err, domain.ErrUserNotFound))
+}
+
+func TestRegisterMerchant_Fail_AlreadyExists(t *testing.T) {
+	mockUserRepo := mocks.NewUserRepository(t)
+	mockRepo := mocks.NewMerchantRepository(t)
+	service := NewMerchantService(mockRepo, mockUserRepo, nil)
+
+	userID := uuid.New()
+	user := &domain.User{ID: userID}
+	existing := &domain.Merchant{ID: uuid.New(), UserID: userID}
+
+	mockUserRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
+	mockRepo.On("GetByUserID", mock.Anything, userID).Return(existing, nil)
+
+	_, err := service.RegisterMerchant(context.Background(), userID, dtos.MerchantRegisterRequest{Name: "New"})
+
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, domain.ErrMerchantAlreadyExists))
+}
+
+func TestRegisterMerchant_Fail_BeginTxError(t *testing.T) {
+	mockRepo := mocks.NewMerchantRepository(t)
+	mockUserRepo := mocks.NewUserRepository(t)
+	mockPool := mocks.NewPool(t)
+	service := NewMerchantService(mockRepo, mockUserRepo, nil)
+
+	userID := uuid.New()
+	user := &domain.User{ID: userID}
+
+	mockUserRepo.On("GetUserByID", mock.Anything, userID).Return(user, nil)
+	mockRepo.On("GetByUserID", mock.Anything, userID).Return(nil, nil)
+	mockRepo.On("GetPool").Return(mockPool)
+	mockPool.On("Begin", mock.Anything).Return(nil, errors.New("begin fail"))
+
+	_, err := service.RegisterMerchant(context.Background(), userID, dtos.MerchantRegisterRequest{Name: "New"})
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "begin fail")
 }

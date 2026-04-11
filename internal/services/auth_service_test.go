@@ -134,9 +134,8 @@ func TestRefreshTokens_Fail_TokenReused(t *testing.T) {
 }
 
 func TestLogout_Success(t *testing.T) {
-	mockRepo := mocks.NewUserRepository(t)
 	mockRTRepo := mocks.NewRefreshTokenRepository(t)
-	service := NewAuthService(mockRepo, mockRTRepo, "secret")
+	service := NewAuthService(nil, mockRTRepo, "secret")
 
 	token := "valid-token"
 	rt := &domain.RefreshToken{
