@@ -5,6 +5,7 @@ import (
 	"go-shop-yourself/internal/services"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type MerchantHandler struct {
@@ -16,12 +17,14 @@ func NewMerchantHandler(service *services.MerchantService) *MerchantHandler {
 }
 
 func (h *MerchantHandler) RegisterMerchant(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uuid.UUID)
+
 	var req dtos.MerchantRegisterRequest
 	if err := c.BodyParser(&req); err != nil {
 		return dtos.NewResponse(c, fiber.StatusBadRequest, "Invalid request payload", nil)
 	}
 
-	res, err := h.service.RegisterMerchant(c.Context(), req)
+	res, err := h.service.RegisterMerchant(c.Context(), userID, req)
 	if err != nil {
 		return dtos.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"go-shop-yourself/internal/database"
 	"go-shop-yourself/internal/handlers"
+	"go-shop-yourself/internal/middleware"
 	"go-shop-yourself/internal/repos"
 	"go-shop-yourself/internal/services"
 
@@ -22,13 +23,19 @@ func main() {
 	// Initialize Database
 	database.ConnectDB()
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatalf("JWT_SECRET environment variable is not set")
+	}
+
 	// Initialize Layers
 	userRepo := repos.NewUserRepository(database.DB)
 	merchantRepo := repos.NewMerchantRepository(database.DB)
 	productRepo := repos.NewProductRepository(database.DB)
 	walletRepo := repos.NewWalletRepository(database.DB)
+	refreshTokenRepo := repos.NewRefreshTokenRepository(database.DB)
 
-	authService := services.NewAuthService(userRepo)
+	authService := services.NewAuthService(userRepo, refreshTokenRepo, jwtSecret)
 	userService := services.NewUserService(userRepo)
 	merchantService := services.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := services.NewProductService(productRepo, merchantRepo)
@@ -52,23 +59,33 @@ func main() {
 	// Map routes
 	app.Get("/", handlers.HelloHandler)
 
-	// Auth routes
-	auth := app.Group("/auth")
-	auth.Post("/register", authHandler.Register)
-	auth.Post("/login", authHandler.Login)
-	auth.Post("/register-merchant", merchantHandler.RegisterMerchant)
+	// Public Auth routes
+	authRoutes := app.Group("/auth")
+	authRoutes.Post("/register", authHandler.Register)
+	authRoutes.Post("/login", authHandler.Login)
+	authRoutes.Post("/refresh", authHandler.RefreshTokens)
+
+	// Middleware for protected routes
+	authMiddleware := middleware.AuthMiddleware(jwtSecret)
+
+	// Protected routes
+	api := app.Group("", authMiddleware)
+
+	// Logout and Merchant registration
+	api.Post("/auth/logout", authHandler.Logout)
+	api.Post("/auth/register-merchant", merchantHandler.RegisterMerchant)
 
 	// User routes
-	users := app.Group("/users")
+	users := api.Group("/users")
 	users.Get("/:id", userHandler.GetUserByID)
 
 	// Product routes
-	products := app.Group("/products")
+	products := api.Group("/products")
 	products.Post("/", productHandler.CreateProduct)
 	products.Put("/:id", productHandler.UpdateProduct)
 
 	// Wallet routes
-	wallets := app.Group("/wallets")
+	wallets := api.Group("/wallets")
 	wallets.Post("/", walletHandler.CreateWallet)
 	wallets.Get("/", walletHandler.GetWallet)
 	wallets.Get("/history", walletHandler.GetHistory)
