@@ -4,10 +4,13 @@ import (
 	"log"
 	"os"
 
+	"go-shop-yourself/internal/auth"
 	"go-shop-yourself/internal/database"
-	"go-shop-yourself/internal/handlers"
-	"go-shop-yourself/internal/repos"
-	"go-shop-yourself/internal/services"
+	"go-shop-yourself/internal/merchant"
+	"go-shop-yourself/internal/product"
+	"go-shop-yourself/internal/server"
+	"go-shop-yourself/internal/user"
+	"go-shop-yourself/internal/wallet"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -32,23 +35,23 @@ func main() {
 	}
 
 	// Initialize Layers
-	userRepo := repos.NewUserRepository(db)
-	merchantRepo := repos.NewMerchantRepository(db)
-	productRepo := repos.NewProductRepository(db)
-	walletRepo := repos.NewWalletRepository(db)
-	refreshTokenRepo := repos.NewRefreshTokenRepository(db)
+	userRepo := user.NewUserRepository(db)
+	merchantRepo := merchant.NewMerchantRepository(db)
+	productRepo := product.NewProductRepository(db)
+	walletRepo := wallet.NewWalletRepository(db)
+	refreshTokenRepo := auth.NewRefreshTokenRepository(db)
 
-	authService := services.NewAuthService(userRepo, refreshTokenRepo, jwtSecret)
-	userService := services.NewUserService(userRepo)
-	merchantService := services.NewMerchantService(merchantRepo, userRepo, walletRepo)
-	productService := services.NewProductService(productRepo, merchantRepo)
-	walletService := services.NewWalletService(walletRepo)
+	authService := auth.NewAuthService(userRepo, refreshTokenRepo, jwtSecret)
+	userService := user.NewUserService(userRepo)
+	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
+	productService := product.NewProductService(productRepo, merchantRepo)
+	walletService := wallet.NewWalletService(walletRepo)
 
-	authHandler := handlers.NewAuthHandler(authService)
-	userHandler := handlers.NewUserHandler(userService)
-	merchantHandler := handlers.NewMerchantHandler(merchantService)
-	productHandler := handlers.NewProductHandler(productService)
-	walletHandler := handlers.NewWalletHandler(walletService)
+	authHandler := auth.NewAuthHandler(authService)
+	userHandler := user.NewUserHandler(userService)
+	merchantHandler := merchant.NewMerchantHandler(merchantService)
+	productHandler := product.NewProductHandler(productService)
+	walletHandler := wallet.NewWalletHandler(walletService)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
@@ -60,7 +63,7 @@ func main() {
 	app := fiber.New()
 
 	// Setup Routes
-	handlers.SetupRoutes(
+	server.SetupRoutes(
 		app,
 		authHandler,
 		userHandler,
