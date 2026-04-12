@@ -4,17 +4,16 @@ import (
 	"errors"
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/services"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type AuthHandler struct {
-	authService *services.AuthService
+	authService domain.AuthServiceInterface
 }
 
-func NewAuthHandler(authService *services.AuthService) *AuthHandler {
+func NewAuthHandler(authService domain.AuthServiceInterface) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 

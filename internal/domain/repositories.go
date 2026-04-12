@@ -5,9 +5,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 )
+
+type Pool interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, u *User) error
@@ -20,7 +23,7 @@ type MerchantRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*Merchant, error)
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*Merchant, error)
 	CreateTx(ctx context.Context, tx pgx.Tx, m *Merchant) error
-	GetPool() *pgxpool.Pool // Keep for now as per refactor.md step 1.1
+	GetPool() Pool // Keep for now as per refactor.md step 1.1
 }
 
 type ProductRepository interface {
@@ -35,7 +38,7 @@ type WalletRepository interface {
 	Withdraw(ctx context.Context, walletID uuid.UUID, amount decimal.Decimal, txData WalletTransaction) error
 	Create(ctx context.Context, w *Wallet) error
 	CreateTx(ctx context.Context, tx pgx.Tx, w *Wallet) error
-	GetPool() *pgxpool.Pool // Keep for now as per refactor.md step 1.1
+	GetPool() Pool // Keep for now as per refactor.md step 1.1
 }
 
 type RefreshTokenRepository interface {

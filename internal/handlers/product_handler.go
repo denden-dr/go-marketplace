@@ -4,17 +4,16 @@ import (
 	"errors"
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/dtos"
-	"go-shop-yourself/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
 type ProductHandler struct {
-	service *services.ProductService
+	service domain.ProductServiceInterface
 }
 
-func NewProductHandler(service *services.ProductService) *ProductHandler {
+func NewProductHandler(service domain.ProductServiceInterface) *ProductHandler {
 	return &ProductHandler{service: service}
 }
 

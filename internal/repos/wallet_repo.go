@@ -122,6 +122,6 @@ func (r *WalletRepository) CreateTx(ctx context.Context, tx pgx.Tx, w *domain.Wa
 	return err
 }
 
-func (r *WalletRepository) GetPool() *pgxpool.Pool {
+func (r *WalletRepository) GetPool() domain.Pool {
 	return r.db
 }
