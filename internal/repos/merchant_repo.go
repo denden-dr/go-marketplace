@@ -58,6 +58,6 @@ func (r *MerchantRepository) CreateTx(ctx context.Context, tx pgx.Tx, m *domain.
 	return err
 }
 
-func (r *MerchantRepository) GetPool() *pgxpool.Pool {
+func (r *MerchantRepository) GetPool() domain.Pool {
 	return r.db
 }
