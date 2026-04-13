@@ -59,30 +59,24 @@ func SetupRoutes(
 	wallets.Get("/history", walletHandler.GetHistory)
 	wallets.Post("/withdraw", walletHandler.Withdraw)
 
-	// V1 Routes
-	v1 := api.Group("/v1")
-
-	// User features (Cart & Orders)
-	userV1 := v1.Group("/user")
-
 	// Cart
-	cartRoutes := userV1.Group("/cart")
+	cartRoutes := users.Group("/cart")
 	cartRoutes.Get("/", cartHandler.GetCart)
 	cartRoutes.Post("/", cartHandler.AddToCart)
 	cartRoutes.Put("/:productID", cartHandler.UpdateCartItem)
 	cartRoutes.Delete("/:productID", cartHandler.RemoveFromCart)
 	cartRoutes.Delete("/", cartHandler.ClearCart)
-
+	
 	// Orders
-	orderRoutes := userV1.Group("/orders")
+	orderRoutes := users.Group("/orders")
 	orderRoutes.Post("/", orderHandler.Checkout)
 	orderRoutes.Get("/:id", orderHandler.GetOrderDetail)
 	orderRoutes.Put("/:id/cancel", orderHandler.UserCancelOrder)
 	orderRoutes.Post("/:id/appeal", orderHandler.UserAppealOrder)
-
+	
 	// Merchant features (Orders)
-	merchantV1 := v1.Group("/merchant")
-	merchantOrders := merchantV1.Group("/orders")
+	merchants := api.Group("/merchants")
+	merchantOrders := merchants.Group("/orders")
 	merchantOrders.Put("/:id/cancel", orderHandler.MerchantCancelOrder)
 	merchantOrders.Put("/:id/status", orderHandler.MerchantUpdateStatus)
 }
