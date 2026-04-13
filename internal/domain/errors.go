@@ -16,4 +16,11 @@ var (
 	ErrInvalidRefreshToken    = errors.New("invalid refresh token")
 	ErrRefreshTokenExpired    = errors.New("refresh token expired")
 	ErrRefreshTokenReused     = errors.New("token reuse detected - all tokens in family revoked")
+
+	ErrOrderNotFound           = errors.New("order not found")
+	ErrOrderNotCancellable     = errors.New("order cannot be cancelled at this stage or time")
+	ErrMerchantShipmentTooEarly = errors.New("shipment cannot be processed within 1 hour of order packaging")
+	ErrInsufficientStock       = errors.New("insufficient product stock")
+	ErrCartItemNotFound        = errors.New("cart item not found")
+	ErrInvalidStatusTransition = errors.New("invalid order status transition")
 )
