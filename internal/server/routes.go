@@ -2,13 +2,13 @@ package server
 
 import (
 	"go-shop-yourself/internal/auth"
+	"go-shop-yourself/internal/cart"
 	"go-shop-yourself/internal/merchant"
 	"go-shop-yourself/internal/middleware"
+	"go-shop-yourself/internal/order"
 	"go-shop-yourself/internal/product"
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
-	"go-shop-yourself/internal/cart"
-	"go-shop-yourself/internal/order"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -64,13 +64,13 @@ func SetupRoutes(
 
 	// User features (Cart & Orders)
 	userV1 := v1.Group("/user")
-	
+
 	// Cart
 	cartRoutes := userV1.Group("/cart")
 	cartRoutes.Get("/", cartHandler.GetCart)
 	cartRoutes.Post("/", cartHandler.AddToCart)
-	cartRoutes.Put("/:id", cartHandler.UpdateCartItem)
-	cartRoutes.Delete("/:id", cartHandler.RemoveFromCart)
+	cartRoutes.Put("/:productID", cartHandler.UpdateCartItem)
+	cartRoutes.Delete("/:productID", cartHandler.RemoveFromCart)
 	cartRoutes.Delete("/", cartHandler.ClearCart)
 
 	// Orders
