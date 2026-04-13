@@ -2,8 +2,10 @@ package server
 
 import (
 	"go-shop-yourself/internal/auth"
+	"go-shop-yourself/internal/cart"
 	"go-shop-yourself/internal/merchant"
 	"go-shop-yourself/internal/middleware"
+	"go-shop-yourself/internal/order"
 	"go-shop-yourself/internal/product"
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
@@ -18,6 +20,8 @@ func SetupRoutes(
 	merchantHandler *merchant.MerchantHandler,
 	productHandler *product.ProductHandler,
 	walletHandler *wallet.WalletHandler,
+	cartHandler *cart.CartHandler,
+	orderHandler *order.OrderHandler,
 	jwtSecret string,
 ) {
 	// Create API base group
@@ -54,4 +58,25 @@ func SetupRoutes(
 	wallets.Get("/", walletHandler.GetWallet)
 	wallets.Get("/history", walletHandler.GetHistory)
 	wallets.Post("/withdraw", walletHandler.Withdraw)
+
+	// Cart
+	cartRoutes := users.Group("/cart")
+	cartRoutes.Get("/", cartHandler.GetCart)
+	cartRoutes.Post("/", cartHandler.AddToCart)
+	cartRoutes.Put("/:productID", cartHandler.UpdateCartItem)
+	cartRoutes.Delete("/:productID", cartHandler.RemoveFromCart)
+	cartRoutes.Delete("/", cartHandler.ClearCart)
+	
+	// Orders
+	orderRoutes := users.Group("/orders")
+	orderRoutes.Post("/", orderHandler.Checkout)
+	orderRoutes.Get("/:id", orderHandler.GetOrderDetail)
+	orderRoutes.Put("/:id/cancel", orderHandler.UserCancelOrder)
+	orderRoutes.Post("/:id/appeal", orderHandler.UserAppealOrder)
+	
+	// Merchant features (Orders)
+	merchants := api.Group("/merchants")
+	merchantOrders := merchants.Group("/orders")
+	merchantOrders.Put("/:id/cancel", orderHandler.MerchantCancelOrder)
+	merchantOrders.Put("/:id/status", orderHandler.MerchantUpdateStatus)
 }

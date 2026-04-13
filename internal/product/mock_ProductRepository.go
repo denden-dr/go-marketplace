@@ -8,6 +8,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	pgx "github.com/jackc/pgx/v5"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -130,6 +132,66 @@ func (_c *MockProductRepository_GetByID_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
+// GetByIDForUpdateTX provides a mock function with given fields: ctx, tx, id
+func (_m *MockProductRepository) GetByIDForUpdateTX(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*domain.Product, error) {
+	ret := _m.Called(ctx, tx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByIDForUpdateTX")
+	}
+
+	var r0 *domain.Product
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID) (*domain.Product, error)); ok {
+		return rf(ctx, tx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID) *domain.Product); ok {
+		r0 = rf(ctx, tx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Product)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, pgx.Tx, uuid.UUID) error); ok {
+		r1 = rf(ctx, tx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockProductRepository_GetByIDForUpdateTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByIDForUpdateTX'
+type MockProductRepository_GetByIDForUpdateTX_Call struct {
+	*mock.Call
+}
+
+// GetByIDForUpdateTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx pgx.Tx
+//   - id uuid.UUID
+func (_e *MockProductRepository_Expecter) GetByIDForUpdateTX(ctx interface{}, tx interface{}, id interface{}) *MockProductRepository_GetByIDForUpdateTX_Call {
+	return &MockProductRepository_GetByIDForUpdateTX_Call{Call: _e.mock.On("GetByIDForUpdateTX", ctx, tx, id)}
+}
+
+func (_c *MockProductRepository_GetByIDForUpdateTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, id uuid.UUID)) *MockProductRepository_GetByIDForUpdateTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockProductRepository_GetByIDForUpdateTX_Call) Return(_a0 *domain.Product, _a1 error) *MockProductRepository_GetByIDForUpdateTX_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockProductRepository_GetByIDForUpdateTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID) (*domain.Product, error)) *MockProductRepository_GetByIDForUpdateTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function with given fields: ctx, p
 func (_m *MockProductRepository) Update(ctx context.Context, p *domain.Product) error {
 	ret := _m.Called(ctx, p)
@@ -173,6 +235,55 @@ func (_c *MockProductRepository_Update_Call) Return(_a0 error) *MockProductRepos
 }
 
 func (_c *MockProductRepository_Update_Call) RunAndReturn(run func(context.Context, *domain.Product) error) *MockProductRepository_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateStockTX provides a mock function with given fields: ctx, tx, id, stock
+func (_m *MockProductRepository) UpdateStockTX(ctx context.Context, tx pgx.Tx, id uuid.UUID, stock int) error {
+	ret := _m.Called(ctx, tx, id, stock)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateStockTX")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID, int) error); ok {
+		r0 = rf(ctx, tx, id, stock)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockProductRepository_UpdateStockTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateStockTX'
+type MockProductRepository_UpdateStockTX_Call struct {
+	*mock.Call
+}
+
+// UpdateStockTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx pgx.Tx
+//   - id uuid.UUID
+//   - stock int
+func (_e *MockProductRepository_Expecter) UpdateStockTX(ctx interface{}, tx interface{}, id interface{}, stock interface{}) *MockProductRepository_UpdateStockTX_Call {
+	return &MockProductRepository_UpdateStockTX_Call{Call: _e.mock.On("UpdateStockTX", ctx, tx, id, stock)}
+}
+
+func (_c *MockProductRepository_UpdateStockTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, id uuid.UUID, stock int)) *MockProductRepository_UpdateStockTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *MockProductRepository_UpdateStockTX_Call) Return(_a0 error) *MockProductRepository_UpdateStockTX_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockProductRepository_UpdateStockTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID, int) error) *MockProductRepository_UpdateStockTX_Call {
 	_c.Call.Return(run)
 	return _c
 }

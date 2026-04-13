@@ -1,0 +1,67 @@
+package order
+
+import (
+	"errors"
+	"time"
+
+	"go-shop-yourself/internal/domain"
+
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+)
+
+type CheckoutRequest struct {
+	PaymentMethod string `json:"payment_method"`
+}
+
+func (r CheckoutRequest) Validate() error {
+	if r.PaymentMethod == "" {
+		return errors.New("payment method is required")
+	}
+	return nil
+}
+
+type OrderResponse struct {
+	ID          uuid.UUID            `json:"id"`
+	PaymentID   uuid.UUID            `json:"payment_id"`
+	MerchantID  uuid.UUID            `json:"merchant_id"`
+	Status      domain.OrderStatus   `json:"status"`
+	TotalAmount decimal.Decimal      `json:"total_amount"`
+	IsAppealed  bool                 `json:"is_appealed"`
+	Items       []OrderItemResponse `json:"items,omitempty"`
+	CreatedAt   time.Time            `json:"created_at"`
+	UpdatedAt   time.Time            `json:"updated_at"`
+}
+
+type OrderItemResponse struct {
+	ID        uuid.UUID       `json:"id"`
+	ProductID uuid.UUID       `json:"product_id"`
+	Quantity  int             `json:"quantity"`
+	Price     decimal.Decimal `json:"price"`
+}
+
+type UpdateStatusRequest struct {
+	Status domain.OrderStatus `json:"status"`
+}
+
+func (r UpdateStatusRequest) Validate() error {
+	if r.Status == "" {
+		return errors.New("status is required")
+	}
+	return nil
+}
+
+type CancelOrderRequest struct {
+	Reason string `json:"reason"`
+}
+
+type AppealOrderRequest struct {
+	Reason string `json:"reason"`
+}
+
+func (r AppealOrderRequest) Validate() error {
+	if r.Reason == "" {
+		return errors.New("appeal reason is required")
+	}
+	return nil
+}

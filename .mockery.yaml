@@ -26,6 +26,14 @@ packages:
     interfaces:
       WalletServiceInterface:
       WalletRepository:
+  go-shop-yourself/internal/cart:
+    interfaces:
+      CartServiceInterface:
+      CartRepository:
+  go-shop-yourself/internal/order:
+    interfaces:
+      OrderServiceInterface:
+      OrderRepository:
   go-shop-yourself/internal/domain:
     interfaces:
       Pool:

@@ -24,6 +24,8 @@ type WalletRepository interface {
 	Withdraw(ctx context.Context, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	Create(ctx context.Context, w *domain.Wallet) error
 	CreateTx(ctx context.Context, tx pgx.Tx, w *domain.Wallet) error
+	DeductBalanceTX(ctx context.Context, tx pgx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	AddBalanceTX(ctx context.Context, tx pgx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	GetPool() domain.Pool
 }
 
