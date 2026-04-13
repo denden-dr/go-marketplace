@@ -28,6 +28,56 @@ func (_m *MockWalletRepository) EXPECT() *MockWalletRepository_Expecter {
 	return &MockWalletRepository_Expecter{mock: &_m.Mock}
 }
 
+// AddBalanceTX provides a mock function with given fields: ctx, tx, walletID, amount, txData
+func (_m *MockWalletRepository) AddBalanceTX(ctx context.Context, tx pgx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	ret := _m.Called(ctx, tx, walletID, amount, txData)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddBalanceTX")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID, decimal.Decimal, domain.WalletTransaction) error); ok {
+		r0 = rf(ctx, tx, walletID, amount, txData)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockWalletRepository_AddBalanceTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddBalanceTX'
+type MockWalletRepository_AddBalanceTX_Call struct {
+	*mock.Call
+}
+
+// AddBalanceTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx pgx.Tx
+//   - walletID uuid.UUID
+//   - amount decimal.Decimal
+//   - txData domain.WalletTransaction
+func (_e *MockWalletRepository_Expecter) AddBalanceTX(ctx interface{}, tx interface{}, walletID interface{}, amount interface{}, txData interface{}) *MockWalletRepository_AddBalanceTX_Call {
+	return &MockWalletRepository_AddBalanceTX_Call{Call: _e.mock.On("AddBalanceTX", ctx, tx, walletID, amount, txData)}
+}
+
+func (_c *MockWalletRepository_AddBalanceTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction)) *MockWalletRepository_AddBalanceTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID), args[3].(decimal.Decimal), args[4].(domain.WalletTransaction))
+	})
+	return _c
+}
+
+func (_c *MockWalletRepository_AddBalanceTX_Call) Return(_a0 error) *MockWalletRepository_AddBalanceTX_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockWalletRepository_AddBalanceTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID, decimal.Decimal, domain.WalletTransaction) error) *MockWalletRepository_AddBalanceTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function with given fields: ctx, w
 func (_m *MockWalletRepository) Create(ctx context.Context, w *domain.Wallet) error {
 	ret := _m.Called(ctx, w)
@@ -119,6 +169,56 @@ func (_c *MockWalletRepository_CreateTx_Call) Return(_a0 error) *MockWalletRepos
 }
 
 func (_c *MockWalletRepository_CreateTx_Call) RunAndReturn(run func(context.Context, pgx.Tx, *domain.Wallet) error) *MockWalletRepository_CreateTx_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeductBalanceTX provides a mock function with given fields: ctx, tx, walletID, amount, txData
+func (_m *MockWalletRepository) DeductBalanceTX(ctx context.Context, tx pgx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	ret := _m.Called(ctx, tx, walletID, amount, txData)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeductBalanceTX")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID, decimal.Decimal, domain.WalletTransaction) error); ok {
+		r0 = rf(ctx, tx, walletID, amount, txData)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockWalletRepository_DeductBalanceTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeductBalanceTX'
+type MockWalletRepository_DeductBalanceTX_Call struct {
+	*mock.Call
+}
+
+// DeductBalanceTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx pgx.Tx
+//   - walletID uuid.UUID
+//   - amount decimal.Decimal
+//   - txData domain.WalletTransaction
+func (_e *MockWalletRepository_Expecter) DeductBalanceTX(ctx interface{}, tx interface{}, walletID interface{}, amount interface{}, txData interface{}) *MockWalletRepository_DeductBalanceTX_Call {
+	return &MockWalletRepository_DeductBalanceTX_Call{Call: _e.mock.On("DeductBalanceTX", ctx, tx, walletID, amount, txData)}
+}
+
+func (_c *MockWalletRepository_DeductBalanceTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction)) *MockWalletRepository_DeductBalanceTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID), args[3].(decimal.Decimal), args[4].(domain.WalletTransaction))
+	})
+	return _c
+}
+
+func (_c *MockWalletRepository_DeductBalanceTX_Call) Return(_a0 error) *MockWalletRepository_DeductBalanceTX_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockWalletRepository_DeductBalanceTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID, decimal.Decimal, domain.WalletTransaction) error) *MockWalletRepository_DeductBalanceTX_Call {
 	_c.Call.Return(run)
 	return _c
 }

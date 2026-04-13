@@ -11,6 +11,8 @@ import (
 	"go-shop-yourself/internal/server"
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
+	"go-shop-yourself/internal/cart"
+	"go-shop-yourself/internal/order"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -40,18 +42,24 @@ func main() {
 	productRepo := product.NewProductRepository(db)
 	walletRepo := wallet.NewWalletRepository(db)
 	refreshTokenRepo := auth.NewRefreshTokenRepository(db)
+	cartRepo := cart.NewCartRepository(db)
+	orderRepo := order.NewOrderRepository(db)
 
 	authService := auth.NewAuthService(userRepo, refreshTokenRepo, jwtSecret)
 	userService := user.NewUserService(userRepo)
 	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := product.NewProductService(productRepo, merchantRepo)
 	walletService := wallet.NewWalletService(walletRepo)
+	cartService := cart.NewCartService(cartRepo, productRepo)
+	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletRepo)
 
 	authHandler := auth.NewAuthHandler(authService)
 	userHandler := user.NewUserHandler(userService)
 	merchantHandler := merchant.NewMerchantHandler(merchantService)
 	productHandler := product.NewProductHandler(productService)
 	walletHandler := wallet.NewWalletHandler(walletService)
+	cartHandler := cart.NewCartHandler(cartService)
+	orderHandler := order.NewOrderHandler(orderService, merchantRepo)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
@@ -67,7 +75,8 @@ func main() {
 		app,
 		authHandler,
 		userHandler,
-		merchantHandler, productHandler, walletHandler, jwtSecret)
+		merchantHandler, productHandler, walletHandler,
+		cartHandler, orderHandler, jwtSecret)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)
