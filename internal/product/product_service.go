@@ -9,6 +9,7 @@ import (
 	"go-shop-yourself/internal/merchant"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type ProductServiceInterface interface {
@@ -20,6 +21,8 @@ type ProductRepository interface {
 	Create(ctx context.Context, p *domain.Product) error
 	Update(ctx context.Context, p *domain.Product) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, error)
+	GetByIDForUpdateTX(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*domain.Product, error)
+	UpdateStockTX(ctx context.Context, tx pgx.Tx, id uuid.UUID, stock int) error
 }
 
 type ProductService struct {

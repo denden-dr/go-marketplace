@@ -43,3 +43,22 @@ func (r *productRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 	}
 	return &p, nil
 }
+
+func (r *productRepository) GetByIDForUpdateTX(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*domain.Product, error) {
+	query := `SELECT id, store_id, name, description, price, stock, height_cm, width_cm, depth_cm, weight_kg, is_onsale, created_at FROM products WHERE id = $1 FOR UPDATE`
+	var p domain.Product
+	err := tx.QueryRow(ctx, query, id).Scan(&p.ID, &p.StoreID, &p.Name, &p.Description, &p.Price, &p.Stock, &p.HeightCM, &p.WidthCM, &p.DepthCM, &p.WeightKG, &p.IsOnSale, &p.CreatedAt)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (r *productRepository) UpdateStockTX(ctx context.Context, tx pgx.Tx, id uuid.UUID, stock int) error {
+	query := `UPDATE products SET stock = $1 WHERE id = $2`
+	_, err := tx.Exec(ctx, query, stock, id)
+	return err
+}
