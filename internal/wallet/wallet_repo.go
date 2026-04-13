@@ -108,6 +108,65 @@ func (r *walletRepository) Withdraw(ctx context.Context, walletID uuid.UUID, amo
 	return tx.Commit(ctx)
 }
 
+func (r *walletRepository) DeductBalanceTX(ctx context.Context, tx pgx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	var currentBalance decimal.Decimal
+	var status domain.WalletStatus
+	query := `SELECT balance, status FROM wallets WHERE id = $1 FOR UPDATE`
+	err := tx.QueryRow(ctx, query, walletID).Scan(&currentBalance, &status)
+	if err != nil {
+		return err
+	}
+
+	if status != domain.WalletStatusActive {
+		return errors.New("wallet is not active")
+	}
+
+	if currentBalance.LessThan(amount) {
+		return errors.New("insufficient balance")
+	}
+
+	newBalance := currentBalance.Sub(amount)
+	updateQuery := `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE id = $2`
+	_, err = tx.Exec(ctx, updateQuery, newBalance, walletID)
+	if err != nil {
+		return err
+	}
+
+	txData.BalanceAfter = newBalance
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, description, created_at) 
+	                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err = tx.Exec(ctx, insertQuery,
+		txData.ID, txData.WalletID, txData.Amount, txData.Direction, txData.Type, txData.Status,
+		txData.ReferenceID, txData.BalanceAfter, txData.Description, txData.CreatedAt,
+	)
+	return err
+}
+
+func (r *walletRepository) AddBalanceTX(ctx context.Context, tx pgx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	var currentBalance decimal.Decimal
+	query := `SELECT balance FROM wallets WHERE id = $1 FOR UPDATE`
+	err := tx.QueryRow(ctx, query, walletID).Scan(&currentBalance)
+	if err != nil {
+		return err
+	}
+
+	newBalance := currentBalance.Add(amount)
+	updateQuery := `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE id = $2`
+	_, err = tx.Exec(ctx, updateQuery, newBalance, walletID)
+	if err != nil {
+		return err
+	}
+
+	txData.BalanceAfter = newBalance
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, description, created_at) 
+	                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err = tx.Exec(ctx, insertQuery,
+		txData.ID, txData.WalletID, txData.Amount, txData.Direction, txData.Type, txData.Status,
+		txData.ReferenceID, txData.BalanceAfter, txData.Description, txData.CreatedAt,
+	)
+	return err
+}
+
 func (r *walletRepository) Create(ctx context.Context, w *domain.Wallet) error {
 	query := `INSERT INTO wallets (id, user_id, wallet_number, balance, currency, status, created_at, updated_at) 
 	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
