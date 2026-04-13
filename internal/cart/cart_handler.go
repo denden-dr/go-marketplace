@@ -45,7 +45,7 @@ func (h *CartHandler) AddToCart(c *fiber.Ctx) error {
 
 func (h *CartHandler) UpdateCartItem(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
-	productID, err := uuid.Parse(c.Params("id"))
+	productID, err := uuid.Parse(c.Params("productID"))
 	if err != nil {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid product ID", nil)
 	}
@@ -70,7 +70,7 @@ func (h *CartHandler) UpdateCartItem(c *fiber.Ctx) error {
 
 func (h *CartHandler) RemoveFromCart(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
-	productID, err := uuid.Parse(c.Params("id"))
+	productID, err := uuid.Parse(c.Params("productID"))
 	if err != nil {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid product ID", nil)
 	}
