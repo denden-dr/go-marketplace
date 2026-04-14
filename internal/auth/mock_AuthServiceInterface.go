@@ -5,7 +5,6 @@ package auth
 import (
 	context "context"
 
-	uuid "github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -188,29 +187,29 @@ func (_c *MockAuthServiceInterface_RefreshTokens_Call) RunAndReturn(run func(con
 	return _c
 }
 
-// Register provides a mock function with given fields: ctx, email, password, username
-func (_m *MockAuthServiceInterface) Register(ctx context.Context, email string, password string, username string) (uuid.UUID, error) {
-	ret := _m.Called(ctx, email, password, username)
+// Register provides a mock function with given fields: ctx, fullName, email, password, username
+func (_m *MockAuthServiceInterface) Register(ctx context.Context, fullName string, email string, password string, username string) (*AuthResponse, error) {
+	ret := _m.Called(ctx, fullName, email, password, username)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Register")
 	}
 
-	var r0 uuid.UUID
+	var r0 *AuthResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) (uuid.UUID, error)); ok {
-		return rf(ctx, email, password, username)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string) (*AuthResponse, error)); ok {
+		return rf(ctx, fullName, email, password, username)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) uuid.UUID); ok {
-		r0 = rf(ctx, email, password, username)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string) *AuthResponse); ok {
+		r0 = rf(ctx, fullName, email, password, username)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(uuid.UUID)
+			r0 = ret.Get(0).(*AuthResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
-		r1 = rf(ctx, email, password, username)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
+		r1 = rf(ctx, fullName, email, password, username)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -225,26 +224,27 @@ type MockAuthServiceInterface_Register_Call struct {
 
 // Register is a helper method to define mock.On call
 //   - ctx context.Context
+//   - fullName string
 //   - email string
 //   - password string
 //   - username string
-func (_e *MockAuthServiceInterface_Expecter) Register(ctx interface{}, email interface{}, password interface{}, username interface{}) *MockAuthServiceInterface_Register_Call {
-	return &MockAuthServiceInterface_Register_Call{Call: _e.mock.On("Register", ctx, email, password, username)}
+func (_e *MockAuthServiceInterface_Expecter) Register(ctx interface{}, fullName interface{}, email interface{}, password interface{}, username interface{}) *MockAuthServiceInterface_Register_Call {
+	return &MockAuthServiceInterface_Register_Call{Call: _e.mock.On("Register", ctx, fullName, email, password, username)}
 }
 
-func (_c *MockAuthServiceInterface_Register_Call) Run(run func(ctx context.Context, email string, password string, username string)) *MockAuthServiceInterface_Register_Call {
+func (_c *MockAuthServiceInterface_Register_Call) Run(run func(ctx context.Context, fullName string, email string, password string, username string)) *MockAuthServiceInterface_Register_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), args[4].(string))
 	})
 	return _c
 }
 
-func (_c *MockAuthServiceInterface_Register_Call) Return(_a0 uuid.UUID, _a1 error) *MockAuthServiceInterface_Register_Call {
+func (_c *MockAuthServiceInterface_Register_Call) Return(_a0 *AuthResponse, _a1 error) *MockAuthServiceInterface_Register_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockAuthServiceInterface_Register_Call) RunAndReturn(run func(context.Context, string, string, string) (uuid.UUID, error)) *MockAuthServiceInterface_Register_Call {
+func (_c *MockAuthServiceInterface_Register_Call) RunAndReturn(run func(context.Context, string, string, string, string) (*AuthResponse, error)) *MockAuthServiceInterface_Register_Call {
 	_c.Call.Return(run)
 	return _c
 }
