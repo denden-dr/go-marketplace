@@ -53,11 +53,11 @@ func SetupRoutes(
 
 	// User routes
 	users := api.Group("/users")
-	users.Get("/:id", userHandler.GetUserByID)
 	users.Get("/addresses", userHandler.ListAddresses)
 	users.Post("/addresses", userHandler.AddAddress)
 	users.Put("/addresses/:id", userHandler.UpdateAddress)
 	users.Delete("/addresses/:id", userHandler.DeleteAddress)
+	users.Get("/:id", userHandler.GetUserByID)
 
 	// Product routes
 	products := api.Group("/products")
