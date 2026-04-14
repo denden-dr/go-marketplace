@@ -71,7 +71,7 @@ func main() {
 	productService := product.NewProductService(productRepo, merchantRepo)
 	walletService := wallet.NewWalletService(walletRepo)
 	cartService := cart.NewCartService(cartRepo, productRepo)
-	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletRepo)
+	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletRepo, userRepo)
 
 	authHandler := auth.NewAuthHandler(authService)
 	userHandler := user.NewUserHandler(userService)
