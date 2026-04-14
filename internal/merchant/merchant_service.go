@@ -27,8 +27,8 @@ type MerchantRepository interface {
 }
 
 type MerchantService struct {
-	repo MerchantRepository
-	userRepo user.UserRepository
+	repo       MerchantRepository
+	userRepo   user.UserRepository
 	walletRepo wallet.WalletRepository
 }
 
@@ -56,24 +56,24 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID
 	}
 
 	merchant := &domain.Merchant{
-		ID: uuid.New(),
-		UserID: userID,
-		Name: req.Name,
-		About: req.About,
-		TaxID: req.TaxID,
+		ID:        uuid.New(),
+		UserID:    userID,
+		Name:      req.Name,
+		About:     req.About,
+		TaxID:     req.TaxID,
 		CreatedAt: time.Now(),
 	}
 
 	// Prepare wallet data
 	wallet := &domain.Wallet{
-		ID: uuid.New(),
-		UserID: userID,
+		ID:           uuid.New(),
+		UserID:       userID,
 		WalletNumber: "WAL-" + uuid.New().String()[:8],
-		Balance: decimal.NewFromInt(0),
-		Currency: "IDR",
-		Status: domain.WalletStatusActive,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Balance:      decimal.NewFromInt(0),
+		Currency:     "IDR",
+		Status:       domain.WalletStatusActive,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	// Start transaction
@@ -99,8 +99,8 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID
 	}
 
 	return &MerchantResponse{
-		ID: merchant.ID,
-		Name: merchant.Name,
+		ID:    merchant.ID,
+		Name:  merchant.Name,
 		Email: user.Email,
 		About: merchant.About,
 	}, nil

@@ -5,18 +5,38 @@ import (
 	"os"
 
 	"go-shop-yourself/internal/auth"
+	"go-shop-yourself/internal/cart"
 	"go-shop-yourself/internal/database"
 	"go-shop-yourself/internal/merchant"
+	"go-shop-yourself/internal/order"
 	"go-shop-yourself/internal/product"
 	"go-shop-yourself/internal/server"
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
-	"go-shop-yourself/internal/cart"
-	"go-shop-yourself/internal/order"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
+
+// @title Go Shop Yourself API
+// @version 1.0
+// @description This is a robust e-commerce backend API.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:3000
+// @BasePath /api
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and then your token.
 
 func main() {
 	// Load .env configuration
@@ -70,13 +90,15 @@ func main() {
 	// Initialize Fiber app
 	app := fiber.New()
 
+	appEnv := os.Getenv("APP_ENV")
+
 	// Setup Routes
 	server.SetupRoutes(
 		app,
 		authHandler,
 		userHandler,
 		merchantHandler, productHandler, walletHandler,
-		cartHandler, orderHandler, jwtSecret)
+		cartHandler, orderHandler, jwtSecret, appEnv)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)

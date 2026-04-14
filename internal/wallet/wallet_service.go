@@ -47,14 +47,14 @@ func (s *WalletService) GetWalletByUserID(ctx context.Context, userID uuid.UUID)
 	}
 
 	return &WalletResponse{
-		ID: wallet.ID,
-		UserID: wallet.UserID,
+		ID:           wallet.ID,
+		UserID:       wallet.UserID,
 		WalletNumber: wallet.WalletNumber,
-		Balance: wallet.Balance,
-		Currency: wallet.Currency,
-		Status: string(wallet.Status),
-		CreatedAt: wallet.CreatedAt,
-		UpdatedAt: wallet.UpdatedAt,
+		Balance:      wallet.Balance,
+		Currency:     wallet.Currency,
+		Status:       string(wallet.Status),
+		CreatedAt:    wallet.CreatedAt,
+		UpdatedAt:    wallet.UpdatedAt,
 	}, nil
 }
 
@@ -83,16 +83,16 @@ func (s *WalletService) GetWalletHistory(ctx context.Context, userID uuid.UUID, 
 	res := []TransactionResponse{}
 	for _, t := range transactions {
 		res = append(res, TransactionResponse{
-			ID: t.ID,
-			WalletID: t.WalletID,
-			Amount: t.Amount,
-			Direction: string(t.Direction),
-			Type: string(t.Type),
-			Status: string(t.Status),
-			ReferenceID: t.ReferenceID,
+			ID:           t.ID,
+			WalletID:     t.WalletID,
+			Amount:       t.Amount,
+			Direction:    string(t.Direction),
+			Type:         string(t.Type),
+			Status:       string(t.Status),
+			ReferenceID:  t.ReferenceID,
 			BalanceAfter: t.BalanceAfter,
-			Description: t.Description,
-			CreatedAt: t.CreatedAt,
+			Description:  t.Description,
+			CreatedAt:    t.CreatedAt,
 		})
 	}
 	return res, nil
@@ -118,15 +118,15 @@ func (s *WalletService) Withdraw(ctx context.Context, userID uuid.UUID, req With
 	}
 
 	txData := domain.WalletTransaction{
-		ID: uuid.New(),
-		WalletID: wallet.ID,
-		Amount: req.Amount,
-		Direction: domain.TransactionDirectionOut,
-		Type: domain.TransactionTypeWithdraw,
-		Status: domain.TransactionStatusSuccess,
+		ID:          uuid.New(),
+		WalletID:    wallet.ID,
+		Amount:      req.Amount,
+		Direction:   domain.TransactionDirectionOut,
+		Type:        domain.TransactionTypeWithdraw,
+		Status:      domain.TransactionStatusSuccess,
 		ReferenceID: "WD-" + time.Now().Format("20060102150405") + "-" + uuid.New().String()[:8],
 		Description: req.Description,
-		CreatedAt: time.Now(),
+		CreatedAt:   time.Now(),
 	}
 
 	// BalanceAfter will be set by the repo during the atomic transaction
@@ -147,14 +147,14 @@ func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*do
 	walletNumber := "WAL-" + uuid.New().String()[:8]
 
 	wallet := &domain.Wallet{
-		ID: uuid.New(),
-		UserID: userID,
+		ID:           uuid.New(),
+		UserID:       userID,
 		WalletNumber: walletNumber,
-		Balance: decimal.NewFromInt(0),
-		Currency: "IDR",
-		Status: domain.WalletStatusActive,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Balance:      decimal.NewFromInt(0),
+		Currency:     "IDR",
+		Status:       domain.WalletStatusActive,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	if err := s.walletRepo.Create(ctx, wallet); err != nil {

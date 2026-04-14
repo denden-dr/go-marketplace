@@ -27,16 +27,16 @@ type RefreshTokenRepository interface {
 }
 
 type AuthService struct {
-	userRepo user.UserRepository
+	userRepo         user.UserRepository
 	refreshTokenRepo RefreshTokenRepository
-	jwtSecret string
+	jwtSecret        string
 }
 
 func NewAuthService(userRepo user.UserRepository, refreshTokenRepo RefreshTokenRepository, jwtSecret string) *AuthService {
 	return &AuthService{
-		userRepo: userRepo,
+		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
-		jwtSecret: jwtSecret,
+		jwtSecret:        jwtSecret,
 	}
 }
 
@@ -55,10 +55,10 @@ func (s *AuthService) Register(ctx context.Context, email, password, username st
 	}
 
 	user := &domain.User{
-		ID: uuid.New(),
-		Username: username,
-		Email: email,
-		Password: string(hashedPassword),
+		ID:        uuid.New(),
+		Username:  username,
+		Email:     email,
+		Password:  string(hashedPassword),
 		CreatedAt: time.Now(),
 	}
 
@@ -97,10 +97,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 	familyID := uuid.New()
 	tokenHash := HashToken(refreshToken)
 	rt := &domain.RefreshToken{
-		ID: uuid.New(),
-		UserID: user.ID,
+		ID:        uuid.New(),
+		UserID:    user.ID,
 		TokenHash: tokenHash,
-		FamilyID: familyID,
+		FamilyID:  familyID,
 		IsRevoked: false,
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 7), // 7 days
 		CreatedAt: time.Now(),
@@ -111,8 +111,8 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 	}
 
 	return &AuthResponse{
-		ID: user.ID,
-		AccessToken: accessToken,
+		ID:           user.ID,
+		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
 }
@@ -160,10 +160,10 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*Auth
 	// Store new refresh token with SAME familyID
 	newTokenHash := HashToken(newRefreshToken)
 	newRt := &domain.RefreshToken{
-		ID: uuid.New(),
-		UserID: rt.UserID,
+		ID:        uuid.New(),
+		UserID:    rt.UserID,
 		TokenHash: newTokenHash,
-		FamilyID: rt.FamilyID,
+		FamilyID:  rt.FamilyID,
 		IsRevoked: false,
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
 		CreatedAt: time.Now(),
@@ -174,8 +174,8 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*Auth
 	}
 
 	return &AuthResponse{
-		ID: rt.UserID,
-		AccessToken: accessToken,
+		ID:           rt.UserID,
+		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
 }

@@ -2,8 +2,8 @@ package product
 
 import (
 	"errors"
-	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/common"
+	"go-shop-yourself/internal/domain"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -17,6 +17,19 @@ func NewProductHandler(service ProductServiceInterface) *ProductHandler {
 	return &ProductHandler{service: service}
 }
 
+// CreateProduct adds a new product to a store
+// @Summary Create product
+// @Description Creates a new product for a specific merchant store.
+// @Tags products
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body ProductCreateRequest true "Product Info"
+// @Success 201 {object} common.ResponseWrapper{data=ProductResponse}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 404 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /products/ [post]
 func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
 	var req ProductCreateRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -38,6 +51,20 @@ func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
 	return common.NewResponse(c, fiber.StatusCreated, "Product created successfully", res)
 }
 
+// UpdateProduct updates an existing product
+// @Summary Update product
+// @Description Updates the details of an existing product.
+// @Tags products
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Product ID (UUID)"
+// @Param request body ProductUpdateRequest true "Product Update Info"
+// @Success 200 {object} common.ResponseWrapper{data=ProductResponse}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 404 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /products/{id} [put]
 func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := uuid.Parse(idStr)

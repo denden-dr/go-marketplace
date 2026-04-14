@@ -35,7 +35,7 @@ type CartService struct {
 }
 
 // Wait, I should check product.ProductRepository definition to ensure compatibility.
-// Actually, earlier I saw it in product_service.go as `ProductRepository`. 
+// Actually, earlier I saw it in product_service.go as `ProductRepository`.
 // I'll use `product.ProductRepository` and import it.
 
 type ProductRepo interface {

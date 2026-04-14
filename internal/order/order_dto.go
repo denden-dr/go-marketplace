@@ -22,15 +22,15 @@ func (r CheckoutRequest) Validate() error {
 }
 
 type OrderResponse struct {
-	ID          uuid.UUID            `json:"id"`
-	PaymentID   uuid.UUID            `json:"payment_id"`
-	MerchantID  uuid.UUID            `json:"merchant_id"`
-	Status      domain.OrderStatus   `json:"status"`
-	TotalAmount decimal.Decimal      `json:"total_amount"`
-	IsAppealed  bool                 `json:"is_appealed"`
+	ID          uuid.UUID           `json:"id"`
+	PaymentID   uuid.UUID           `json:"payment_id"`
+	MerchantID  uuid.UUID           `json:"merchant_id"`
+	Status      domain.OrderStatus  `json:"status"`
+	TotalAmount decimal.Decimal     `json:"total_amount"`
+	IsAppealed  bool                `json:"is_appealed"`
 	Items       []OrderItemResponse `json:"items,omitempty"`
-	CreatedAt   time.Time            `json:"created_at"`
-	UpdatedAt   time.Time            `json:"updated_at"`
+	CreatedAt   time.Time           `json:"created_at"`
+	UpdatedAt   time.Time           `json:"updated_at"`
 }
 
 type OrderItemResponse struct {
