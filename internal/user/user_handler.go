@@ -2,8 +2,8 @@ package user
 
 import (
 	"errors"
-	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/common"
+	"go-shop-yourself/internal/domain"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,6 +18,19 @@ func NewUserHandler(userService UserServiceInterface) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
+// GetUserByID retrieves user profile
+// @Summary Get user profile
+// @Description Fetches the user profile details by their unique ID.
+// @Tags users
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID (UUID)"
+// @Success 200 {object} common.ResponseWrapper{data=domain.User}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 404 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /users/{id} [get]
 func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := uuid.Parse(idStr)

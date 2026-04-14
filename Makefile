@@ -8,7 +8,11 @@ endif
 DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_PATH=internal/database/migrations
 
-.PHONY: help build run clean fmt tidy migrate-up migrate-down migrate-create test mock
+.PHONY: help build run clean fmt tidy migrate-up migrate-down migrate-create test mock swagger
+
+swagger: ## Generate swagger documentation
+	@echo "Generating swagger..."
+	swag init -g main.go --parseDependency --parseInternal
 
 test: ## Run all tests
 	@echo "Running tests..."
