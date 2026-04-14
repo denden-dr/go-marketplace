@@ -11,6 +11,8 @@ import (
 	"go-shop-yourself/internal/wallet"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
+	_ "go-shop-yourself/docs"
 )
 
 func SetupRoutes(
@@ -23,7 +25,13 @@ func SetupRoutes(
 	cartHandler *cart.CartHandler,
 	orderHandler *order.OrderHandler,
 	jwtSecret string,
+	appEnv string,
 ) {
+	// Swagger UI
+	if appEnv == "development" {
+		app.Get("/swagger/*", swagger.HandlerDefault)
+	}
+
 	// Create API base group
 	apiBase := app.Group("/api")
 
@@ -66,14 +74,14 @@ func SetupRoutes(
 	cartRoutes.Put("/:productID", cartHandler.UpdateCartItem)
 	cartRoutes.Delete("/:productID", cartHandler.RemoveFromCart)
 	cartRoutes.Delete("/", cartHandler.ClearCart)
-	
+
 	// Orders
 	orderRoutes := users.Group("/orders")
 	orderRoutes.Post("/", orderHandler.Checkout)
 	orderRoutes.Get("/:id", orderHandler.GetOrderDetail)
 	orderRoutes.Put("/:id/cancel", orderHandler.UserCancelOrder)
 	orderRoutes.Post("/:id/appeal", orderHandler.UserAppealOrder)
-	
+
 	// Merchant features (Orders)
 	merchants := api.Group("/merchants")
 	merchantOrders := merchants.Group("/orders")

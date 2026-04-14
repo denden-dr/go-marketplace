@@ -2,8 +2,8 @@ package auth
 
 import (
 	"errors"
-	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/common"
+	"go-shop-yourself/internal/domain"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,6 +17,18 @@ func NewAuthHandler(authService AuthServiceInterface) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
+// Register handles user registration
+// @Summary Register a new user
+// @Description Creates a new user account with email, password, and username.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Registration Info"
+// @Success 201 {object} common.ResponseWrapper{data=AuthResponse}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 409 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	var req RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -38,6 +50,18 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	return common.NewResponse(c, http.StatusCreated, "User registered successfully", AuthResponse{ID: userId})
 }
 
+// Login handles user authentication
+// @Summary Login user
+// @Description Authenticates a user and returns access and refresh tokens.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login Credentials"
+// @Success 200 {object} common.ResponseWrapper{data=AuthResponse}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 410 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req LoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -59,6 +83,18 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	return common.NewResponse(c, http.StatusOK, "Login successful", res)
 }
 
+// RefreshTokens handles token refreshing
+// @Summary Refresh access tokens
+// @Description Rotates refresh tokens and provides a new access token.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RefreshRequest true "Refresh Token"
+// @Success 200 {object} common.ResponseWrapper{data=AuthResponse}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 401 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
 	var req RefreshRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -80,6 +116,19 @@ func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
 	return common.NewResponse(c, http.StatusOK, "Token refreshed successfully", res)
 }
 
+// Logout handles user logout
+// @Summary Logout user
+// @Description Invalidates the current refresh token.
+// @Tags auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body LogoutRequest true "Refresh Token to invalidate"
+// @Success 200 {object} common.ResponseWrapper
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 401 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	var req LogoutRequest
 	if err := c.BodyParser(&req); err != nil {

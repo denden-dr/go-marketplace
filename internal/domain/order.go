@@ -40,15 +40,15 @@ type OrderPayment struct {
 }
 
 type Order struct {
-	ID             uuid.UUID       `json:"id" db:"id"`
-	PaymentID      uuid.UUID       `json:"payment_id" db:"payment_id"`
-	MerchantID     uuid.UUID       `json:"merchant_id" db:"merchant_id"` // StoreID from Product
-	UserID         uuid.UUID       `json:"user_id" db:"user_id"`
-	Status         OrderStatus     `json:"status" db:"status"`
-	TotalAmount    decimal.Decimal `json:"total_amount" db:"total_amount"`
-	IsAppealed     bool            `json:"is_appealed" db:"is_appealed"`
-	CreatedAt      time.Time       `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time       `json:"updated_at" db:"updated_at"`
+	ID          uuid.UUID       `json:"id" db:"id"`
+	PaymentID   uuid.UUID       `json:"payment_id" db:"payment_id"`
+	MerchantID  uuid.UUID       `json:"merchant_id" db:"merchant_id"` // StoreID from Product
+	UserID      uuid.UUID       `json:"user_id" db:"user_id"`
+	Status      OrderStatus     `json:"status" db:"status"`
+	TotalAmount decimal.Decimal `json:"total_amount" db:"total_amount"`
+	IsAppealed  bool            `json:"is_appealed" db:"is_appealed"`
+	CreatedAt   time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at" db:"updated_at"`
 }
 
 type OrderItem struct {

@@ -26,7 +26,7 @@ type ProductRepository interface {
 }
 
 type ProductService struct {
-	repo ProductRepository
+	repo         ProductRepository
 	merchantRepo merchant.MerchantRepository
 }
 
@@ -45,18 +45,18 @@ func (s *ProductService) CreateProduct(ctx context.Context, req ProductCreateReq
 	}
 
 	product := &domain.Product{
-		ID: uuid.New(),
-		StoreID: req.StoreID,
-		Name: req.Name,
+		ID:          uuid.New(),
+		StoreID:     req.StoreID,
+		Name:        req.Name,
 		Description: req.Description,
-		Price: req.Price,
-		Stock: req.Stock,
-		HeightCM: req.HeightCM,
-		WidthCM: req.WidthCM,
-		DepthCM: req.DepthCM,
-		WeightKG: req.WeightKG,
-		IsOnSale: req.IsOnSale,
-		CreatedAt: time.Now(),
+		Price:       req.Price,
+		Stock:       req.Stock,
+		HeightCM:    req.HeightCM,
+		WidthCM:     req.WidthCM,
+		DepthCM:     req.DepthCM,
+		WeightKG:    req.WeightKG,
+		IsOnSale:    req.IsOnSale,
+		CreatedAt:   time.Now(),
 	}
 
 	if err := s.repo.Create(ctx, product); err != nil {
@@ -64,13 +64,13 @@ func (s *ProductService) CreateProduct(ctx context.Context, req ProductCreateReq
 	}
 
 	return &ProductResponse{
-		ID: product.ID,
-		Name: product.Name,
+		ID:          product.ID,
+		Name:        product.Name,
 		Description: product.Description,
-		Price: product.Price,
-		Stock: product.Stock,
-		IsOnSale: product.IsOnSale,
-		CreatedAt: product.CreatedAt,
+		Price:       product.Price,
+		Stock:       product.Stock,
+		IsOnSale:    product.IsOnSale,
+		CreatedAt:   product.CreatedAt,
 	}, nil
 }
 
@@ -94,12 +94,12 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id uuid.UUID, req Pr
 	}
 
 	return &ProductResponse{
-		ID: product.ID,
-		Name: product.Name,
+		ID:          product.ID,
+		Name:        product.Name,
 		Description: product.Description,
-		Price: product.Price,
-		Stock: product.Stock,
-		IsOnSale: product.IsOnSale,
-		CreatedAt: product.CreatedAt,
+		Price:       product.Price,
+		Stock:       product.Stock,
+		IsOnSale:    product.IsOnSale,
+		CreatedAt:   product.CreatedAt,
 	}, nil
 }
