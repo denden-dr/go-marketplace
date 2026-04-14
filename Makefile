@@ -8,7 +8,7 @@ endif
 DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_PATH=internal/database/migrations
 
-.PHONY: help build run clean fmt tidy migrate-up migrate-down migrate-create test
+.PHONY: help build run clean fmt tidy migrate-up migrate-down migrate-create test mock
 
 test: ## Run all tests
 	@echo "Running tests..."
@@ -52,3 +52,7 @@ migrate-down: ## Run database migrations down
 migrate-create: ## Create a new migration file (usage: make migrate-create name=name_of_migration)
 	@echo "Creating migration..."
 	migrate create -ext sql -dir $(MIGRATIONS_PATH) -seq $(name)
+
+mock: ## Generate mocks using mockery
+	@echo "Generating mocks..."
+	mockery
