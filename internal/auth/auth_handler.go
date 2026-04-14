@@ -39,7 +39,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
 	}
 
-	userId, err := h.authService.Register(c.Context(), req.Email, req.Password, req.Username)
+	res, err := h.authService.Register(c.Context(), req.FullName, req.Email, req.Password, req.Username)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserAlreadyExists) {
 			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
@@ -47,7 +47,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
 	}
 
-	return common.NewResponse(c, http.StatusCreated, "User registered successfully", AuthResponse{ID: userId})
+	return common.NewResponse(c, http.StatusCreated, "User registered successfully", res)
 }
 
 // Login handles user authentication

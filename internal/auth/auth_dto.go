@@ -2,16 +2,22 @@ package auth
 
 import (
 	"errors"
+	"time"
+
 	"github.com/google/uuid"
 )
 
 type RegisterRequest struct {
+	FullName string `json:"full_name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Username string `json:"username"`
 }
 
 func (r RegisterRequest) Validate() error {
+	if r.FullName == "" {
+		return errors.New("full name is required")
+	}
 	if r.Email == "" {
 		return errors.New("email is required")
 	}
@@ -29,6 +35,10 @@ func (r RegisterRequest) Validate() error {
 
 type AuthResponse struct {
 	ID           uuid.UUID `json:"id"`
+	FullName     string    `json:"full_name"`
+	Username     string    `json:"username"`
+	Email        string    `json:"email"`
+	CreatedAt    time.Time `json:"created_at"`
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token"`
 }
