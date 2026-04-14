@@ -22,6 +22,114 @@ func (_m *MockUserServiceInterface) EXPECT() *MockUserServiceInterface_Expecter 
 	return &MockUserServiceInterface_Expecter{mock: &_m.Mock}
 }
 
+// AddAddress provides a mock function with given fields: ctx, userID, req
+func (_m *MockUserServiceInterface) AddAddress(ctx context.Context, userID uuid.UUID, req *AddressRequest) (*AddressResponse, error) {
+	ret := _m.Called(ctx, userID, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddAddress")
+	}
+
+	var r0 *AddressResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *AddressRequest) (*AddressResponse, error)); ok {
+		return rf(ctx, userID, req)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *AddressRequest) *AddressResponse); ok {
+		r0 = rf(ctx, userID, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AddressResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, *AddressRequest) error); ok {
+		r1 = rf(ctx, userID, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserServiceInterface_AddAddress_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddAddress'
+type MockUserServiceInterface_AddAddress_Call struct {
+	*mock.Call
+}
+
+// AddAddress is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - req *AddressRequest
+func (_e *MockUserServiceInterface_Expecter) AddAddress(ctx interface{}, userID interface{}, req interface{}) *MockUserServiceInterface_AddAddress_Call {
+	return &MockUserServiceInterface_AddAddress_Call{Call: _e.mock.On("AddAddress", ctx, userID, req)}
+}
+
+func (_c *MockUserServiceInterface_AddAddress_Call) Run(run func(ctx context.Context, userID uuid.UUID, req *AddressRequest)) *MockUserServiceInterface_AddAddress_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(*AddressRequest))
+	})
+	return _c
+}
+
+func (_c *MockUserServiceInterface_AddAddress_Call) Return(_a0 *AddressResponse, _a1 error) *MockUserServiceInterface_AddAddress_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserServiceInterface_AddAddress_Call) RunAndReturn(run func(context.Context, uuid.UUID, *AddressRequest) (*AddressResponse, error)) *MockUserServiceInterface_AddAddress_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteAddress provides a mock function with given fields: ctx, userID, addressID
+func (_m *MockUserServiceInterface) DeleteAddress(ctx context.Context, userID uuid.UUID, addressID uuid.UUID) error {
+	ret := _m.Called(ctx, userID, addressID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteAddress")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = rf(ctx, userID, addressID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockUserServiceInterface_DeleteAddress_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteAddress'
+type MockUserServiceInterface_DeleteAddress_Call struct {
+	*mock.Call
+}
+
+// DeleteAddress is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - addressID uuid.UUID
+func (_e *MockUserServiceInterface_Expecter) DeleteAddress(ctx interface{}, userID interface{}, addressID interface{}) *MockUserServiceInterface_DeleteAddress_Call {
+	return &MockUserServiceInterface_DeleteAddress_Call{Call: _e.mock.On("DeleteAddress", ctx, userID, addressID)}
+}
+
+func (_c *MockUserServiceInterface_DeleteAddress_Call) Run(run func(ctx context.Context, userID uuid.UUID, addressID uuid.UUID)) *MockUserServiceInterface_DeleteAddress_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockUserServiceInterface_DeleteAddress_Call) Return(_a0 error) *MockUserServiceInterface_DeleteAddress_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockUserServiceInterface_DeleteAddress_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID) error) *MockUserServiceInterface_DeleteAddress_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserByID provides a mock function with given fields: ctx, id
 func (_m *MockUserServiceInterface) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error) {
 	ret := _m.Called(ctx, id)
@@ -77,6 +185,126 @@ func (_c *MockUserServiceInterface_GetUserByID_Call) Return(_a0 *UserResponse, _
 }
 
 func (_c *MockUserServiceInterface_GetUserByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*UserResponse, error)) *MockUserServiceInterface_GetUserByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAddresses provides a mock function with given fields: ctx, userID
+func (_m *MockUserServiceInterface) ListAddresses(ctx context.Context, userID uuid.UUID) ([]AddressResponse, error) {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListAddresses")
+	}
+
+	var r0 []AddressResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]AddressResponse, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []AddressResponse); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]AddressResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserServiceInterface_ListAddresses_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAddresses'
+type MockUserServiceInterface_ListAddresses_Call struct {
+	*mock.Call
+}
+
+// ListAddresses is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+func (_e *MockUserServiceInterface_Expecter) ListAddresses(ctx interface{}, userID interface{}) *MockUserServiceInterface_ListAddresses_Call {
+	return &MockUserServiceInterface_ListAddresses_Call{Call: _e.mock.On("ListAddresses", ctx, userID)}
+}
+
+func (_c *MockUserServiceInterface_ListAddresses_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockUserServiceInterface_ListAddresses_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockUserServiceInterface_ListAddresses_Call) Return(_a0 []AddressResponse, _a1 error) *MockUserServiceInterface_ListAddresses_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserServiceInterface_ListAddresses_Call) RunAndReturn(run func(context.Context, uuid.UUID) ([]AddressResponse, error)) *MockUserServiceInterface_ListAddresses_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateAddress provides a mock function with given fields: ctx, userID, addressID, req
+func (_m *MockUserServiceInterface) UpdateAddress(ctx context.Context, userID uuid.UUID, addressID uuid.UUID, req *AddressRequest) (*AddressResponse, error) {
+	ret := _m.Called(ctx, userID, addressID, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateAddress")
+	}
+
+	var r0 *AddressResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *AddressRequest) (*AddressResponse, error)); ok {
+		return rf(ctx, userID, addressID, req)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *AddressRequest) *AddressResponse); ok {
+		r0 = rf(ctx, userID, addressID, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AddressResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, *AddressRequest) error); ok {
+		r1 = rf(ctx, userID, addressID, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserServiceInterface_UpdateAddress_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateAddress'
+type MockUserServiceInterface_UpdateAddress_Call struct {
+	*mock.Call
+}
+
+// UpdateAddress is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - addressID uuid.UUID
+//   - req *AddressRequest
+func (_e *MockUserServiceInterface_Expecter) UpdateAddress(ctx interface{}, userID interface{}, addressID interface{}, req interface{}) *MockUserServiceInterface_UpdateAddress_Call {
+	return &MockUserServiceInterface_UpdateAddress_Call{Call: _e.mock.On("UpdateAddress", ctx, userID, addressID, req)}
+}
+
+func (_c *MockUserServiceInterface_UpdateAddress_Call) Run(run func(ctx context.Context, userID uuid.UUID, addressID uuid.UUID, req *AddressRequest)) *MockUserServiceInterface_UpdateAddress_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(*AddressRequest))
+	})
+	return _c
+}
+
+func (_c *MockUserServiceInterface_UpdateAddress_Call) Return(_a0 *AddressResponse, _a1 error) *MockUserServiceInterface_UpdateAddress_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserServiceInterface_UpdateAddress_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID, *AddressRequest) (*AddressResponse, error)) *MockUserServiceInterface_UpdateAddress_Call {
 	_c.Call.Return(run)
 	return _c
 }
