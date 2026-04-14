@@ -80,7 +80,7 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 	// 2. Lock and Validate Stock, Calculate Total
 	totalAmount := decimal.Zero
 	merchantItems := make(map[uuid.UUID][]domain.CartItem)
-	
+
 	for _, ci := range cartItems {
 		p, err := s.productRepo.GetByIDForUpdateTX(ctx, tx, ci.ProductID)
 		if err != nil {

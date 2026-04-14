@@ -54,11 +54,11 @@ func TestOrderService_CreateUserCheckout_Success(t *testing.T) {
 
 	mockOrderRepo.On("Begin", mock.Anything).Return(mockTx, nil)
 	mockCartRepo.On("GetCartByUserID", mock.Anything, userID).Return(cartItems, nil)
-	
+
 	mockProductRepo.On("GetByIDForUpdateTX", mock.Anything, mockTx, productID).Return(cartItems[0].Product, nil)
 	mockWalletRepo.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
 	mockWalletRepo.On("DeductBalanceTX", mock.Anything, mockTx, w.ID, decimal.NewFromInt(100), mock.Anything).Return(nil)
-	
+
 	mockOrderRepo.On("CreateOrderPaymentTX", mock.Anything, mockTx, mock.Anything).Return(nil)
 	mockOrderRepo.On("CreateOrderTX", mock.Anything, mockTx, mock.Anything).Return(nil)
 	mockOrderRepo.On("CreateOrderItemTX", mock.Anything, mockTx, mock.Anything).Return(nil)
@@ -86,7 +86,7 @@ func TestOrderService_CancelUserOrder_Success(t *testing.T) {
 	userID := uuid.New()
 	orderID := uuid.New()
 	productID := uuid.New()
-	
+
 	order := &domain.Order{
 		ID:          orderID,
 		UserID:      userID,
@@ -166,7 +166,7 @@ func TestOrderService_MerchantUpdateStatus_FailTooEarlyShipment(t *testing.T) {
 
 	merchantID := uuid.New()
 	orderID := uuid.New()
-	
+
 	// Packaging status but only 10 mins since creation
 	order := &domain.Order{
 		ID:         orderID,
@@ -203,7 +203,7 @@ func TestOrderService_AppealUserOrder_Success(t *testing.T) {
 	mockOrderRepo.On("Begin", mock.Anything).Return(mockTx, nil)
 	mockOrderRepo.On("CreateAppeal", mock.Anything, mock.Anything).Return(nil)
 	mockOrderRepo.On("UpdateOrderAppealTX", mock.Anything, mockTx, orderID, true).Return(nil)
-	
+
 	mockTx.ExpectCommit()
 
 	err = service.AppealUserOrder(context.Background(), userID, orderID, "Packaging took too long")

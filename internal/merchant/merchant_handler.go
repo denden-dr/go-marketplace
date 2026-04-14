@@ -2,8 +2,8 @@ package merchant
 
 import (
 	"errors"
-	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/common"
+	"go-shop-yourself/internal/domain"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -17,6 +17,20 @@ func NewMerchantHandler(service MerchantServiceInterface) *MerchantHandler {
 	return &MerchantHandler{service: service}
 }
 
+// RegisterMerchant registers a user as a merchant
+// @Summary Register as merchant
+// @Description Allows an authenticated user to register their own shop/merchant profile.
+// @Tags merchants
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body MerchantRegisterRequest true "Merchant Registration Info"
+// @Success 201 {object} common.ResponseWrapper{data=MerchantResponse}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 404 {object} common.ResponseWrapper
+// @Failure 409 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /auth/register-merchant [post]
 func (h *MerchantHandler) RegisterMerchant(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 

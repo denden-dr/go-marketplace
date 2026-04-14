@@ -1,0 +1,1135 @@
+basePath: /api
+definitions:
+  auth.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      id:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  auth.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  auth.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  auth.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  cart.AddToCartRequest:
+    properties:
+      product_id:
+        type: string
+      quantity:
+        type: integer
+    type: object
+  cart.CartItemResponse:
+    properties:
+      id:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: string
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      subtotal:
+        type: number
+    type: object
+  cart.CartResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/cart.CartItemResponse'
+        type: array
+      total_price:
+        type: number
+    type: object
+  cart.UpdateCartItemRequest:
+    properties:
+      quantity:
+        type: integer
+    type: object
+  common.ResponseWrapper:
+    properties:
+      data: {}
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+  domain.OrderStatus:
+    enum:
+    - pending
+    - processing
+    - packaging
+    - shipping
+    - delivered
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - OrderStatusPending
+    - OrderStatusProcessing
+    - OrderStatusPackaging
+    - OrderStatusShipping
+    - OrderStatusDelivered
+    - OrderStatusCancelled
+  domain.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  merchant.MerchantRegisterRequest:
+    properties:
+      about:
+        type: string
+      name:
+        type: string
+      tax_id:
+        type: string
+    type: object
+  merchant.MerchantResponse:
+    properties:
+      about:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  order.AppealOrderRequest:
+    properties:
+      reason:
+        type: string
+    type: object
+  order.CheckoutRequest:
+    properties:
+      payment_method:
+        type: string
+    type: object
+  order.OrderItemResponse:
+    properties:
+      id:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: string
+      quantity:
+        type: integer
+    type: object
+  order.OrderResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      is_appealed:
+        type: boolean
+      items:
+        items:
+          $ref: '#/definitions/order.OrderItemResponse'
+        type: array
+      merchant_id:
+        type: string
+      payment_id:
+        type: string
+      status:
+        $ref: '#/definitions/domain.OrderStatus'
+      total_amount:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  order.UpdateStatusRequest:
+    properties:
+      status:
+        $ref: '#/definitions/domain.OrderStatus'
+    type: object
+  product.ProductCreateRequest:
+    properties:
+      depth_cm:
+        type: number
+      description:
+        type: string
+      height_cm:
+        type: number
+      is_onsale:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      stock:
+        type: integer
+      store_id:
+        type: string
+      weight_kg:
+        type: number
+      width_cm:
+        type: number
+    type: object
+  product.ProductResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_onsale:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      stock:
+        type: integer
+    type: object
+  product.ProductUpdateRequest:
+    properties:
+      description:
+        type: string
+      is_onsale:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      stock:
+        type: integer
+    type: object
+  wallet.TransactionResponse:
+    properties:
+      amount:
+        type: number
+      balance_after:
+        type: number
+      created_at:
+        type: string
+      description:
+        type: string
+      direction:
+        type: string
+      id:
+        type: string
+      reference_id:
+        type: string
+      status:
+        type: string
+      type:
+        type: string
+      wallet_id:
+        type: string
+    type: object
+  wallet.WalletResponse:
+    properties:
+      balance:
+        type: number
+      created_at:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      wallet_number:
+        type: string
+    type: object
+  wallet.WithdrawRequest:
+    properties:
+      amount:
+        type: number
+      description:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a robust e-commerce backend API.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Go Shop Yourself API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns access and refresh tokens.
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.AuthResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "410":
+          description: Gone
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidates the current refresh token.
+      parameters:
+      - description: Refresh Token to invalidate
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Rotates refresh tokens and provides a new access token.
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.AuthResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      summary: Refresh access tokens
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account with email, password, and username.
+      parameters:
+      - description: Registration Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.AuthResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      summary: Register a new user
+      tags:
+      - auth
+  /auth/register-merchant:
+    post:
+      consumes:
+      - application/json
+      description: Allows an authenticated user to register their own shop/merchant
+        profile.
+      parameters:
+      - description: Merchant Registration Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/merchant.MerchantRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/merchant.MerchantResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Register as merchant
+      tags:
+      - merchants
+  /merchants/orders/{id}/cancel:
+    put:
+      consumes:
+      - application/json
+      description: Allows the shop owner to cancel an order and initiate a refund.
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Cancel order (Merchant)
+      tags:
+      - orders
+  /merchants/orders/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Allows the shop owner to change the lifecycle status of an order
+        (e.g., to SHIPPED).
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New Status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/order.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Update order status (Merchant)
+      tags:
+      - orders
+  /products/:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new product for a specific merchant store.
+      parameters:
+      - description: Product Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/product.ProductCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/product.ProductResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Create product
+      tags:
+      - products
+  /products/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an existing product.
+      parameters:
+      - description: Product ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Product Update Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/product.ProductUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/product.ProductResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Update product
+      tags:
+      - products
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetches the user profile details by their unique ID.
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - users
+  /users/cart:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes all products from the authenticated user's shopping cart.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Clear cart
+      tags:
+      - cart
+    get:
+      consumes:
+      - application/json
+      description: Fetches all items in the authenticated user's shopping cart along
+        with the total price.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/cart.CartResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get cart
+      tags:
+      - cart
+    post:
+      consumes:
+      - application/json
+      description: Adds a specified quantity of a product to the authenticated user's
+        cart.
+      parameters:
+      - description: Add to Cart Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/cart.AddToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Add to cart
+      tags:
+      - cart
+  /users/cart/{productID}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a specific product from the authenticated user's cart.
+      parameters:
+      - description: Product ID (UUID)
+        in: path
+        name: productID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Remove from cart
+      tags:
+      - cart
+    put:
+      consumes:
+      - application/json
+      description: Updates the quantity of a specific product already in the user's
+        cart.
+      parameters:
+      - description: Product ID (UUID)
+        in: path
+        name: productID
+        required: true
+        type: string
+      - description: Update Quantity Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/cart.UpdateCartItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Update cart item
+      tags:
+      - cart
+  /users/orders:
+    post:
+      consumes:
+      - application/json
+      description: Converts the current items in the authenticated user's cart into
+        a formal order.
+      parameters:
+      - description: Checkout Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/order.CheckoutRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/order.OrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Create order from cart
+      tags:
+      - orders
+  /users/orders/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetches full information for a specific order by its ID.
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/order.OrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get order details
+      tags:
+      - orders
+  /users/orders/{id}/appeal:
+    post:
+      consumes:
+      - application/json
+      description: Submits a formal appeal for an order, typically for disputes.
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Appeal Reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/order.AppealOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Appeal order (User)
+      tags:
+      - orders
+  /users/orders/{id}/cancel:
+    put:
+      consumes:
+      - application/json
+      description: Cancels a pending or processing order and initiates a refund if
+        applicable.
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Cancel order (User)
+      tags:
+      - orders
+  /wallets/:
+    get:
+      consumes:
+      - application/json
+      description: Fetches the authenticated user's digital wallet information.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/wallet.WalletResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get wallet
+      tags:
+      - wallets
+    post:
+      consumes:
+      - application/json
+      description: Creates a new digital wallet for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/wallet.WalletResponse'
+              type: object
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Create wallet
+      tags:
+      - wallets
+  /wallets/history:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a paginated list of transactions for the user's wallet.
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/wallet.TransactionResponse'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get wallet history
+      tags:
+      - wallets
+  /wallets/withdraw:
+    post:
+      consumes:
+      - application/json
+      description: Deducts funds from the user's wallet balance.
+      parameters:
+      - description: Withdrawal Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/wallet.WithdrawRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Withdraw from wallet
+      tags:
+      - wallets
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and then your token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
