@@ -8,6 +8,7 @@ import (
 	"go-shop-yourself/internal/cart"
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/product"
+	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
 
 	"github.com/google/uuid"
@@ -50,14 +51,16 @@ type OrderService struct {
 	cartRepo    cart.CartRepository
 	productRepo product.ProductRepository
 	walletRepo  wallet.WalletRepository
+	userRepo    user.UserRepository
 }
 
-func NewOrderService(orderRepo OrderRepository, cartRepo cart.CartRepository, productRepo product.ProductRepository, walletRepo wallet.WalletRepository) *OrderService {
+func NewOrderService(orderRepo OrderRepository, cartRepo cart.CartRepository, productRepo product.ProductRepository, walletRepo wallet.WalletRepository, userRepo user.UserRepository) *OrderService {
 	return &OrderService{
 		orderRepo:   orderRepo,
 		cartRepo:    cartRepo,
 		productRepo: productRepo,
 		walletRepo:  walletRepo,
+		userRepo:    userRepo,
 	}
 }
 
@@ -124,7 +127,57 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		return nil, err
 	}
 
-	// 4. Create OrderPayment
+	// 4. Resolve Shipping Address snapshot
+	var addrRecipientName, addrPhone, addrStreet, addrCity, addrProvince, addrPostal string
+	
+	if req.AddressID != nil {
+		addr, err := s.userRepo.GetAddressByID(ctx, *req.AddressID)
+		if err != nil {
+			return nil, err
+		}
+		if addr == nil || addr.UserID != userID {
+			return nil, fmt.Errorf("invalid address id")
+		}
+		addrRecipientName = addr.RecipientName
+		addrPhone = addr.PhoneNumber
+		addrStreet = addr.StreetAddress
+		addrCity = addr.City
+		addrProvince = addr.Province
+		addrPostal = addr.PostalCode
+	} else if req.ShippingRecipientName != "" {
+		// Mandatory fields for custom address
+		if req.ShippingPhoneNumber == "" || req.ShippingStreetAddress == "" || req.ShippingCity == "" || req.ShippingProvince == "" || req.ShippingPostalCode == "" {
+			return nil, fmt.Errorf("incomplete custom shipping address")
+		}
+		addrRecipientName = req.ShippingRecipientName
+		addrPhone = req.ShippingPhoneNumber
+		addrStreet = req.ShippingStreetAddress
+		addrCity = req.ShippingCity
+		addrProvince = req.ShippingProvince
+		addrPostal = req.ShippingPostalCode
+	} else {
+		// Try to get default address
+		addresses, err := s.userRepo.GetAddressesByUserID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		for _, a := range addresses {
+			if a.IsDefault {
+				addrRecipientName = a.RecipientName
+				addrPhone = a.PhoneNumber
+				addrStreet = a.StreetAddress
+				addrCity = a.City
+				addrProvince = a.Province
+				addrPostal = a.PostalCode
+				break
+			}
+		}
+		if addrRecipientName == "" {
+			return nil, fmt.Errorf("shipping address is required: please provide address_id or full shipping details")
+		}
+	}
+
+	// 5. Create OrderPayment
 	payment := &domain.OrderPayment{
 		ID:            uuid.New(),
 		UserID:        userID,
@@ -147,15 +200,21 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		}
 
 		order := &domain.Order{
-			ID:          orderID,
-			PaymentID:   payment.ID,
-			MerchantID:  merchantID,
-			UserID:      userID,
-			Status:      domain.OrderStatusProcessing, // Direct to Processing since payment is success
-			TotalAmount: orderAmount,
-			IsAppealed:  false,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			ID:                    orderID,
+			PaymentID:             payment.ID,
+			MerchantID:            merchantID,
+			UserID:                userID,
+			Status:                domain.OrderStatusProcessing, // Direct to Processing since payment is success
+			TotalAmount:           orderAmount,
+			ShippingRecipientName: addrRecipientName,
+			ShippingPhoneNumber:   addrPhone,
+			ShippingStreetAddress: addrStreet,
+			ShippingCity:          addrCity,
+			ShippingProvince:      addrProvince,
+			ShippingPostalCode:    addrPostal,
+			IsAppealed:            false,
+			CreatedAt:             time.Now(),
+			UpdatedAt:             time.Now(),
 		}
 		if err := s.orderRepo.CreateOrderTX(ctx, tx, order); err != nil {
 			return nil, err
@@ -435,15 +494,21 @@ func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderRespon
 	}
 
 	return &OrderResponse{
-		ID:          o.ID,
-		PaymentID:   o.PaymentID,
-		MerchantID:  o.MerchantID,
-		Status:      o.Status,
-		TotalAmount: o.TotalAmount,
-		IsAppealed:  o.IsAppealed,
-		Items:       itemResponses,
-		CreatedAt:   o.CreatedAt,
-		UpdatedAt:   o.UpdatedAt,
+		ID:                    o.ID,
+		PaymentID:             o.PaymentID,
+		MerchantID:            o.MerchantID,
+		Status:                o.Status,
+		TotalAmount:           o.TotalAmount,
+		ShippingRecipientName: o.ShippingRecipientName,
+		ShippingPhoneNumber:   o.ShippingPhoneNumber,
+		ShippingStreetAddress: o.ShippingStreetAddress,
+		ShippingCity:          o.ShippingCity,
+		ShippingProvince:      o.ShippingProvince,
+		ShippingPostalCode:    o.ShippingPostalCode,
+		IsAppealed:            o.IsAppealed,
+		Items:                 itemResponses,
+		CreatedAt:             o.CreatedAt,
+		UpdatedAt:             o.UpdatedAt,
 	}, nil
 }
 

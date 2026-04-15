@@ -4,9 +4,17 @@ definitions:
     properties:
       access_token:
         type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
       id:
         type: string
       refresh_token:
+        type: string
+      username:
         type: string
     type: object
   auth.LoginRequest:
@@ -29,6 +37,8 @@ definitions:
   auth.RegisterRequest:
     properties:
       email:
+        type: string
+      full_name:
         type: string
       password:
         type: string
@@ -101,6 +111,8 @@ definitions:
         type: string
       email:
         type: string
+      full_name:
+        type: string
       id:
         type: string
       password:
@@ -135,6 +147,10 @@ definitions:
     type: object
   order.CheckoutRequest:
     properties:
+      address_id:
+        type: string
+      custom_shipping_address:
+        type: string
       payment_method:
         type: string
     type: object
@@ -229,6 +245,48 @@ definitions:
         type: number
       stock:
         type: integer
+    type: object
+  user.AddressRequest:
+    properties:
+      city:
+        type: string
+      is_default:
+        type: boolean
+      phone_number:
+        type: string
+      postal_code:
+        type: string
+      province:
+        type: string
+      recipient_name:
+        type: string
+      street_address:
+        type: string
+      tag:
+        type: string
+    type: object
+  user.AddressResponse:
+    properties:
+      city:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      phone_number:
+        type: string
+      postal_code:
+        type: string
+      province:
+        type: string
+      recipient_name:
+        type: string
+      street_address:
+        type: string
+      tag:
+        type: string
     type: object
   wallet.TransactionResponse:
     properties:
@@ -694,6 +752,160 @@ paths:
       security:
       - BearerAuth: []
       summary: Get user profile
+      tags:
+      - users
+  /users/addresses:
+    get:
+      description: Returns all saved address templates for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/user.AddressResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: List user addresses
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Creates a new address template for the authenticated user.
+      parameters:
+      - description: Address Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.AddressRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.AddressResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Add user address
+      tags:
+      - users
+  /users/addresses/{id}:
+    delete:
+      description: Removes an address template from the user's saved addresses.
+      parameters:
+      - description: Address ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Delete user address
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Modifies an existing address template for the authenticated user.
+      parameters:
+      - description: Address ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated Address Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.AddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.AddressResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Update user address
       tags:
       - users
   /users/cart:

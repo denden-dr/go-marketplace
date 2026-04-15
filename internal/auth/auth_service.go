@@ -13,7 +13,7 @@ import (
 )
 
 type AuthServiceInterface interface {
-	Register(ctx context.Context, email, password, username string) (uuid.UUID, error)
+	Register(ctx context.Context, fullName, email, password, username string) (*AuthResponse, error)
 	Login(ctx context.Context, email, password string) (*AuthResponse, error)
 	RefreshTokens(ctx context.Context, rawToken string) (*AuthResponse, error)
 	Logout(ctx context.Context, rawToken string) error
@@ -40,22 +40,23 @@ func NewAuthService(userRepo user.UserRepository, refreshTokenRepo RefreshTokenR
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, email, password, username string) (uuid.UUID, error) {
+func (s *AuthService) Register(ctx context.Context, fullName, email, password, username string) (*AuthResponse, error) {
 	existingUser, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return uuid.Nil, err
+		return nil, err
 	}
 	if existingUser != nil {
-		return uuid.Nil, domain.ErrUserAlreadyExists
+		return nil, domain.ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return uuid.Nil, err
+		return nil, err
 	}
 
 	user := &domain.User{
 		ID:        uuid.New(),
+		FullName:  fullName,
 		Username:  username,
 		Email:     email,
 		Password:  string(hashedPassword),
@@ -63,10 +64,46 @@ func (s *AuthService) Register(ctx context.Context, email, password, username st
 	}
 
 	if err := s.userRepo.CreateUser(ctx, user); err != nil {
-		return uuid.Nil, err
+		return nil, err
 	}
 
-	return user.ID, nil
+	// Generate tokens for immediate login after registration
+	accessToken, err := GenerateAccessToken(user.ID, s.jwtSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := GenerateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	// Store refresh token
+	familyID := uuid.New()
+	tokenHash := HashToken(refreshToken)
+	rt := &domain.RefreshToken{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		TokenHash: tokenHash,
+		FamilyID:  familyID,
+		IsRevoked: false,
+		ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
+		CreatedAt: time.Now(),
+	}
+
+	if err := s.refreshTokenRepo.Create(ctx, rt); err != nil {
+		return nil, err
+	}
+
+	return &AuthResponse{
+		ID:           user.ID,
+		FullName:     user.FullName,
+		Username:     user.Username,
+		Email:        user.Email,
+		CreatedAt:    user.CreatedAt,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthResponse, error) {
@@ -112,6 +149,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 
 	return &AuthResponse{
 		ID:           user.ID,
+		FullName:     user.FullName,
+		Username:     user.Username,
+		Email:        user.Email,
+		CreatedAt:    user.CreatedAt,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
@@ -173,8 +214,20 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*Auth
 		return nil, err
 	}
 
+	user, err := s.userRepo.GetUserByID(ctx, rt.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
+
 	return &AuthResponse{
 		ID:           rt.UserID,
+		FullName:     user.FullName,
+		Username:     user.Username,
+		Email:        user.Email,
+		CreatedAt:    user.CreatedAt,
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
