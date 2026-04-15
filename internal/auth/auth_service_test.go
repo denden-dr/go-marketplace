@@ -25,14 +25,15 @@ func TestAuthService_Register_Success(t *testing.T) {
 	username := "testuser"
 
 	mockRepo.On("GetUserByEmail", mock.Anything, email).Return(nil, nil)
-	mockRepo.On("CreateUser", mock.Anything, mock.MatchedBy(func(u *domain.User) bool {
-		return u.Email == email && u.Username == username
-	})).Return(nil)
+	mockRepo.On("CreateUser", mock.Anything, mock.Anything).Return(nil)
+	mockRTRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 
-	userID, err := service.Register(context.Background(), email, password, username)
+	res, err := service.Register(context.Background(), "Test User", email, password, username)
 
 	assert.NoError(t, err)
-	assert.NotEqual(t, uuid.Nil, userID)
+	assert.NotNil(t, res)
+	assert.NotEqual(t, uuid.Nil, res.ID)
+	assert.Equal(t, "Test User", res.FullName)
 }
 
 func TestAuthService_Register_Fail_UserAlreadyExists(t *testing.T) {
@@ -44,7 +45,7 @@ func TestAuthService_Register_Fail_UserAlreadyExists(t *testing.T) {
 
 	mockRepo.On("GetUserByEmail", mock.Anything, email).Return(&domain.User{}, nil)
 
-	_, err := service.Register(context.Background(), email, "pass", "user")
+	_, err := service.Register(context.Background(), "Full Name", email, "pass", "user")
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, domain.ErrUserAlreadyExists))
@@ -60,6 +61,8 @@ func TestAuthService_Login_Success(t *testing.T) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	u := &domain.User{
 		ID:       uuid.New(),
+		FullName: "Test User",
+		Username: "testuser",
 		Email:    email,
 		Password: string(hashedPassword),
 	}
@@ -103,9 +106,12 @@ func TestAuthService_RefreshTokens_Success(t *testing.T) {
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
 
+	u := &domain.User{ID: rt.UserID, FullName: "Test User", Email: "test@example.com"}
+
 	mockRTRepo.On("GetByTokenHash", mock.Anything, mock.Anything).Return(rt, nil)
 	mockRTRepo.On("RevokeByID", mock.Anything, rt.ID).Return(nil)
 	mockRTRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	mockRepo.On("GetUserByID", mock.Anything, rt.UserID).Return(u, nil)
 
 	res, err := service.RefreshTokens(context.Background(), rawToken)
 

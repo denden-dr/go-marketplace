@@ -24,6 +24,53 @@ func (_m *MockUserRepository) EXPECT() *MockUserRepository_Expecter {
 	return &MockUserRepository_Expecter{mock: &_m.Mock}
 }
 
+// CreateAddress provides a mock function with given fields: ctx, addr
+func (_m *MockUserRepository) CreateAddress(ctx context.Context, addr *domain.UserAddress) error {
+	ret := _m.Called(ctx, addr)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateAddress")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *domain.UserAddress) error); ok {
+		r0 = rf(ctx, addr)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockUserRepository_CreateAddress_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateAddress'
+type MockUserRepository_CreateAddress_Call struct {
+	*mock.Call
+}
+
+// CreateAddress is a helper method to define mock.On call
+//   - ctx context.Context
+//   - addr *domain.UserAddress
+func (_e *MockUserRepository_Expecter) CreateAddress(ctx interface{}, addr interface{}) *MockUserRepository_CreateAddress_Call {
+	return &MockUserRepository_CreateAddress_Call{Call: _e.mock.On("CreateAddress", ctx, addr)}
+}
+
+func (_c *MockUserRepository_CreateAddress_Call) Run(run func(ctx context.Context, addr *domain.UserAddress)) *MockUserRepository_CreateAddress_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*domain.UserAddress))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_CreateAddress_Call) Return(_a0 error) *MockUserRepository_CreateAddress_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockUserRepository_CreateAddress_Call) RunAndReturn(run func(context.Context, *domain.UserAddress) error) *MockUserRepository_CreateAddress_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateUser provides a mock function with given fields: ctx, u
 func (_m *MockUserRepository) CreateUser(ctx context.Context, u *domain.User) error {
 	ret := _m.Called(ctx, u)
@@ -67,6 +114,171 @@ func (_c *MockUserRepository_CreateUser_Call) Return(_a0 error) *MockUserReposit
 }
 
 func (_c *MockUserRepository_CreateUser_Call) RunAndReturn(run func(context.Context, *domain.User) error) *MockUserRepository_CreateUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteAddress provides a mock function with given fields: ctx, addressID
+func (_m *MockUserRepository) DeleteAddress(ctx context.Context, addressID uuid.UUID) error {
+	ret := _m.Called(ctx, addressID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteAddress")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, addressID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockUserRepository_DeleteAddress_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteAddress'
+type MockUserRepository_DeleteAddress_Call struct {
+	*mock.Call
+}
+
+// DeleteAddress is a helper method to define mock.On call
+//   - ctx context.Context
+//   - addressID uuid.UUID
+func (_e *MockUserRepository_Expecter) DeleteAddress(ctx interface{}, addressID interface{}) *MockUserRepository_DeleteAddress_Call {
+	return &MockUserRepository_DeleteAddress_Call{Call: _e.mock.On("DeleteAddress", ctx, addressID)}
+}
+
+func (_c *MockUserRepository_DeleteAddress_Call) Run(run func(ctx context.Context, addressID uuid.UUID)) *MockUserRepository_DeleteAddress_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_DeleteAddress_Call) Return(_a0 error) *MockUserRepository_DeleteAddress_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockUserRepository_DeleteAddress_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *MockUserRepository_DeleteAddress_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetAddressByID provides a mock function with given fields: ctx, addressID
+func (_m *MockUserRepository) GetAddressByID(ctx context.Context, addressID uuid.UUID) (*domain.UserAddress, error) {
+	ret := _m.Called(ctx, addressID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAddressByID")
+	}
+
+	var r0 *domain.UserAddress
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*domain.UserAddress, error)); ok {
+		return rf(ctx, addressID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *domain.UserAddress); ok {
+		r0 = rf(ctx, addressID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.UserAddress)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, addressID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserRepository_GetAddressByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAddressByID'
+type MockUserRepository_GetAddressByID_Call struct {
+	*mock.Call
+}
+
+// GetAddressByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - addressID uuid.UUID
+func (_e *MockUserRepository_Expecter) GetAddressByID(ctx interface{}, addressID interface{}) *MockUserRepository_GetAddressByID_Call {
+	return &MockUserRepository_GetAddressByID_Call{Call: _e.mock.On("GetAddressByID", ctx, addressID)}
+}
+
+func (_c *MockUserRepository_GetAddressByID_Call) Run(run func(ctx context.Context, addressID uuid.UUID)) *MockUserRepository_GetAddressByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_GetAddressByID_Call) Return(_a0 *domain.UserAddress, _a1 error) *MockUserRepository_GetAddressByID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserRepository_GetAddressByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*domain.UserAddress, error)) *MockUserRepository_GetAddressByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetAddressesByUserID provides a mock function with given fields: ctx, userID
+func (_m *MockUserRepository) GetAddressesByUserID(ctx context.Context, userID uuid.UUID) ([]domain.UserAddress, error) {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAddressesByUserID")
+	}
+
+	var r0 []domain.UserAddress
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]domain.UserAddress, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []domain.UserAddress); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.UserAddress)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserRepository_GetAddressesByUserID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAddressesByUserID'
+type MockUserRepository_GetAddressesByUserID_Call struct {
+	*mock.Call
+}
+
+// GetAddressesByUserID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+func (_e *MockUserRepository_Expecter) GetAddressesByUserID(ctx interface{}, userID interface{}) *MockUserRepository_GetAddressesByUserID_Call {
+	return &MockUserRepository_GetAddressesByUserID_Call{Call: _e.mock.On("GetAddressesByUserID", ctx, userID)}
+}
+
+func (_c *MockUserRepository_GetAddressesByUserID_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockUserRepository_GetAddressesByUserID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_GetAddressesByUserID_Call) Return(_a0 []domain.UserAddress, _a1 error) *MockUserRepository_GetAddressesByUserID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserRepository_GetAddressesByUserID_Call) RunAndReturn(run func(context.Context, uuid.UUID) ([]domain.UserAddress, error)) *MockUserRepository_GetAddressesByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -185,6 +397,100 @@ func (_c *MockUserRepository_GetUserByID_Call) Return(_a0 *domain.User, _a1 erro
 }
 
 func (_c *MockUserRepository_GetUserByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*domain.User, error)) *MockUserRepository_GetUserByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UnsetDefaultAddresses provides a mock function with given fields: ctx, userID
+func (_m *MockUserRepository) UnsetDefaultAddresses(ctx context.Context, userID uuid.UUID) error {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UnsetDefaultAddresses")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockUserRepository_UnsetDefaultAddresses_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UnsetDefaultAddresses'
+type MockUserRepository_UnsetDefaultAddresses_Call struct {
+	*mock.Call
+}
+
+// UnsetDefaultAddresses is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+func (_e *MockUserRepository_Expecter) UnsetDefaultAddresses(ctx interface{}, userID interface{}) *MockUserRepository_UnsetDefaultAddresses_Call {
+	return &MockUserRepository_UnsetDefaultAddresses_Call{Call: _e.mock.On("UnsetDefaultAddresses", ctx, userID)}
+}
+
+func (_c *MockUserRepository_UnsetDefaultAddresses_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockUserRepository_UnsetDefaultAddresses_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_UnsetDefaultAddresses_Call) Return(_a0 error) *MockUserRepository_UnsetDefaultAddresses_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockUserRepository_UnsetDefaultAddresses_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *MockUserRepository_UnsetDefaultAddresses_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateAddress provides a mock function with given fields: ctx, addr
+func (_m *MockUserRepository) UpdateAddress(ctx context.Context, addr *domain.UserAddress) error {
+	ret := _m.Called(ctx, addr)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateAddress")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *domain.UserAddress) error); ok {
+		r0 = rf(ctx, addr)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockUserRepository_UpdateAddress_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateAddress'
+type MockUserRepository_UpdateAddress_Call struct {
+	*mock.Call
+}
+
+// UpdateAddress is a helper method to define mock.On call
+//   - ctx context.Context
+//   - addr *domain.UserAddress
+func (_e *MockUserRepository_Expecter) UpdateAddress(ctx interface{}, addr interface{}) *MockUserRepository_UpdateAddress_Call {
+	return &MockUserRepository_UpdateAddress_Call{Call: _e.mock.On("UpdateAddress", ctx, addr)}
+}
+
+func (_c *MockUserRepository_UpdateAddress_Call) Run(run func(ctx context.Context, addr *domain.UserAddress)) *MockUserRepository_UpdateAddress_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*domain.UserAddress))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_UpdateAddress_Call) Return(_a0 error) *MockUserRepository_UpdateAddress_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockUserRepository_UpdateAddress_Call) RunAndReturn(run func(context.Context, *domain.UserAddress) error) *MockUserRepository_UpdateAddress_Call {
 	_c.Call.Return(run)
 	return _c
 }

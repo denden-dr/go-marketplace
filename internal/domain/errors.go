@@ -23,4 +23,6 @@ var (
 	ErrInsufficientStock        = errors.New("insufficient product stock")
 	ErrCartItemNotFound         = errors.New("cart item not found")
 	ErrInvalidStatusTransition  = errors.New("invalid order status transition")
+	ErrForbidden                = errors.New("forbidden: you do not have permission to access this resource")
+	ErrAddressNotFound          = errors.New("address not found")
 )

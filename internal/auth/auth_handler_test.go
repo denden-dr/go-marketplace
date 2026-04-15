@@ -22,15 +22,24 @@ func TestAuthHandler_Register_Success(t *testing.T) {
 	app := testutil.SetupTestApp()
 	app.Post("/register", handler.Register)
 
-	userID := uuid.New()
 	reqBody := RegisterRequest{
+		FullName: "Test User",
 		Email:    "test@example.com",
 		Password: "password123",
 		Username: "testuser",
 	}
 	body, _ := json.Marshal(reqBody)
 
-	mockService.On("Register", mock.Anything, reqBody.Email, reqBody.Password, reqBody.Username).Return(userID, nil)
+	authRes := &AuthResponse{
+		ID:           uuid.New(),
+		FullName:     reqBody.FullName,
+		Username:     reqBody.Username,
+		Email:        reqBody.Email,
+		AccessToken:  "access",
+		RefreshToken: "refresh",
+	}
+
+	mockService.On("Register", mock.Anything, reqBody.FullName, reqBody.Email, reqBody.Password, reqBody.Username).Return(authRes, nil)
 
 	req := httptest.NewRequest("POST", "/register", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -68,13 +77,14 @@ func TestAuthHandler_Register_Fail_UserAlreadyExists(t *testing.T) {
 	app.Post("/register", handler.Register)
 
 	reqBody := RegisterRequest{
+		FullName: "Existing User",
 		Email:    "exists@example.com",
 		Password: "password123",
 		Username: "testuser",
 	}
 	body, _ := json.Marshal(reqBody)
 
-	mockService.On("Register", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.Nil, domain.ErrUserAlreadyExists)
+	mockService.On("Register", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrUserAlreadyExists)
 
 	req := httptest.NewRequest("POST", "/register", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")

@@ -26,9 +26,13 @@ func (r *orderRepository) CreateOrderPaymentTX(ctx context.Context, tx pgx.Tx, p
 }
 
 func (r *orderRepository) CreateOrderTX(ctx context.Context, tx pgx.Tx, o *domain.Order) error {
-	query := `INSERT INTO orders (id, payment_id, merchant_id, user_id, status, total_amount, is_appealed, created_at, updated_at) 
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := tx.Exec(ctx, query, o.ID, o.PaymentID, o.MerchantID, o.UserID, o.Status, o.TotalAmount, o.IsAppealed, o.CreatedAt, o.UpdatedAt)
+	query := `INSERT INTO orders (id, payment_id, merchant_id, user_id, status, total_amount, 
+	          shipping_recipient_name, shipping_phone_number, shipping_street_address, 
+	          shipping_city, shipping_province, shipping_postal_code, is_appealed, created_at, updated_at) 
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
+	_, err := tx.Exec(ctx, query, o.ID, o.PaymentID, o.MerchantID, o.UserID, o.Status, o.TotalAmount,
+		o.ShippingRecipientName, o.ShippingPhoneNumber, o.ShippingStreetAddress,
+		o.ShippingCity, o.ShippingProvince, o.ShippingPostalCode, o.IsAppealed, o.CreatedAt, o.UpdatedAt)
 	return err
 }
 
@@ -40,10 +44,17 @@ func (r *orderRepository) CreateOrderItemTX(ctx context.Context, tx pgx.Tx, item
 }
 
 func (r *orderRepository) GetOrderByID(ctx context.Context, id uuid.UUID) (*domain.Order, error) {
-	query := `SELECT id, payment_id, merchant_id, user_id, status, total_amount, is_appealed, created_at, updated_at 
+	query := `SELECT id, payment_id, merchant_id, user_id, status, total_amount, 
+	          shipping_recipient_name, shipping_phone_number, shipping_street_address, 
+	          shipping_city, shipping_province, shipping_postal_code, is_appealed, created_at, updated_at 
 	          FROM orders WHERE id = $1`
 	var o domain.Order
-	err := r.db.QueryRow(ctx, query, id).Scan(&o.ID, &o.PaymentID, &o.MerchantID, &o.UserID, &o.Status, &o.TotalAmount, &o.IsAppealed, &o.CreatedAt, &o.UpdatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&o.ID, &o.PaymentID, &o.MerchantID, &o.UserID, &o.Status, &o.TotalAmount,
+		&o.ShippingRecipientName, &o.ShippingPhoneNumber, &o.ShippingStreetAddress,
+		&o.ShippingCity, &o.ShippingProvince, &o.ShippingPostalCode,
+		&o.IsAppealed, &o.CreatedAt, &o.UpdatedAt,
+	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
