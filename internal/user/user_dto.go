@@ -17,25 +17,25 @@ type UserResponse struct {
 }
 
 type AddressRequest struct {
-	Tag            domain.AddressTag `json:"tag"`
-	RecipientName  string            `json:"recipient_name"`
-	PhoneNumber    string            `json:"phone_number"`
-	StreetAddress  string            `json:"street_address"`
-	City           string            `json:"city"`
-	Province       string            `json:"province"`
-	PostalCode     string            `json:"postal_code"`
-	IsDefault      bool              `json:"is_default"`
+	Tag           domain.AddressTag `json:"tag"`
+	RecipientName string            `json:"recipient_name"`
+	PhoneNumber   string            `json:"phone_number"`
+	StreetAddress string            `json:"street_address"`
+	City          string            `json:"city"`
+	Province      string            `json:"province"`
+	PostalCode    string            `json:"postal_code"`
+	IsDefault     bool              `json:"is_default"`
 }
 
 type AddressResponse struct {
-	ID             uuid.UUID         `json:"id"`
-	Tag            domain.AddressTag `json:"tag"`
-	RecipientName  string    `json:"recipient_name"`
-	PhoneNumber    string    `json:"phone_number"`
-	StreetAddress  string    `json:"street_address"`
-	City           string    `json:"city"`
-	Province       string    `json:"province"`
-	PostalCode     string    `json:"postal_code"`
-	IsDefault      bool      `json:"is_default"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID            uuid.UUID         `json:"id"`
+	Tag           domain.AddressTag `json:"tag"`
+	RecipientName string            `json:"recipient_name"`
+	PhoneNumber   string            `json:"phone_number"`
+	StreetAddress string            `json:"street_address"`
+	City          string            `json:"city"`
+	Province      string            `json:"province"`
+	PostalCode    string            `json:"postal_code"`
+	IsDefault     bool              `json:"is_default"`
+	CreatedAt     time.Time         `json:"created_at"`
 }

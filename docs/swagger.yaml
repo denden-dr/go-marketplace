@@ -89,6 +89,14 @@ definitions:
       status:
         type: integer
     type: object
+  domain.AddressTag:
+    enum:
+    - home
+    - work
+    type: string
+    x-enum-varnames:
+    - AddressTagHome
+    - AddressTagWork
   domain.OrderStatus:
     enum:
     - pending
@@ -149,9 +157,19 @@ definitions:
     properties:
       address_id:
         type: string
-      custom_shipping_address:
-        type: string
       payment_method:
+        type: string
+      shipping_city:
+        type: string
+      shipping_phone_number:
+        type: string
+      shipping_postal_code:
+        type: string
+      shipping_province:
+        type: string
+      shipping_recipient_name:
+        type: string
+      shipping_street_address:
         type: string
     type: object
   order.OrderItemResponse:
@@ -180,6 +198,18 @@ definitions:
       merchant_id:
         type: string
       payment_id:
+        type: string
+      shipping_city:
+        type: string
+      shipping_phone_number:
+        type: string
+      shipping_postal_code:
+        type: string
+      shipping_province:
+        type: string
+      shipping_recipient_name:
+        type: string
+      shipping_street_address:
         type: string
       status:
         $ref: '#/definitions/domain.OrderStatus'
@@ -263,7 +293,7 @@ definitions:
       street_address:
         type: string
       tag:
-        type: string
+        $ref: '#/definitions/domain.AddressTag'
     type: object
   user.AddressResponse:
     properties:
@@ -286,7 +316,7 @@ definitions:
       street_address:
         type: string
       tag:
-        type: string
+        $ref: '#/definitions/domain.AddressTag'
     type: object
   wallet.TransactionResponse:
     properties:
@@ -714,46 +744,6 @@ paths:
       summary: Update product
       tags:
       - products
-  /users/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Fetches the user profile details by their unique ID.
-      parameters:
-      - description: User ID (UUID)
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
-            - properties:
-                data:
-                  $ref: '#/definitions/domain.User'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.ResponseWrapper'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/common.ResponseWrapper'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/common.ResponseWrapper'
-      security:
-      - BearerAuth: []
-      summary: Get user profile
-      tags:
-      - users
   /users/addresses:
     get:
       description: Returns all saved address templates for the authenticated user.
@@ -1059,6 +1049,38 @@ paths:
       summary: Update cart item
       tags:
       - cart
+  /users/me:
+    get:
+      description: Fetches the authenticated user profile details.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.User'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - users
   /users/orders:
     post:
       consumes:
