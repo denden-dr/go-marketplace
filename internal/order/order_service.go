@@ -129,7 +129,7 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 
 	// 4. Resolve Shipping Address snapshot
 	var addrRecipientName, addrPhone, addrStreet, addrCity, addrProvince, addrPostal string
-	
+
 	if req.AddressID != nil {
 		addr, err := s.userRepo.GetAddressByID(ctx, *req.AddressID)
 		if err != nil {

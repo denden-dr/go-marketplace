@@ -55,11 +55,11 @@ func TestOrderService_CreateUserCheckout_Success(t *testing.T) {
 	w := &domain.Wallet{ID: uuid.New(), UserID: userID, Balance: decimal.NewFromInt(200), Status: domain.WalletStatusActive}
 
 	addr := &domain.UserAddress{
-		ID:           uuid.New(),
-		UserID:       userID,
+		ID:            uuid.New(),
+		UserID:        userID,
 		RecipientName: "John Doe",
 		StreetAddress: "123 Main St",
-		IsDefault:    true,
+		IsDefault:     true,
 	}
 
 	mockOrderRepo.On("Begin", mock.Anything).Return(mockTx, nil)
