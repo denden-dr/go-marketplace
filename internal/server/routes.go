@@ -9,6 +9,7 @@ import (
 	"go-shop-yourself/internal/product"
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
+	"go-shop-yourself/internal/health"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
@@ -24,6 +25,7 @@ func SetupRoutes(
 	walletHandler *wallet.WalletHandler,
 	cartHandler *cart.CartHandler,
 	orderHandler *order.OrderHandler,
+	healthHandler *health.HealthHandler,
 	jwtSecret string,
 	appEnv string,
 ) {
@@ -34,6 +36,9 @@ func SetupRoutes(
 
 	// Create API base group
 	apiBase := app.Group("/api")
+
+	// Health check (Public)
+	apiBase.Get("/health", healthHandler.CheckStatus)
 
 	// Public Auth routes
 	authRoutes := apiBase.Group("/auth")

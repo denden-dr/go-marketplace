@@ -13,6 +13,8 @@ import (
 	"go-shop-yourself/internal/server"
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
+	"go-shop-yourself/internal/health"
+	"go-shop-yourself/internal/opensearch"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -51,6 +53,12 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize OpenSearch
+	osClient, err := opensearch.ConnectOpenSearch()
+	if err != nil {
+		log.Printf("Warning: Failed to connect to OpenSearch: %v", err)
+	}
+
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
 		log.Fatalf("JWT_SECRET environment variable is not set")
@@ -80,6 +88,7 @@ func main() {
 	walletHandler := wallet.NewWalletHandler(walletService)
 	cartHandler := cart.NewCartHandler(cartService)
 	orderHandler := order.NewOrderHandler(orderService, merchantRepo)
+	healthHandler := health.NewHealthHandler(db, osClient)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
@@ -98,7 +107,7 @@ func main() {
 		authHandler,
 		userHandler,
 		merchantHandler, productHandler, walletHandler,
-		cartHandler, orderHandler, jwtSecret, appEnv)
+		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)
