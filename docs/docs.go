@@ -1104,6 +1104,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fetches the authenticated user profile details.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.ResponseWrapper"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.User"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    }
+                }
+            }
+        },
         "/users/orders": {
             "post": {
                 "security": [
@@ -1328,73 +1383,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/common.ResponseWrapper"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/common.ResponseWrapper"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Fetches the user profile details by their unique ID.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get user profile",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/common.ResponseWrapper"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/domain.User"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/common.ResponseWrapper"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/common.ResponseWrapper"
                         }
@@ -1770,6 +1758,17 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.AddressTag": {
+            "type": "string",
+            "enum": [
+                "home",
+                "work"
+            ],
+            "x-enum-varnames": [
+                "AddressTagHome",
+                "AddressTagWork"
+            ]
+        },
         "domain.OrderStatus": {
             "type": "string",
             "enum": [
@@ -1857,10 +1856,25 @@ const docTemplate = `{
                 "address_id": {
                     "type": "string"
                 },
-                "custom_shipping_address": {
+                "payment_method": {
                     "type": "string"
                 },
-                "payment_method": {
+                "shipping_city": {
+                    "type": "string"
+                },
+                "shipping_phone_number": {
+                    "type": "string"
+                },
+                "shipping_postal_code": {
+                    "type": "string"
+                },
+                "shipping_province": {
+                    "type": "string"
+                },
+                "shipping_recipient_name": {
+                    "type": "string"
+                },
+                "shipping_street_address": {
                     "type": "string"
                 }
             }
@@ -1904,6 +1918,24 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "payment_id": {
+                    "type": "string"
+                },
+                "shipping_city": {
+                    "type": "string"
+                },
+                "shipping_phone_number": {
+                    "type": "string"
+                },
+                "shipping_postal_code": {
+                    "type": "string"
+                },
+                "shipping_province": {
+                    "type": "string"
+                },
+                "shipping_recipient_name": {
+                    "type": "string"
+                },
+                "shipping_street_address": {
                     "type": "string"
                 },
                 "status": {
@@ -2031,7 +2063,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tag": {
-                    "type": "string"
+                    "$ref": "#/definitions/domain.AddressTag"
                 }
             }
         },
@@ -2066,7 +2098,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tag": {
-                    "type": "string"
+                    "$ref": "#/definitions/domain.AddressTag"
                 }
             }
         },
