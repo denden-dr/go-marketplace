@@ -57,7 +57,7 @@ func SetupRoutes(
 	users.Post("/addresses", userHandler.AddAddress)
 	users.Put("/addresses/:id", userHandler.UpdateAddress)
 	users.Delete("/addresses/:id", userHandler.DeleteAddress)
-	users.Get("/:id", userHandler.GetUserByID)
+	users.Get("/me", userHandler.GetProfile)
 
 	// Product routes
 	products := api.Group("/products")

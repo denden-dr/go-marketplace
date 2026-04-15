@@ -18,27 +18,24 @@ func NewUserHandler(userService UserServiceInterface) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
-// GetUserByID retrieves user profile
+// GetProfile retrieves user profile
 // @Summary Get user profile
-// @Description Fetches the user profile details by their unique ID.
+// @Description Fetches the authenticated user profile details.
 // @Tags users
 // @Security BearerAuth
-// @Accept json
 // @Produce json
-// @Param id path string true "User ID (UUID)"
 // @Success 200 {object} common.ResponseWrapper{data=domain.User}
-// @Failure 400 {object} common.ResponseWrapper
+// @Failure 401 {object} common.ResponseWrapper
 // @Failure 404 {object} common.ResponseWrapper
 // @Failure 500 {object} common.ResponseWrapper
-// @Router /users/{id} [get]
-func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
-	idStr := c.Params("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid user ID format", nil)
+// @Router /users/me [get]
+func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(uuid.UUID)
+	if !ok {
+		return common.NewResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 	}
 
-	user, err := h.userService.GetUserByID(c.Context(), id)
+	user, err := h.userService.GetUserByID(c.Context(), userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return common.NewResponse(c, http.StatusNotFound, err.Error(), nil)
