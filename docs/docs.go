@@ -348,6 +348,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/health": {
+            "get": {
+                "description": "Checks connectivity to the database and OpenSearch.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Check application health",
+                "responses": {
+                    "200": {
+                        "description": "Application is healthy",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    },
+                    "503": {
+                        "description": "Application is unhealthy",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    }
+                }
+            }
+        },
         "/merchants/orders/{id}/cancel": {
             "put": {
                 "security": [

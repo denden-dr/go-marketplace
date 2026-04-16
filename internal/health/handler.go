@@ -22,7 +22,13 @@ func NewHealthHandler(db *pgxpool.Pool, os *opensearchapi.Client) *HealthHandler
 }
 
 // CheckStatus handles the health check request.
-// It checks both the database and OpenSearch connectivity.
+// @Summary Check application health
+// @Description Checks connectivity to the database and OpenSearch.
+// @Tags Health
+// @Produce json
+// @Success 200 {object} common.ResponseWrapper "Application is healthy"
+// @Failure 503 {object} common.ResponseWrapper "Application is unhealthy"
+// @Router /health [get]
 func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 	dbStatus := "up"
 	osStatus := "up"
