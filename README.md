@@ -14,6 +14,7 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Shopping Cart**: Real-time cart management with price calculations.
 - **Order Processing**: Complete checkout flow, order status tracking, and history.
 - **Wallet System**: Internal wallet for users to manage balances and pay for orders.
+- **Health Monitoring**: Real-time monitoring of application, database, and OpenSearch connectivity.
 - **DB Migrations**: Automated database versioning and migrations.
 
 ---
@@ -24,6 +25,7 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Web Framework**: [Fiber v2](https://gofiber.io/)
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
 - **Database Tooling**: [pgxpool](https://github.com/jackc/pgx) (Driver/Pool), [golang-migrate](https://github.com/golang-migrate/migrate)
+- **Search Engine**: [OpenSearch](https://opensearch.org/)
 - **JSON Web Tokens**: [golang-jwt](https://github.com/golang-jwt/jwt)
 - **Unit Testing**: [testify](https://github.com/stretchr/testify), [pgxmock](https://github.com/pashagolub/pgxmock), [mockery](https://github.com/vektra/mockery)
 - **Utilities**: [godotenv](https://github.com/joho/godotenv), [shopspring/decimal](https://github.com/shopspring/decimal)
@@ -108,6 +110,7 @@ internal/
 ├── product/     # Product catalog
 ├── user/        # User accounts & profiles
 ├── wallet/      # Digital balance & transactions
+├── health/      # Application health checks (DB, OS)
 └── server/      # Router & Fiber initialization
 ```
 
@@ -121,3 +124,56 @@ To run the full test suite with verbose output:
 ```bash
 make test
 ```
+
+---
+
+## 🏥 Health Monitoring
+
+The application provides a public health check endpoint to monitor the status of the service and its dependencies (Database and OpenSearch).
+
+- **Endpoint**: `GET /api/health`
+- **Response Format**: JSON
+- **Success Response**: `200 OK`
+- **Error Response**: `503 Service Unavailable` (if any component is down)
+
+**Example Request**:
+```bash
+curl http://localhost:3000/api/health
+```
+
+**Example Response**:
+```json
+{
+  "message": "application is healthy",
+  "status": 200,
+  "data": {
+    "components": {
+      "database": "up",
+      "opensearch": "up"
+    }
+  }
+}
+```
+
+---
+
+## 🔍 OpenSearch Integration
+
+The project integrates with **OpenSearch** for advanced search capabilities and real-time indexing.
+
+### Purpose
+- **Health Monitoring**: Connectivity checks are performed as part of the system health status.
+*Next Steps*: OpenSearch will be used to power product search features, providing fast, full-text search and filtering.
+
+### Configuration
+Configure OpenSearch using the following environment variables in your `.env` file:
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `OPENSEARCH_HOST` | Hostname of the OpenSearch cluster | `localhost` |
+| `OPENSEARCH_PORT` | Port for OpenSearch service | `9200` |
+| `OPENSEARCH_USER` | Username for authentication | `admin` |
+| `OPENSEARCH_PASSWORD` | Password for authentication | `admin` |
+
+### Connection logic
+The application uses the `opensearch-go/v3` client. Connections are initialized in `main.go` and verified during startup. If OpenSearch is unavailable, the application will log a warning but continue to run (depending on feature availability).
