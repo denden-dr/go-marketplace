@@ -3,13 +3,13 @@ package server
 import (
 	"go-shop-yourself/internal/auth"
 	"go-shop-yourself/internal/cart"
+	"go-shop-yourself/internal/health"
 	"go-shop-yourself/internal/merchant"
 	"go-shop-yourself/internal/middleware"
 	"go-shop-yourself/internal/order"
 	"go-shop-yourself/internal/product"
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
-	"go-shop-yourself/internal/health"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
@@ -45,6 +45,10 @@ func SetupRoutes(
 	authRoutes.Post("/register", authHandler.Register)
 	authRoutes.Post("/login", authHandler.Login)
 	authRoutes.Post("/refresh", authHandler.RefreshTokens)
+
+	// Public products
+	publicProducts := apiBase.Group("/products")
+	publicProducts.Get("/search", productHandler.SearchProducts)
 
 	// Middleware for protected routes
 	authMiddleware := middleware.AuthMiddleware(jwtSecret)

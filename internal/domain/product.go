@@ -11,7 +11,7 @@ type Product struct {
 	ID          uuid.UUID       `json:"id" db:"id"`
 	StoreID     uuid.UUID       `json:"store_id" db:"store_id"`
 	Name        string          `json:"name" db:"name"`
-	Description string          `json:"description" db:"description"`
+	Description *string         `json:"description" db:"description"`
 	Price       decimal.Decimal `json:"price" db:"price"`
 	Stock       int             `json:"stock" db:"stock"`
 	HeightCM    float64         `json:"height_cm" db:"height_cm"`

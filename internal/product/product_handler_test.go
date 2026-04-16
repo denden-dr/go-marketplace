@@ -167,3 +167,57 @@ func TestProductHandler_UpdateProduct_Fail_InternalError(t *testing.T) {
 	json.NewDecoder(resp.Body).Decode(&result)
 	assert.Equal(t, "err", result.Message)
 }
+
+func TestProductHandler_SearchProducts_Success(t *testing.T) {
+	mockService := NewMockProductServiceInterface(t)
+	handler := NewProductHandler(mockService)
+	app := testutil.SetupTestApp()
+	app.Get("/products/search", handler.SearchProducts)
+
+	productID := uuid.New()
+	products := []ProductResponse{
+		{
+			ID:   productID,
+			Name: "Search Result",
+		},
+	}
+
+	mockService.On("SearchProducts", mock.Anything, mock.MatchedBy(func(r ProductSearchRequest) bool {
+		return r.Query == "test"
+	})).Return(products, nil)
+
+	req := httptest.NewRequest("GET", "/products/search?q=test", nil)
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var result common.ResponseWrapper
+	json.NewDecoder(resp.Body).Decode(&result)
+	assert.Equal(t, "Products retrieved successfully", result.Message)
+}
+
+func TestProductHandler_SearchProducts_ValidationError(t *testing.T) {
+	mockService := NewMockProductServiceInterface(t)
+	handler := NewProductHandler(mockService)
+	app := testutil.SetupTestApp()
+	app.Get("/products/search", handler.SearchProducts)
+
+	req := httptest.NewRequest("GET", "/products/search?q=a", nil) // Query too short
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestProductHandler_SearchProducts_InternalError(t *testing.T) {
+	mockService := NewMockProductServiceInterface(t)
+	handler := NewProductHandler(mockService)
+	app := testutil.SetupTestApp()
+	app.Get("/products/search", handler.SearchProducts)
+
+	mockService.On("SearchProducts", mock.Anything, mock.Anything).Return(nil, errors.New("err"))
+
+	req := httptest.NewRequest("GET", "/products/search?q=error", nil)
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}

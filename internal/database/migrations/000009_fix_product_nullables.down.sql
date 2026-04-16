@@ -1,0 +1,11 @@
+-- Remove NOT NULL constraints
+ALTER TABLE products ALTER COLUMN height_cm DROP NOT NULL;
+ALTER TABLE products ALTER COLUMN width_cm DROP NOT NULL;
+ALTER TABLE products ALTER COLUMN depth_cm DROP NOT NULL;
+ALTER TABLE products ALTER COLUMN weight_kg DROP NOT NULL;
+
+-- Remove defaults
+ALTER TABLE products ALTER COLUMN height_cm DROP DEFAULT;
+ALTER TABLE products ALTER COLUMN width_cm DROP DEFAULT;
+ALTER TABLE products ALTER COLUMN depth_cm DROP DEFAULT;
+ALTER TABLE products ALTER COLUMN weight_kg DROP DEFAULT;

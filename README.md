@@ -14,6 +14,7 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Shopping Cart**: Real-time cart management with price calculations.
 - **Order Processing**: Complete checkout flow, order status tracking, and history.
 - **Wallet System**: Internal wallet for users to manage balances and pay for orders.
+- **Product Search**: Robust full-text and fuzzy search powered by PostgreSQL `pg_trgm` and `tsvector`.
 - **Health Monitoring**: Real-time monitoring of application, database, and OpenSearch connectivity.
 - **DB Migrations**: Automated database versioning and migrations.
 
@@ -91,6 +92,7 @@ The project includes a `Makefile` for common development tasks:
 | `make migrate-down` | Rollback the last database migration. |
 | `make fmt` | Format the Go source code. |
 | `make tidy` | Tidy up Go modules. |
+| `make swagger` | Generate Swagger API documentation. |
 | `make clean` | Remove the compiled binary. |
 
 ---
