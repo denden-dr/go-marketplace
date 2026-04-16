@@ -192,6 +192,67 @@ func (_c *MockProductRepository_GetByIDForUpdateTX_Call) RunAndReturn(run func(c
 	return _c
 }
 
+// Search provides a mock function with given fields: ctx, query, limit, offset
+func (_m *MockProductRepository) Search(ctx context.Context, query string, limit int, offset int) ([]domain.Product, error) {
+	ret := _m.Called(ctx, query, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Search")
+	}
+
+	var r0 []domain.Product
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) ([]domain.Product, error)); ok {
+		return rf(ctx, query, limit, offset)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) []domain.Product); ok {
+		r0 = rf(ctx, query, limit, offset)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Product)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, int, int) error); ok {
+		r1 = rf(ctx, query, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockProductRepository_Search_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Search'
+type MockProductRepository_Search_Call struct {
+	*mock.Call
+}
+
+// Search is a helper method to define mock.On call
+//   - ctx context.Context
+//   - query string
+//   - limit int
+//   - offset int
+func (_e *MockProductRepository_Expecter) Search(ctx interface{}, query interface{}, limit interface{}, offset interface{}) *MockProductRepository_Search_Call {
+	return &MockProductRepository_Search_Call{Call: _e.mock.On("Search", ctx, query, limit, offset)}
+}
+
+func (_c *MockProductRepository_Search_Call) Run(run func(ctx context.Context, query string, limit int, offset int)) *MockProductRepository_Search_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(int), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *MockProductRepository_Search_Call) Return(_a0 []domain.Product, _a1 error) *MockProductRepository_Search_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockProductRepository_Search_Call) RunAndReturn(run func(context.Context, string, int, int) ([]domain.Product, error)) *MockProductRepository_Search_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function with given fields: ctx, p
 func (_m *MockProductRepository) Update(ctx context.Context, p *domain.Product) error {
 	ret := _m.Called(ctx, p)

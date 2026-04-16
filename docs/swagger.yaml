@@ -761,6 +761,49 @@ paths:
       summary: Update product
       tags:
       - products
+  /products/search:
+    get:
+      consumes:
+      - application/json
+      description: Searches for products using full-text search and fuzzy matching.
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/product.ProductResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      summary: Search products
+      tags:
+      - products
   /users/addresses:
     get:
       description: Returns all saved address templates for the authenticated user.

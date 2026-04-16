@@ -91,3 +91,34 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 
 	return common.NewResponse(c, fiber.StatusOK, "Product updated successfully", res)
 }
+
+// SearchProducts searches for products
+// @Summary Search products
+// @Description Searches for products using full-text search and fuzzy matching.
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param q query string false "Search query"
+// @Param limit query int false "Limit"
+// @Param page query int false "Page"
+// @Success 200 {object} common.ResponseWrapper{data=[]ProductResponse}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /products/search [get]
+func (h *ProductHandler) SearchProducts(c *fiber.Ctx) error {
+	var req ProductSearchRequest
+	if err := c.QueryParser(&req); err != nil {
+		return common.NewResponse(c, fiber.StatusBadRequest, "Invalid query parameters", nil)
+	}
+
+	if err := req.Validate(); err != nil {
+		return common.NewResponse(c, fiber.StatusBadRequest, err.Error(), nil)
+	}
+
+	res, err := h.service.SearchProducts(c.Context(), req)
+	if err != nil {
+		return common.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
+	}
+
+	return common.NewResponse(c, fiber.StatusOK, "Products retrieved successfully", res)
+}

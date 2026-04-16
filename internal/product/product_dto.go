@@ -11,7 +11,7 @@ import (
 type ProductResponse struct {
 	ID          uuid.UUID       `json:"id"`
 	Name        string          `json:"name"`
-	Description string          `json:"description"`
+	Description *string         `json:"description"`
 	Price       decimal.Decimal `json:"price"`
 	Stock       int             `json:"stock"`
 	IsOnSale    bool            `json:"is_onsale"`
@@ -21,7 +21,7 @@ type ProductResponse struct {
 type ProductCreateRequest struct {
 	StoreID     uuid.UUID       `json:"store_id"`
 	Name        string          `json:"name"`
-	Description string          `json:"description"`
+	Description *string         `json:"description"`
 	Price       decimal.Decimal `json:"price"`
 	Stock       int             `json:"stock"`
 	HeightCM    float64         `json:"height_cm"`
@@ -49,7 +49,7 @@ func (r ProductCreateRequest) Validate() error {
 
 type ProductUpdateRequest struct {
 	Name        string          `json:"name"`
-	Description string          `json:"description"`
+	Description *string         `json:"description"`
 	Price       decimal.Decimal `json:"price"`
 	Stock       int             `json:"stock"`
 	IsOnSale    bool            `json:"is_onsale"`
@@ -64,6 +64,25 @@ func (r ProductUpdateRequest) Validate() error {
 	}
 	if r.Stock < 0 {
 		return errors.New("stock cannot be negative")
+	}
+	return nil
+}
+
+type ProductSearchRequest struct {
+	Query string `query:"q"`
+	Limit int    `query:"limit"`
+	Page  int    `query:"page"`
+}
+
+func (r ProductSearchRequest) Validate() error {
+	if r.Query != "" && len(r.Query) < 2 {
+		return errors.New("search query must be at least 2 characters")
+	}
+	if r.Limit < 0 {
+		return errors.New("limit cannot be negative")
+	}
+	if r.Page < 0 {
+		return errors.New("page cannot be negative")
 	}
 	return nil
 }
