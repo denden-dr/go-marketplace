@@ -81,6 +81,65 @@ func (_c *MockProductServiceInterface_CreateProduct_Call) RunAndReturn(run func(
 	return _c
 }
 
+// SearchProducts provides a mock function with given fields: ctx, req
+func (_m *MockProductServiceInterface) SearchProducts(ctx context.Context, req ProductSearchRequest) ([]ProductResponse, error) {
+	ret := _m.Called(ctx, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SearchProducts")
+	}
+
+	var r0 []ProductResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, ProductSearchRequest) ([]ProductResponse, error)); ok {
+		return rf(ctx, req)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, ProductSearchRequest) []ProductResponse); ok {
+		r0 = rf(ctx, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]ProductResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, ProductSearchRequest) error); ok {
+		r1 = rf(ctx, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockProductServiceInterface_SearchProducts_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SearchProducts'
+type MockProductServiceInterface_SearchProducts_Call struct {
+	*mock.Call
+}
+
+// SearchProducts is a helper method to define mock.On call
+//   - ctx context.Context
+//   - req ProductSearchRequest
+func (_e *MockProductServiceInterface_Expecter) SearchProducts(ctx interface{}, req interface{}) *MockProductServiceInterface_SearchProducts_Call {
+	return &MockProductServiceInterface_SearchProducts_Call{Call: _e.mock.On("SearchProducts", ctx, req)}
+}
+
+func (_c *MockProductServiceInterface_SearchProducts_Call) Run(run func(ctx context.Context, req ProductSearchRequest)) *MockProductServiceInterface_SearchProducts_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(ProductSearchRequest))
+	})
+	return _c
+}
+
+func (_c *MockProductServiceInterface_SearchProducts_Call) Return(_a0 []ProductResponse, _a1 error) *MockProductServiceInterface_SearchProducts_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockProductServiceInterface_SearchProducts_Call) RunAndReturn(run func(context.Context, ProductSearchRequest) ([]ProductResponse, error)) *MockProductServiceInterface_SearchProducts_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateProduct provides a mock function with given fields: ctx, id, req
 func (_m *MockProductServiceInterface) UpdateProduct(ctx context.Context, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error) {
 	ret := _m.Called(ctx, id, req)
