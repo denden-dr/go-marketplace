@@ -15,6 +15,7 @@ import (
 type ProductServiceInterface interface {
 	CreateProduct(ctx context.Context, req ProductCreateRequest) (*ProductResponse, error)
 	UpdateProduct(ctx context.Context, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error)
+	SearchProducts(ctx context.Context, req ProductSearchRequest) ([]ProductResponse, error)
 }
 
 type ProductRepository interface {
@@ -23,6 +24,7 @@ type ProductRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, error)
 	GetByIDForUpdateTX(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*domain.Product, error)
 	UpdateStockTX(ctx context.Context, tx pgx.Tx, id uuid.UUID, stock int) error
+	Search(ctx context.Context, query string, limit, offset int) ([]domain.Product, error)
 }
 
 type ProductService struct {
@@ -102,4 +104,34 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id uuid.UUID, req Pr
 		IsOnSale:    product.IsOnSale,
 		CreatedAt:   product.CreatedAt,
 	}, nil
+}
+
+func (s *ProductService) SearchProducts(ctx context.Context, req ProductSearchRequest) ([]ProductResponse, error) {
+	if req.Limit <= 0 {
+		req.Limit = 10
+	}
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	offset := (req.Page - 1) * req.Limit
+
+	products, err := s.repo.Search(ctx, req.Query, req.Limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	responses := make([]ProductResponse, 0, len(products))
+	for _, p := range products {
+		responses = append(responses, ProductResponse{
+			ID:          p.ID,
+			Name:        p.Name,
+			Description: p.Description,
+			Price:       p.Price,
+			Stock:       p.Stock,
+			IsOnSale:    p.IsOnSale,
+			CreatedAt:   p.CreatedAt,
+		})
+	}
+
+	return responses, nil
 }

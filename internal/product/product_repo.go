@@ -62,3 +62,37 @@ func (r *productRepository) UpdateStockTX(ctx context.Context, tx pgx.Tx, id uui
 	_, err := tx.Exec(ctx, query, stock, id)
 	return err
 }
+
+func (r *productRepository) Search(ctx context.Context, query string, limit, offset int) ([]domain.Product, error) {
+	sqlQuery := `
+		SELECT id, store_id, name, description, price, stock, height_cm, width_cm, depth_cm, weight_kg, is_onsale, created_at 
+		FROM products 
+		WHERE ($1 = '' OR search_vector @@ websearch_to_tsquery('english', $1) OR name % $1)
+		ORDER BY 
+			(CASE WHEN $1 = '' THEN 0 ELSE ts_rank(search_vector, websearch_to_tsquery('english', $1)) END) DESC,
+			(CASE WHEN $1 = '' THEN 0 ELSE similarity(name, $1) END) DESC,
+			created_at DESC
+		LIMIT $2 OFFSET $3`
+
+	rows, err := r.db.Query(ctx, sqlQuery, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []domain.Product
+	for rows.Next() {
+		var p domain.Product
+		err := rows.Scan(&p.ID, &p.StoreID, &p.Name, &p.Description, &p.Price, &p.Stock, &p.HeightCM, &p.WidthCM, &p.DepthCM, &p.WeightKG, &p.IsOnSale, &p.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
