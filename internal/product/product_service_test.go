@@ -7,6 +7,7 @@ import (
 
 	"go-shop-yourself/internal/domain"
 	"go-shop-yourself/internal/merchant"
+	"go-shop-yourself/internal/testutil"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -23,7 +24,7 @@ func TestProductService_CreateProduct_Success(t *testing.T) {
 	req := ProductCreateRequest{
 		StoreID:     storeID,
 		Name:        "Test Product",
-		Description: "Good product",
+		Description: testutil.Ptr("Good product"),
 		Price:       decimal.NewFromInt(100),
 		Stock:       10,
 	}
@@ -87,4 +88,46 @@ func TestProductService_UpdateProduct_Fail_NotFound(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, domain.ErrProductNotFound))
+}
+
+func TestProductService_SearchProducts_Success(t *testing.T) {
+	mockRepo := NewMockProductRepository(t)
+	service := NewProductService(mockRepo, nil)
+
+	req := ProductSearchRequest{
+		Query: "laptop",
+		Limit: 5,
+		Page:  1,
+	}
+
+	productID := uuid.New()
+	products := []domain.Product{
+		{
+			ID:          productID,
+			Name:        "Gaming Laptop",
+			Description: testutil.Ptr("Powerful laptop"),
+		},
+	}
+
+	mockRepo.On("Search", mock.Anything, "laptop", 5, 0).Return(products, nil)
+
+	res, err := service.SearchProducts(context.Background(), req)
+
+	assert.NoError(t, err)
+	assert.Len(t, res, 1)
+	assert.Equal(t, productID, res[0].ID)
+}
+
+func TestProductService_SearchProducts_RepositoryError(t *testing.T) {
+	mockRepo := NewMockProductRepository(t)
+	service := NewProductService(mockRepo, nil)
+
+	req := ProductSearchRequest{Query: "error"}
+	mockRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("db error"))
+
+	res, err := service.SearchProducts(context.Background(), req)
+
+	assert.Error(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, "db error", err.Error())
 }
