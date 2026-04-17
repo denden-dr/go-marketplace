@@ -40,8 +40,6 @@ All responses follow a consistent envelope format:
 }
 ```
 
-Defined in [response_wrapper.go](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/internal/common/response_wrapper.go).
-
 ---
 
 ## Tech Stack
@@ -124,8 +122,6 @@ Each feature package contains:
 ## Configuration
 
 ### Environment Variables
-
-Configured via `.env` file in the project root. See [.env.example](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/.env.example).
 
 | Variable | Description | Required |
 |:---|:---|:---|
@@ -390,7 +386,7 @@ Same request body as `POST`. Returns updated address.
 | `page` | int | 1 | Page number |
 
 > [!NOTE]
-> Search uses PostgreSQL's `pg_trgm` (trigram fuzzy matching) and `tsvector` (full-text search). See [migration 8](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/internal/database/migrations/000008_add_product_search_idx.up.sql).
+> Search uses PostgreSQL's `pg_trgm` (trigram fuzzy matching) and `tsvector`
 
 **Success Response** (`200`):
 ```json
@@ -794,8 +790,6 @@ Merchant cancellation is permitted anytime **before shipping**. Triggers refund 
 | `password` | string | bcrypt hash |
 | `created_at` | timestamp | Registration time |
 
-Defined in [domain/user.go](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/internal/domain/user.go).
-
 ### UserAddress
 
 | Field | Type | Description |
@@ -822,8 +816,6 @@ Defined in [domain/user.go](file:///home/denden/Documents/denden/personal/golang
 | `tax_id` | string |
 | `created_at` | timestamp |
 
-Defined in [domain/merchant.go](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/internal/domain/merchant.go).
-
 ### Product
 
 | Field | Type | Notes |
@@ -837,8 +829,6 @@ Defined in [domain/merchant.go](file:///home/denden/Documents/denden/personal/go
 | `height_cm`, `width_cm`, `depth_cm` | float64 | Physical dimensions |
 | `weight_kg` | float64 | Weight |
 | `is_onsale` | bool | Sale flag |
-
-Defined in [domain/product.go](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/internal/domain/product.go).
 
 ### Wallet
 
@@ -881,8 +871,6 @@ Defined in [domain/product.go](file:///home/denden/Documents/denden/personal/gol
 | `status` | string |
 
 ### Domain Errors
-
-All domain errors are defined in [domain/errors.go](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/internal/domain/errors.go):
 
 | Error | Description |
 |:---|:---|
@@ -950,8 +938,6 @@ All cancellations trigger: status → `cancelled`, wallet refund, stock restorat
 
 ## Database Migrations
 
-Located at [internal/database/migrations/](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/internal/database/migrations).
-
 | # | Name | Description |
 |:---|:---|:---|
 | 1 | `create_users_table` | Users table with email, password, username |
@@ -999,7 +985,6 @@ make clean          # Remove binary
 
 ### Swagger Documentation
 
-Generated via `swag init` from handler annotations. Files output to [docs/](file:///home/denden/Documents/denden/personal/golang-project/go-shop-yourself/docs):
 - `docs.go` — Go embed
 - `swagger.json` / `swagger.yaml` — OpenAPI spec
 
