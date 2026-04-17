@@ -43,7 +43,13 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 	}
 
 	// Check OpenSearch
-	if _, err := h.os.Info(context.Background(), nil); err != nil {
+	if h.os != nil {
+		if _, err := h.os.Info(context.Background(), nil); err != nil {
+			osStatus = "down"
+			message = "application is unhealthy"
+			statusCode = fiber.StatusServiceUnavailable
+		}
+	} else {
 		osStatus = "down"
 		message = "application is unhealthy"
 		statusCode = fiber.StatusServiceUnavailable
