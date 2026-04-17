@@ -13,8 +13,8 @@ import (
 )
 
 type ProductServiceInterface interface {
-	CreateProduct(ctx context.Context, req ProductCreateRequest) (*ProductResponse, error)
-	UpdateProduct(ctx context.Context, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error)
+	CreateProduct(ctx context.Context, userID uuid.UUID, req ProductCreateRequest) (*ProductResponse, error)
+	UpdateProduct(ctx context.Context, userID uuid.UUID, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error)
 	SearchProducts(ctx context.Context, req ProductSearchRequest) ([]ProductResponse, error)
 }
 
@@ -36,14 +36,18 @@ func NewProductService(repo ProductRepository, merchantRepo merchant.MerchantRep
 	return &ProductService{repo: repo, merchantRepo: merchantRepo}
 }
 
-func (s *ProductService) CreateProduct(ctx context.Context, req ProductCreateRequest) (*ProductResponse, error) {
-	// Verify merchant exists
+func (s *ProductService) CreateProduct(ctx context.Context, userID uuid.UUID, req ProductCreateRequest) (*ProductResponse, error) {
+	// Verify merchant exists and belongs to the user
 	merchant, err := s.merchantRepo.GetByID(ctx, req.StoreID)
 	if err != nil {
 		return nil, err
 	}
 	if merchant == nil {
 		return nil, domain.ErrMerchantNotFound
+	}
+
+	if merchant.UserID != userID {
+		return nil, domain.ErrForbidden
 	}
 
 	product := &domain.Product{
@@ -76,13 +80,22 @@ func (s *ProductService) CreateProduct(ctx context.Context, req ProductCreateReq
 	}, nil
 }
 
-func (s *ProductService) UpdateProduct(ctx context.Context, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error) {
+func (s *ProductService) UpdateProduct(ctx context.Context, userID uuid.UUID, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error) {
 	product, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if product == nil {
 		return nil, domain.ErrProductNotFound
+	}
+
+	// Verify the user owns the merchant that owns the product
+	m, err := s.merchantRepo.GetByID(ctx, product.StoreID)
+	if err != nil {
+		return nil, err
+	}
+	if m == nil || m.UserID != userID {
+		return nil, domain.ErrForbidden
 	}
 
 	product.Name = req.Name

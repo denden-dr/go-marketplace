@@ -40,12 +40,16 @@ func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
 		return common.NewResponse(c, fiber.StatusBadRequest, err.Error(), nil)
 	}
 
-	res, err := h.service.CreateProduct(c.Context(), req)
+	userID := c.Locals("userID").(uuid.UUID)
+	res, err := h.service.CreateProduct(c.Context(), userID, req)
 	if err != nil {
 		if errors.Is(err, domain.ErrMerchantNotFound) {
 			return common.NewResponse(c, fiber.StatusNotFound, err.Error(), nil)
 		}
-		return common.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
+		if errors.Is(err, domain.ErrForbidden) {
+			return common.NewResponse(c, fiber.StatusForbidden, err.Error(), nil)
+		}
+		return common.NewResponse(c, fiber.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, fiber.StatusCreated, "Product created successfully", res)
@@ -81,12 +85,16 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 		return common.NewResponse(c, fiber.StatusBadRequest, err.Error(), nil)
 	}
 
-	res, err := h.service.UpdateProduct(c.Context(), id, req)
+	userID := c.Locals("userID").(uuid.UUID)
+	res, err := h.service.UpdateProduct(c.Context(), userID, id, req)
 	if err != nil {
 		if errors.Is(err, domain.ErrProductNotFound) {
 			return common.NewResponse(c, fiber.StatusNotFound, err.Error(), nil)
 		}
-		return common.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
+		if errors.Is(err, domain.ErrForbidden) {
+			return common.NewResponse(c, fiber.StatusForbidden, err.Error(), nil)
+		}
+		return common.NewResponse(c, fiber.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, fiber.StatusOK, "Product updated successfully", res)
@@ -117,7 +125,7 @@ func (h *ProductHandler) SearchProducts(c *fiber.Ctx) error {
 
 	res, err := h.service.SearchProducts(c.Context(), req)
 	if err != nil {
-		return common.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, fiber.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, fiber.StatusOK, "Products retrieved successfully", res)
