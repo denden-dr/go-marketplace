@@ -67,7 +67,6 @@ func (r UpdateStatusRequest) Validate() error {
 	return nil
 }
 
-
 type AppealOrderRequest struct {
 	Reason string `json:"reason"`
 }

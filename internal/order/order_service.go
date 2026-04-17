@@ -509,4 +509,3 @@ func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderRespon
 		UpdatedAt:             o.UpdatedAt,
 	}, nil
 }
-
