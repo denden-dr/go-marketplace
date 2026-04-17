@@ -71,6 +71,52 @@ func (_c *MockRefreshTokenRepository_Create_Call) RunAndReturn(run func(context.
 	return _c
 }
 
+// DeleteExpiredTokens provides a mock function with given fields: ctx
+func (_m *MockRefreshTokenRepository) DeleteExpiredTokens(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteExpiredTokens")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockRefreshTokenRepository_DeleteExpiredTokens_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteExpiredTokens'
+type MockRefreshTokenRepository_DeleteExpiredTokens_Call struct {
+	*mock.Call
+}
+
+// DeleteExpiredTokens is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockRefreshTokenRepository_Expecter) DeleteExpiredTokens(ctx interface{}) *MockRefreshTokenRepository_DeleteExpiredTokens_Call {
+	return &MockRefreshTokenRepository_DeleteExpiredTokens_Call{Call: _e.mock.On("DeleteExpiredTokens", ctx)}
+}
+
+func (_c *MockRefreshTokenRepository_DeleteExpiredTokens_Call) Run(run func(ctx context.Context)) *MockRefreshTokenRepository_DeleteExpiredTokens_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockRefreshTokenRepository_DeleteExpiredTokens_Call) Return(_a0 error) *MockRefreshTokenRepository_DeleteExpiredTokens_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRefreshTokenRepository_DeleteExpiredTokens_Call) RunAndReturn(run func(context.Context) error) *MockRefreshTokenRepository_DeleteExpiredTokens_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetByTokenHash provides a mock function with given fields: ctx, hash
 func (_m *MockRefreshTokenRepository) GetByTokenHash(ctx context.Context, hash string) (*domain.RefreshToken, error) {
 	ret := _m.Called(ctx, hash)

@@ -27,6 +27,31 @@ type AddressRequest struct {
 	IsDefault     bool              `json:"is_default"`
 }
 
+func (r *AddressRequest) Validate() error {
+	if r.RecipientName == "" {
+		return domain.ErrRecipientNameRequired
+	}
+	if r.PhoneNumber == "" {
+		return domain.ErrPhoneNumberRequired
+	}
+	if r.StreetAddress == "" {
+		return domain.ErrStreetAddressRequired
+	}
+	if r.City == "" {
+		return domain.ErrCityRequired
+	}
+	if r.Province == "" {
+		return domain.ErrProvinceRequired
+	}
+	if r.PostalCode == "" {
+		return domain.ErrPostalCodeRequired
+	}
+	if r.Tag != domain.AddressTagHome && r.Tag != domain.AddressTagWork {
+		return domain.ErrInvalidAddressTag
+	}
+	return nil
+}
+
 type AddressResponse struct {
 	ID            uuid.UUID         `json:"id"`
 	Tag           domain.AddressTag `json:"tag"`

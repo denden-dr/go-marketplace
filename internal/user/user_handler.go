@@ -40,7 +40,7 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return common.NewResponse(c, http.StatusNotFound, err.Error(), nil)
 		}
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusOK, "User profile retrieved", user)
@@ -70,9 +70,13 @@ func (h *UserHandler) AddAddress(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
 	}
 
+	if err := req.Validate(); err != nil {
+		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
+	}
+
 	res, err := h.userService.AddAddress(c.Context(), userID, &req)
 	if err != nil {
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusCreated, "Address added successfully", res)
@@ -96,7 +100,7 @@ func (h *UserHandler) ListAddresses(c *fiber.Ctx) error {
 
 	addresses, err := h.userService.ListAddresses(c.Context(), userID)
 	if err != nil {
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusOK, "Addresses retrieved", addresses)
@@ -134,12 +138,16 @@ func (h *UserHandler) UpdateAddress(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
 	}
 
+	if err := req.Validate(); err != nil {
+		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
+	}
+
 	res, err := h.userService.UpdateAddress(c.Context(), userID, addressID, &req)
 	if err != nil {
 		if errors.Is(err, domain.ErrForbidden) {
 			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
 		}
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusOK, "Address updated successfully", res)
@@ -174,7 +182,7 @@ func (h *UserHandler) DeleteAddress(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrForbidden) {
 			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
 		}
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusOK, "Address deleted successfully", nil)

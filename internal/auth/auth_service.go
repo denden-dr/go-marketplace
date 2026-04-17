@@ -24,6 +24,7 @@ type RefreshTokenRepository interface {
 	GetByTokenHash(ctx context.Context, hash string) (*domain.RefreshToken, error)
 	RevokeByID(ctx context.Context, id uuid.UUID) error
 	RevokeAllByFamilyID(ctx context.Context, familyID uuid.UUID) error
+	DeleteExpiredTokens(ctx context.Context) error
 }
 
 type AuthService struct {
