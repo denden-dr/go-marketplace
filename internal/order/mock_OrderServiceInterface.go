@@ -181,65 +181,6 @@ func (_c *MockOrderServiceInterface_CreateUserCheckout_Call) RunAndReturn(run fu
 	return _c
 }
 
-// GetMerchantOrders provides a mock function with given fields: ctx, merchantID
-func (_m *MockOrderServiceInterface) GetMerchantOrders(ctx context.Context, merchantID uuid.UUID) ([]OrderResponse, error) {
-	ret := _m.Called(ctx, merchantID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetMerchantOrders")
-	}
-
-	var r0 []OrderResponse
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]OrderResponse, error)); ok {
-		return rf(ctx, merchantID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []OrderResponse); ok {
-		r0 = rf(ctx, merchantID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]OrderResponse)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, merchantID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockOrderServiceInterface_GetMerchantOrders_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMerchantOrders'
-type MockOrderServiceInterface_GetMerchantOrders_Call struct {
-	*mock.Call
-}
-
-// GetMerchantOrders is a helper method to define mock.On call
-//   - ctx context.Context
-//   - merchantID uuid.UUID
-func (_e *MockOrderServiceInterface_Expecter) GetMerchantOrders(ctx interface{}, merchantID interface{}) *MockOrderServiceInterface_GetMerchantOrders_Call {
-	return &MockOrderServiceInterface_GetMerchantOrders_Call{Call: _e.mock.On("GetMerchantOrders", ctx, merchantID)}
-}
-
-func (_c *MockOrderServiceInterface_GetMerchantOrders_Call) Run(run func(ctx context.Context, merchantID uuid.UUID)) *MockOrderServiceInterface_GetMerchantOrders_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *MockOrderServiceInterface_GetMerchantOrders_Call) Return(_a0 []OrderResponse, _a1 error) *MockOrderServiceInterface_GetMerchantOrders_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockOrderServiceInterface_GetMerchantOrders_Call) RunAndReturn(run func(context.Context, uuid.UUID) ([]OrderResponse, error)) *MockOrderServiceInterface_GetMerchantOrders_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetOrder provides a mock function with given fields: ctx, id
 func (_m *MockOrderServiceInterface) GetOrder(ctx context.Context, id uuid.UUID) (*OrderResponse, error) {
 	ret := _m.Called(ctx, id)
@@ -295,65 +236,6 @@ func (_c *MockOrderServiceInterface_GetOrder_Call) Return(_a0 *OrderResponse, _a
 }
 
 func (_c *MockOrderServiceInterface_GetOrder_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*OrderResponse, error)) *MockOrderServiceInterface_GetOrder_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetUserOrders provides a mock function with given fields: ctx, userID
-func (_m *MockOrderServiceInterface) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]OrderResponse, error) {
-	ret := _m.Called(ctx, userID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetUserOrders")
-	}
-
-	var r0 []OrderResponse
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]OrderResponse, error)); ok {
-		return rf(ctx, userID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []OrderResponse); ok {
-		r0 = rf(ctx, userID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]OrderResponse)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, userID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockOrderServiceInterface_GetUserOrders_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserOrders'
-type MockOrderServiceInterface_GetUserOrders_Call struct {
-	*mock.Call
-}
-
-// GetUserOrders is a helper method to define mock.On call
-//   - ctx context.Context
-//   - userID uuid.UUID
-func (_e *MockOrderServiceInterface_Expecter) GetUserOrders(ctx interface{}, userID interface{}) *MockOrderServiceInterface_GetUserOrders_Call {
-	return &MockOrderServiceInterface_GetUserOrders_Call{Call: _e.mock.On("GetUserOrders", ctx, userID)}
-}
-
-func (_c *MockOrderServiceInterface_GetUserOrders_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockOrderServiceInterface_GetUserOrders_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *MockOrderServiceInterface_GetUserOrders_Call) Return(_a0 []OrderResponse, _a1 error) *MockOrderServiceInterface_GetUserOrders_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockOrderServiceInterface_GetUserOrders_Call) RunAndReturn(run func(context.Context, uuid.UUID) ([]OrderResponse, error)) *MockOrderServiceInterface_GetUserOrders_Call {
 	_c.Call.Return(run)
 	return _c
 }

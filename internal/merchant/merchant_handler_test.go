@@ -103,5 +103,5 @@ func TestMerchantHandler_RegisterMerchant_Fail_InternalError(t *testing.T) {
 
 	var result common.ResponseWrapper
 	json.NewDecoder(resp.Body).Decode(&result)
-	assert.Equal(t, "srv error", result.Message)
+	assert.Equal(t, "Internal Server Error", result.Message)
 }
