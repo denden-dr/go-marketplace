@@ -44,7 +44,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrUserAlreadyExists) {
 			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
 		}
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusCreated, "User registered successfully", res)
@@ -77,7 +77,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusOK, "Login successful", res)
@@ -110,7 +110,7 @@ func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrInvalidRefreshToken) || errors.Is(err, domain.ErrRefreshTokenExpired) || errors.Is(err, domain.ErrRefreshTokenReused) {
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusOK, "Token refreshed successfully", res)
@@ -144,7 +144,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrInvalidRefreshToken) {
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, http.StatusOK, "Logout successful", nil)

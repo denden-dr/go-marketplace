@@ -34,14 +34,6 @@ type CartService struct {
 	productRepo product.ProductRepository
 }
 
-// Wait, I should check product.ProductRepository definition to ensure compatibility.
-// Actually, earlier I saw it in product_service.go as `ProductRepository`.
-// I'll use `product.ProductRepository` and import it.
-
-type ProductRepo interface {
-	GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, error)
-}
-
 func NewCartService(repo CartRepository, productRepo product.ProductRepository) *CartService {
 	return &CartService{
 		repo:        repo,

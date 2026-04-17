@@ -14,13 +14,13 @@ import (
 
 type OrderHandler struct {
 	orderService OrderServiceInterface
-	merchantRepo merchant.MerchantRepository
+	MerchantRepo merchant.MerchantRepository
 }
 
 func NewOrderHandler(orderService OrderServiceInterface, merchantRepo merchant.MerchantRepository) *OrderHandler {
 	return &OrderHandler{
 		orderService: orderService,
-		merchantRepo: merchantRepo,
+		MerchantRepo: merchantRepo,
 	}
 }
 
@@ -147,19 +147,10 @@ func (h *OrderHandler) UserAppealOrder(c *fiber.Ctx) error {
 // @Failure 500 {object} common.ResponseWrapper
 // @Router /merchants/orders/{id}/status [put]
 func (h *OrderHandler) MerchantUpdateStatus(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(uuid.UUID)
+	merchant := c.Locals("merchant").(*domain.Merchant)
 	orderID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid order ID", nil)
-	}
-
-	// Find Merchant associated with this user
-	m, err := h.merchantRepo.GetByUserID(c.Context(), userID)
-	if err != nil {
-		return common.NewResponse(c, http.StatusInternalServerError, "Error retrieving merchant profile", nil)
-	}
-	if m == nil {
-		return common.NewResponse(c, http.StatusForbidden, "Only merchants can update order status", nil)
 	}
 
 	var req UpdateStatusRequest
@@ -171,12 +162,12 @@ func (h *OrderHandler) MerchantUpdateStatus(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
 	}
 
-	err = h.orderService.MerchantUpdateStatus(c.Context(), m.ID, orderID, req.Status)
+	err = h.orderService.MerchantUpdateStatus(c.Context(), merchant.ID, orderID, req.Status)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidStatusTransition) || errors.Is(err, domain.ErrMerchantShipmentTooEarly) || errors.Is(err, domain.ErrOrderNotFound) {
 			return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
 		}
-		log.Printf("Error updating order %s by merchant %s: %v", orderID, m.ID, err)
+		log.Printf("Error updating order %s by merchant %s: %v", orderID, merchant.ID, err)
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
@@ -197,26 +188,18 @@ func (h *OrderHandler) MerchantUpdateStatus(c *fiber.Ctx) error {
 // @Failure 500 {object} common.ResponseWrapper
 // @Router /merchants/orders/{id}/cancel [put]
 func (h *OrderHandler) MerchantCancelOrder(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(uuid.UUID)
+	merchant := c.Locals("merchant").(*domain.Merchant)
 	orderID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid order ID", nil)
 	}
 
-	m, err := h.merchantRepo.GetByUserID(c.Context(), userID)
-	if err != nil {
-		return common.NewResponse(c, http.StatusInternalServerError, "Error retrieving merchant profile", nil)
-	}
-	if m == nil {
-		return common.NewResponse(c, http.StatusForbidden, "Only merchants can cancel orders", nil)
-	}
-
-	err = h.orderService.MerchantCancelOrder(c.Context(), m.ID, orderID)
+	err = h.orderService.MerchantCancelOrder(c.Context(), merchant.ID, orderID)
 	if err != nil {
 		if errors.Is(err, domain.ErrOrderNotCancellable) || errors.Is(err, domain.ErrOrderNotFound) {
 			return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
 		}
-		log.Printf("Error cancelling order %s by merchant %s: %v", orderID, m.ID, err)
+		log.Printf("Error cancelling order %s by merchant %s: %v", orderID, merchant.ID, err)
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
