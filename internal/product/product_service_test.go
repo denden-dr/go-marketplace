@@ -29,12 +29,13 @@ func TestProductService_CreateProduct_Success(t *testing.T) {
 		Stock:       10,
 	}
 
-	m := &domain.Merchant{ID: storeID}
+	userID := uuid.New()
+	m := &domain.Merchant{ID: storeID, UserID: userID}
 
 	mockMerchantRepo.On("GetByID", mock.Anything, storeID).Return(m, nil)
 	mockRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 
-	res, err := service.CreateProduct(context.Background(), req)
+	res, err := service.CreateProduct(context.Background(), userID, req)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -48,7 +49,8 @@ func TestProductService_CreateProduct_Fail_MerchantNotFound(t *testing.T) {
 	storeID := uuid.New()
 	mockMerchantRepo.On("GetByID", mock.Anything, storeID).Return(nil, nil)
 
-	_, err := service.CreateProduct(context.Background(), ProductCreateRequest{StoreID: storeID, Name: "Product"})
+	userID := uuid.New()
+	_, err := service.CreateProduct(context.Background(), userID, ProductCreateRequest{StoreID: storeID, Name: "Product"})
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, domain.ErrMerchantNotFound))
@@ -56,21 +58,26 @@ func TestProductService_CreateProduct_Fail_MerchantNotFound(t *testing.T) {
 
 func TestProductService_UpdateProduct_Success(t *testing.T) {
 	mockRepo := NewMockProductRepository(t)
-	service := NewProductService(mockRepo, nil)
+	mockMerchantRepo := merchant.NewMockMerchantRepository(t)
+	service := NewProductService(mockRepo, mockMerchantRepo)
 
 	productID := uuid.New()
+	userID := uuid.New()
 	p := &domain.Product{ID: productID, Name: "Old Name"}
 	req := ProductUpdateRequest{
 		Name:  "New Name",
 		Price: decimal.NewFromInt(150),
 	}
 
+	m := &domain.Merchant{ID: p.StoreID, UserID: userID}
+
 	mockRepo.On("GetByID", mock.Anything, productID).Return(p, nil)
+	mockMerchantRepo.On("GetByID", mock.Anything, p.StoreID).Return(m, nil)
 	mockRepo.On("Update", mock.Anything, mock.MatchedBy(func(p *domain.Product) bool {
 		return p.Name == "New Name"
 	})).Return(nil)
 
-	res, err := service.UpdateProduct(context.Background(), productID, req)
+	res, err := service.UpdateProduct(context.Background(), userID, productID, req)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -79,12 +86,13 @@ func TestProductService_UpdateProduct_Success(t *testing.T) {
 
 func TestProductService_UpdateProduct_Fail_NotFound(t *testing.T) {
 	mockRepo := NewMockProductRepository(t)
-	service := NewProductService(mockRepo, nil)
-
+	mockMerchantRepo := merchant.NewMockMerchantRepository(t)
+	service := NewProductService(mockRepo, mockMerchantRepo)
 	productID := uuid.New()
 	mockRepo.On("GetByID", mock.Anything, productID).Return(nil, nil)
 
-	_, err := service.UpdateProduct(context.Background(), productID, ProductUpdateRequest{Name: "New"})
+	userID := uuid.New()
+	_, err := service.UpdateProduct(context.Background(), userID, productID, ProductUpdateRequest{Name: "New"})
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, domain.ErrProductNotFound))

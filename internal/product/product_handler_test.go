@@ -22,7 +22,8 @@ func TestProductHandler_CreateProduct_Success(t *testing.T) {
 	mockService := NewMockProductServiceInterface(t)
 	handler := NewProductHandler(mockService)
 	app := testutil.SetupTestApp()
-	app.Post("/products", handler.CreateProduct)
+	userID := uuid.New()
+	app.Post("/products", testutil.AuthTestMiddleware(userID), handler.CreateProduct)
 
 	reqBody := ProductCreateRequest{
 		StoreID: uuid.New(),
@@ -36,7 +37,7 @@ func TestProductHandler_CreateProduct_Success(t *testing.T) {
 		Name: "New Product",
 	}
 
-	mockService.On("CreateProduct", mock.Anything, mock.Anything).Return(productRes, nil)
+	mockService.On("CreateProduct", mock.Anything, userID, mock.Anything).Return(productRes, nil)
 
 	req := httptest.NewRequest("POST", "/products", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -54,7 +55,8 @@ func TestProductHandler_CreateProduct_Fail_MerchantNotFound(t *testing.T) {
 	mockService := NewMockProductServiceInterface(t)
 	handler := NewProductHandler(mockService)
 	app := testutil.SetupTestApp()
-	app.Post("/products", handler.CreateProduct)
+	userID := uuid.New()
+	app.Post("/products", testutil.AuthTestMiddleware(userID), handler.CreateProduct)
 
 	reqBody := ProductCreateRequest{
 		StoreID: uuid.New(),
@@ -64,7 +66,7 @@ func TestProductHandler_CreateProduct_Fail_MerchantNotFound(t *testing.T) {
 	}
 	body, _ := json.Marshal(reqBody)
 
-	mockService.On("CreateProduct", mock.Anything, mock.MatchedBy(func(r ProductCreateRequest) bool {
+	mockService.On("CreateProduct", mock.Anything, userID, mock.MatchedBy(func(r ProductCreateRequest) bool {
 		return r.Name == "Product"
 	})).Return(nil, domain.ErrMerchantNotFound)
 
@@ -84,7 +86,8 @@ func TestProductHandler_UpdateProduct_Success(t *testing.T) {
 	mockService := NewMockProductServiceInterface(t)
 	handler := NewProductHandler(mockService)
 	app := testutil.SetupTestApp()
-	app.Put("/products/:id", handler.UpdateProduct)
+	userID := uuid.New()
+	app.Put("/products/:id", testutil.AuthTestMiddleware(userID), handler.UpdateProduct)
 
 	productID := uuid.New()
 	reqBody := ProductUpdateRequest{
@@ -98,7 +101,7 @@ func TestProductHandler_UpdateProduct_Success(t *testing.T) {
 		Name: "Updated Product",
 	}
 
-	mockService.On("UpdateProduct", mock.Anything, productID, mock.Anything).Return(productRes, nil)
+	mockService.On("UpdateProduct", mock.Anything, userID, productID, mock.Anything).Return(productRes, nil)
 
 	req := httptest.NewRequest("PUT", "/products/"+productID.String(), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -116,7 +119,8 @@ func TestProductHandler_UpdateProduct_Fail_NotFound(t *testing.T) {
 	mockService := NewMockProductServiceInterface(t)
 	handler := NewProductHandler(mockService)
 	app := testutil.SetupTestApp()
-	app.Put("/products/:id", handler.UpdateProduct)
+	userID := uuid.New()
+	app.Put("/products/:id", testutil.AuthTestMiddleware(userID), handler.UpdateProduct)
 
 	productID := uuid.New()
 	reqBody := ProductUpdateRequest{
@@ -126,7 +130,7 @@ func TestProductHandler_UpdateProduct_Fail_NotFound(t *testing.T) {
 	}
 	body, _ := json.Marshal(reqBody)
 
-	mockService.On("UpdateProduct", mock.Anything, productID, mock.Anything).Return(nil, domain.ErrProductNotFound)
+	mockService.On("UpdateProduct", mock.Anything, userID, productID, mock.Anything).Return(nil, domain.ErrProductNotFound)
 
 	req := httptest.NewRequest("PUT", "/products/"+productID.String(), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -144,10 +148,11 @@ func TestProductHandler_UpdateProduct_Fail_InternalError(t *testing.T) {
 	mockService := NewMockProductServiceInterface(t)
 	handler := NewProductHandler(mockService)
 	app := testutil.SetupTestApp()
-	app.Put("/products/:id", handler.UpdateProduct)
+	userID := uuid.New()
+	app.Put("/products/:id", testutil.AuthTestMiddleware(userID), handler.UpdateProduct)
 
 	productID := uuid.New()
-	mockService.On("UpdateProduct", mock.Anything, productID, mock.Anything).Return(nil, errors.New("err"))
+	mockService.On("UpdateProduct", mock.Anything, userID, productID, mock.Anything).Return(nil, errors.New("err"))
 
 	reqBody := ProductUpdateRequest{
 		Name:  "Valid Name",
@@ -165,7 +170,7 @@ func TestProductHandler_UpdateProduct_Fail_InternalError(t *testing.T) {
 
 	var result common.ResponseWrapper
 	json.NewDecoder(resp.Body).Decode(&result)
-	assert.Equal(t, "err", result.Message)
+	assert.Equal(t, "Internal Server Error", result.Message)
 }
 
 func TestProductHandler_SearchProducts_Success(t *testing.T) {
@@ -220,4 +225,7 @@ func TestProductHandler_SearchProducts_InternalError(t *testing.T) {
 	resp, _ := app.Test(req)
 
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	var result common.ResponseWrapper
+	json.NewDecoder(resp.Body).Decode(&result)
+	assert.Equal(t, "Internal Server Error", result.Message)
 }

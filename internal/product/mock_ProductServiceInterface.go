@@ -22,9 +22,9 @@ func (_m *MockProductServiceInterface) EXPECT() *MockProductServiceInterface_Exp
 	return &MockProductServiceInterface_Expecter{mock: &_m.Mock}
 }
 
-// CreateProduct provides a mock function with given fields: ctx, req
-func (_m *MockProductServiceInterface) CreateProduct(ctx context.Context, req ProductCreateRequest) (*ProductResponse, error) {
-	ret := _m.Called(ctx, req)
+// CreateProduct provides a mock function with given fields: ctx, userID, req
+func (_m *MockProductServiceInterface) CreateProduct(ctx context.Context, userID uuid.UUID, req ProductCreateRequest) (*ProductResponse, error) {
+	ret := _m.Called(ctx, userID, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateProduct")
@@ -32,19 +32,19 @@ func (_m *MockProductServiceInterface) CreateProduct(ctx context.Context, req Pr
 
 	var r0 *ProductResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, ProductCreateRequest) (*ProductResponse, error)); ok {
-		return rf(ctx, req)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, ProductCreateRequest) (*ProductResponse, error)); ok {
+		return rf(ctx, userID, req)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, ProductCreateRequest) *ProductResponse); ok {
-		r0 = rf(ctx, req)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, ProductCreateRequest) *ProductResponse); ok {
+		r0 = rf(ctx, userID, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ProductResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, ProductCreateRequest) error); ok {
-		r1 = rf(ctx, req)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, ProductCreateRequest) error); ok {
+		r1 = rf(ctx, userID, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -59,14 +59,15 @@ type MockProductServiceInterface_CreateProduct_Call struct {
 
 // CreateProduct is a helper method to define mock.On call
 //   - ctx context.Context
+//   - userID uuid.UUID
 //   - req ProductCreateRequest
-func (_e *MockProductServiceInterface_Expecter) CreateProduct(ctx interface{}, req interface{}) *MockProductServiceInterface_CreateProduct_Call {
-	return &MockProductServiceInterface_CreateProduct_Call{Call: _e.mock.On("CreateProduct", ctx, req)}
+func (_e *MockProductServiceInterface_Expecter) CreateProduct(ctx interface{}, userID interface{}, req interface{}) *MockProductServiceInterface_CreateProduct_Call {
+	return &MockProductServiceInterface_CreateProduct_Call{Call: _e.mock.On("CreateProduct", ctx, userID, req)}
 }
 
-func (_c *MockProductServiceInterface_CreateProduct_Call) Run(run func(ctx context.Context, req ProductCreateRequest)) *MockProductServiceInterface_CreateProduct_Call {
+func (_c *MockProductServiceInterface_CreateProduct_Call) Run(run func(ctx context.Context, userID uuid.UUID, req ProductCreateRequest)) *MockProductServiceInterface_CreateProduct_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(ProductCreateRequest))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(ProductCreateRequest))
 	})
 	return _c
 }
@@ -76,7 +77,7 @@ func (_c *MockProductServiceInterface_CreateProduct_Call) Return(_a0 *ProductRes
 	return _c
 }
 
-func (_c *MockProductServiceInterface_CreateProduct_Call) RunAndReturn(run func(context.Context, ProductCreateRequest) (*ProductResponse, error)) *MockProductServiceInterface_CreateProduct_Call {
+func (_c *MockProductServiceInterface_CreateProduct_Call) RunAndReturn(run func(context.Context, uuid.UUID, ProductCreateRequest) (*ProductResponse, error)) *MockProductServiceInterface_CreateProduct_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -140,9 +141,9 @@ func (_c *MockProductServiceInterface_SearchProducts_Call) RunAndReturn(run func
 	return _c
 }
 
-// UpdateProduct provides a mock function with given fields: ctx, id, req
-func (_m *MockProductServiceInterface) UpdateProduct(ctx context.Context, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error) {
-	ret := _m.Called(ctx, id, req)
+// UpdateProduct provides a mock function with given fields: ctx, userID, id, req
+func (_m *MockProductServiceInterface) UpdateProduct(ctx context.Context, userID uuid.UUID, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error) {
+	ret := _m.Called(ctx, userID, id, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateProduct")
@@ -150,19 +151,19 @@ func (_m *MockProductServiceInterface) UpdateProduct(ctx context.Context, id uui
 
 	var r0 *ProductResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, ProductUpdateRequest) (*ProductResponse, error)); ok {
-		return rf(ctx, id, req)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, ProductUpdateRequest) (*ProductResponse, error)); ok {
+		return rf(ctx, userID, id, req)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, ProductUpdateRequest) *ProductResponse); ok {
-		r0 = rf(ctx, id, req)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, ProductUpdateRequest) *ProductResponse); ok {
+		r0 = rf(ctx, userID, id, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ProductResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, ProductUpdateRequest) error); ok {
-		r1 = rf(ctx, id, req)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, ProductUpdateRequest) error); ok {
+		r1 = rf(ctx, userID, id, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -177,15 +178,16 @@ type MockProductServiceInterface_UpdateProduct_Call struct {
 
 // UpdateProduct is a helper method to define mock.On call
 //   - ctx context.Context
+//   - userID uuid.UUID
 //   - id uuid.UUID
 //   - req ProductUpdateRequest
-func (_e *MockProductServiceInterface_Expecter) UpdateProduct(ctx interface{}, id interface{}, req interface{}) *MockProductServiceInterface_UpdateProduct_Call {
-	return &MockProductServiceInterface_UpdateProduct_Call{Call: _e.mock.On("UpdateProduct", ctx, id, req)}
+func (_e *MockProductServiceInterface_Expecter) UpdateProduct(ctx interface{}, userID interface{}, id interface{}, req interface{}) *MockProductServiceInterface_UpdateProduct_Call {
+	return &MockProductServiceInterface_UpdateProduct_Call{Call: _e.mock.On("UpdateProduct", ctx, userID, id, req)}
 }
 
-func (_c *MockProductServiceInterface_UpdateProduct_Call) Run(run func(ctx context.Context, id uuid.UUID, req ProductUpdateRequest)) *MockProductServiceInterface_UpdateProduct_Call {
+func (_c *MockProductServiceInterface_UpdateProduct_Call) Run(run func(ctx context.Context, userID uuid.UUID, id uuid.UUID, req ProductUpdateRequest)) *MockProductServiceInterface_UpdateProduct_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(ProductUpdateRequest))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(ProductUpdateRequest))
 	})
 	return _c
 }
@@ -195,7 +197,7 @@ func (_c *MockProductServiceInterface_UpdateProduct_Call) Return(_a0 *ProductRes
 	return _c
 }
 
-func (_c *MockProductServiceInterface_UpdateProduct_Call) RunAndReturn(run func(context.Context, uuid.UUID, ProductUpdateRequest) (*ProductResponse, error)) *MockProductServiceInterface_UpdateProduct_Call {
+func (_c *MockProductServiceInterface_UpdateProduct_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID, ProductUpdateRequest) (*ProductResponse, error)) *MockProductServiceInterface_UpdateProduct_Call {
 	_c.Call.Return(run)
 	return _c
 }
