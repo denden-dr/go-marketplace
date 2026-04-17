@@ -23,8 +23,6 @@ type OrderServiceInterface interface {
 	MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error
 	MerchantCancelOrder(ctx context.Context, merchantID, orderID uuid.UUID) error
 	GetOrder(ctx context.Context, id uuid.UUID) (*OrderResponse, error)
-	GetUserOrders(ctx context.Context, userID uuid.UUID) ([]OrderResponse, error)
-	GetMerchantOrders(ctx context.Context, merchantID uuid.UUID) ([]OrderResponse, error)
 }
 
 type OrderRepository interface {
@@ -510,15 +508,4 @@ func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderRespon
 		CreatedAt:             o.CreatedAt,
 		UpdatedAt:             o.UpdatedAt,
 	}, nil
-}
-
-// Stubs for remaining methods to satisfy interface if needed, or implement them properly
-func (s *OrderService) GetUserOrders(ctx context.Context, userID uuid.UUID) ([]OrderResponse, error) {
-	// Implementation omitted for brevity, can be added if needed
-	return nil, nil
-}
-
-func (s *OrderService) GetMerchantOrders(ctx context.Context, merchantID uuid.UUID) ([]OrderResponse, error) {
-	// Implementation omitted for brevity, can be added if needed
-	return nil, nil
 }

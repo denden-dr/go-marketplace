@@ -51,7 +51,7 @@ func (h *MerchantHandler) RegisterMerchant(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrMerchantAlreadyExists) {
 			return common.NewResponse(c, fiber.StatusConflict, err.Error(), nil)
 		}
-		return common.NewResponse(c, fiber.StatusInternalServerError, err.Error(), nil)
+		return common.NewResponse(c, fiber.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
 	return common.NewResponse(c, fiber.StatusCreated, "Merchant registered successfully", res)

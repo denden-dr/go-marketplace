@@ -150,7 +150,7 @@ func TestWalletHandler_CreateWallet_Success(t *testing.T) {
 	userID := uuid.New()
 	app.Post("/wallets", testutil.AuthTestMiddleware(userID), handler.CreateWallet)
 
-	w := &domain.Wallet{ID: uuid.New(), UserID: userID}
+	w := &WalletResponse{ID: uuid.New(), UserID: userID}
 
 	mockService.On("CreateWallet", mock.Anything, userID).Return(w, nil)
 

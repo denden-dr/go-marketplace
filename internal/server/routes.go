@@ -97,7 +97,7 @@ func SetupRoutes(
 
 	// Merchant features (Orders)
 	merchants := api.Group("/merchants")
-	merchantOrders := merchants.Group("/orders")
+	merchantOrders := merchants.Group("/orders", order.MerchantMiddleware(orderHandler.MerchantRepo))
 	merchantOrders.Put("/:id/cancel", orderHandler.MerchantCancelOrder)
 	merchantOrders.Put("/:id/status", orderHandler.MerchantUpdateStatus)
 }

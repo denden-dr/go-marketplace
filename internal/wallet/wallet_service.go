@@ -15,7 +15,7 @@ type WalletServiceInterface interface {
 	GetWalletByUserID(ctx context.Context, userID uuid.UUID) (*WalletResponse, error)
 	GetWalletHistory(ctx context.Context, userID uuid.UUID, page, limit int) ([]TransactionResponse, error)
 	Withdraw(ctx context.Context, userID uuid.UUID, req WithdrawRequest) error
-	CreateWallet(ctx context.Context, userID uuid.UUID) (*domain.Wallet, error)
+	CreateWallet(ctx context.Context, userID uuid.UUID) (*WalletResponse, error)
 }
 
 type WalletRepository interface {
@@ -133,7 +133,7 @@ func (s *WalletService) Withdraw(ctx context.Context, userID uuid.UUID, req With
 	return s.walletRepo.Withdraw(ctx, wallet.ID, req.Amount, txData)
 }
 
-func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*domain.Wallet, error) {
+func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*WalletResponse, error) {
 	// Check if wallet already exists
 	existing, err := s.walletRepo.GetWalletByUserID(ctx, userID)
 	if err != nil {
@@ -161,5 +161,14 @@ func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*do
 		return nil, err
 	}
 
-	return wallet, nil
+	return &WalletResponse{
+		ID:           wallet.ID,
+		UserID:       wallet.UserID,
+		WalletNumber: wallet.WalletNumber,
+		Balance:      wallet.Balance,
+		Currency:     wallet.Currency,
+		Status:       string(wallet.Status),
+		CreatedAt:    wallet.CreatedAt,
+		UpdatedAt:    wallet.UpdatedAt,
+	}, nil
 }
