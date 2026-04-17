@@ -37,3 +37,6 @@ Thumbs.db
 *.log
 .agents/memories/
 go-shop-yourself
+
+
+_*.md

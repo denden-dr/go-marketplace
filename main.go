@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"time"
 
 	"go-shop-yourself/internal/auth"
 	"go-shop-yourself/internal/cart"
@@ -72,6 +74,17 @@ func main() {
 	refreshTokenRepo := auth.NewRefreshTokenRepository(db)
 	cartRepo := cart.NewCartRepository(db)
 	orderRepo := order.NewOrderRepository(db)
+
+	// Background cleanup for expired refresh tokens
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := refreshTokenRepo.DeleteExpiredTokens(context.Background()); err != nil {
+				log.Printf("Error cleaning up expired refresh tokens: %v", err)
+			}
+		}
+	}()
 
 	authService := auth.NewAuthService(userRepo, refreshTokenRepo, jwtSecret)
 	userService := user.NewUserService(userRepo)
