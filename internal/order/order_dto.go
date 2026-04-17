@@ -25,6 +25,9 @@ func (r CheckoutRequest) Validate() error {
 	if r.PaymentMethod == "" {
 		return errors.New("payment method is required")
 	}
+	if r.PaymentMethod != "wallet" {
+		return errors.New("only 'wallet' payment method is supported")
+	}
 	return nil
 }
 
@@ -64,9 +67,6 @@ func (r UpdateStatusRequest) Validate() error {
 	return nil
 }
 
-type CancelOrderRequest struct {
-	Reason string `json:"reason"`
-}
 
 type AppealOrderRequest struct {
 	Reason string `json:"reason"`
