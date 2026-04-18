@@ -53,11 +53,13 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*UserRespo
 	}
 
 	return &UserResponse{
-		ID:        user.ID,
-		FullName:  user.FullName,
-		Username:  user.Username,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
+		ID:           user.ID,
+		FullName:     user.FullName,
+		Username:     user.Username,
+		Email:        user.Email,
+		AuthProvider: user.AuthProvider,
+		ProviderID:   user.ProviderID,
+		CreatedAt:    user.CreatedAt,
 	}, nil
 }
 
