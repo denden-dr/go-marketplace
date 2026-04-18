@@ -7,23 +7,27 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/opensearch-project/opensearch-go/v3/opensearchapi"
+
+	firebase "firebase.google.com/go/v4"
 )
 
 type HealthHandler struct {
 	db *pgxpool.Pool
 	os *opensearchapi.Client
+	fb *firebase.App
 }
 
-func NewHealthHandler(db *pgxpool.Pool, os *opensearchapi.Client) *HealthHandler {
+func NewHealthHandler(db *pgxpool.Pool, os *opensearchapi.Client, fb *firebase.App) *HealthHandler {
 	return &HealthHandler{
 		db: db,
 		os: os,
+		fb: fb,
 	}
 }
 
 // CheckStatus handles the health check request.
 // @Summary Check application health
-// @Description Checks connectivity to the database and OpenSearch.
+// @Description Checks connectivity to the database, OpenSearch, and Firebase.
 // @Tags Health
 // @Produce json
 // @Success 200 {object} common.ResponseWrapper "Application is healthy"
@@ -55,10 +59,26 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 		statusCode = fiber.StatusServiceUnavailable
 	}
 
+	// Check Firebase
+	firebaseStatus := "up"
+	if h.fb != nil {
+		// Attempt to initialize Auth client as a health check
+		if _, err := h.fb.Auth(context.Background()); err != nil {
+			firebaseStatus = "down"
+			message = "application is unhealthy"
+			statusCode = fiber.StatusServiceUnavailable
+		}
+	} else {
+		firebaseStatus = "down"
+		message = "application is unhealthy"
+		statusCode = fiber.StatusServiceUnavailable
+	}
+
 	return common.NewResponse(c, statusCode, message, fiber.Map{
 		"components": fiber.Map{
 			"database":   dbStatus,
 			"opensearch": osStatus,
+			"firebase":   firebaseStatus,
 		},
 	})
 }

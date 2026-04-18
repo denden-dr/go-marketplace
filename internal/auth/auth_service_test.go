@@ -18,7 +18,8 @@ import (
 func TestAuthService_Register_Success(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
 	mockRTRepo := NewMockRefreshTokenRepository(t)
-	service := NewAuthService(mockRepo, mockRTRepo, "secret")
+	mockFirebaseClient := NewMockFirebaseAuthClient(t)
+	service := NewAuthService(mockRepo, mockRTRepo, mockFirebaseClient, "secret")
 
 	email := "test@example.com"
 	password := "password123"
@@ -39,7 +40,8 @@ func TestAuthService_Register_Success(t *testing.T) {
 func TestAuthService_Register_Fail_UserAlreadyExists(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
 	mockRTRepo := NewMockRefreshTokenRepository(t)
-	service := NewAuthService(mockRepo, mockRTRepo, "secret")
+	mockFirebaseClient := NewMockFirebaseAuthClient(t)
+	service := NewAuthService(mockRepo, mockRTRepo, mockFirebaseClient, "secret")
 
 	email := "test@example.com"
 
@@ -54,18 +56,21 @@ func TestAuthService_Register_Fail_UserAlreadyExists(t *testing.T) {
 func TestAuthService_Login_Success(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
 	mockRTRepo := NewMockRefreshTokenRepository(t)
-	service := NewAuthService(mockRepo, mockRTRepo, "secret")
+	mockFirebaseClient := NewMockFirebaseAuthClient(t)
+	service := NewAuthService(mockRepo, mockRTRepo, mockFirebaseClient, "secret")
 
 	email := "test@example.com"
 	password := "password123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	u := &domain.User{
-		ID:       uuid.New(),
-		FullName: "Test User",
-		Username: "testuser",
-		Email:    email,
-		Password: string(hashedPassword),
+		ID:           uuid.New(),
+		FullName:     "Test User",
+		Username:     "testuser",
+		Email:        email,
+		Password:     &password, // Using password as placeholder for hashed password for simplicity in test setup if needed, but bcrypt.Compare uses u.Password
+		AuthProvider: domain.AuthProviderLocal,
 	}
+	u.Password = func() *string { s := string(hashedPassword); return &s }()
 
 	mockRepo.On("GetUserByEmail", mock.Anything, email).Return(u, nil)
 	mockRTRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
@@ -82,7 +87,8 @@ func TestAuthService_Login_Success(t *testing.T) {
 func TestAuthService_Login_Fail_UserNotFound(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
 	mockRTRepo := NewMockRefreshTokenRepository(t)
-	service := NewAuthService(mockRepo, mockRTRepo, "secret")
+	mockFirebaseClient := NewMockFirebaseAuthClient(t)
+	service := NewAuthService(mockRepo, mockRTRepo, mockFirebaseClient, "secret")
 
 	mockRepo.On("GetUserByEmail", mock.Anything, "notfound@email.com").Return(nil, nil)
 
@@ -95,7 +101,8 @@ func TestAuthService_Login_Fail_UserNotFound(t *testing.T) {
 func TestAuthService_RefreshTokens_Success(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
 	mockRTRepo := NewMockRefreshTokenRepository(t)
-	service := NewAuthService(mockRepo, mockRTRepo, "secret")
+	mockFirebaseClient := NewMockFirebaseAuthClient(t)
+	service := NewAuthService(mockRepo, mockRTRepo, mockFirebaseClient, "secret")
 
 	rawToken := "old-refresh-token"
 	rt := &domain.RefreshToken{
@@ -106,7 +113,7 @@ func TestAuthService_RefreshTokens_Success(t *testing.T) {
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
 
-	u := &domain.User{ID: rt.UserID, FullName: "Test User", Email: "test@example.com"}
+	u := &domain.User{ID: rt.UserID, FullName: "Test User", Email: "test@example.com", AuthProvider: domain.AuthProviderLocal}
 
 	mockRTRepo.On("GetByTokenHash", mock.Anything, mock.Anything).Return(rt, nil)
 	mockRTRepo.On("RevokeByID", mock.Anything, rt.ID).Return(nil)
@@ -123,7 +130,8 @@ func TestAuthService_RefreshTokens_Success(t *testing.T) {
 func TestAuthService_RefreshTokens_Fail_TokenReused(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
 	mockRTRepo := NewMockRefreshTokenRepository(t)
-	service := NewAuthService(mockRepo, mockRTRepo, "secret")
+	mockFirebaseClient := NewMockFirebaseAuthClient(t)
+	service := NewAuthService(mockRepo, mockRTRepo, mockFirebaseClient, "secret")
 
 	rt := &domain.RefreshToken{
 		FamilyID:  uuid.New(),
@@ -141,7 +149,8 @@ func TestAuthService_RefreshTokens_Fail_TokenReused(t *testing.T) {
 
 func TestAuthService_Logout_Success(t *testing.T) {
 	mockRTRepo := NewMockRefreshTokenRepository(t)
-	service := NewAuthService(nil, mockRTRepo, "secret")
+	mockFirebaseClient := NewMockFirebaseAuthClient(t)
+	service := NewAuthService(nil, mockRTRepo, mockFirebaseClient, "secret")
 
 	token := "valid-token"
 	rt := &domain.RefreshToken{

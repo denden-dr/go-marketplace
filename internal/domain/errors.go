@@ -16,6 +16,9 @@ var (
 	ErrInvalidRefreshToken   = errors.New("invalid refresh token")
 	ErrRefreshTokenExpired   = errors.New("refresh token expired")
 	ErrRefreshTokenReused    = errors.New("token reuse detected - all tokens in family revoked")
+	ErrAuthProviderMismatch  = errors.New("this email is registered via a different sign-in method")
+	ErrEmailAlreadyUsedByOtherMethod = errors.New("this email is already registered with another method")
+	ErrInvalidFirebaseToken  = errors.New("invalid or expired Firebase token")
 
 	ErrOrderNotFound            = errors.New("order not found")
 	ErrOrderNotCancellable      = errors.New("order cannot be cancelled at this stage or time")

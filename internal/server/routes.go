@@ -44,6 +44,7 @@ func SetupRoutes(
 	authRoutes := apiBase.Group("/auth")
 	authRoutes.Post("/register", authHandler.Register)
 	authRoutes.Post("/login", authHandler.Login)
+	authRoutes.Post("/firebase", authHandler.FirebaseLogin)
 	authRoutes.Post("/refresh", authHandler.RefreshTokens)
 
 	// Public products
