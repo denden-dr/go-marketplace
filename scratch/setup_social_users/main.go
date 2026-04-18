@@ -18,7 +18,7 @@ type TestUser struct {
 
 func main() {
 	os.Setenv("FIREBASE_AUTH_EMULATOR_HOST", "localhost:9099")
-	
+
 	config := &firebase.Config{ProjectID: "fb-go-commerce-auth"}
 	app, err := firebase.NewApp(context.Background(), config, option.WithoutAuthentication())
 	if err != nil {
