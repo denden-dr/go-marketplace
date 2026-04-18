@@ -130,8 +130,6 @@ definitions:
         type: string
       id:
         type: string
-      password:
-        type: string
       provider_id:
         type: string
       username:
