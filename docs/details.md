@@ -51,7 +51,8 @@ All responses follow a consistent envelope format:
 | Database | PostgreSQL (via `pgxpool`) |
 | Search Engine | OpenSearch v3 |
 | Migrations | `golang-migrate` |
-| Auth | JWT (`golang-jwt/v5`) + bcrypt |
+| Auth (Local) | JWT (`golang-jwt/v5`) + bcrypt |
+| Auth (Social) | Firebase Authentication (Social-only) |
 | Docs | Swagger/OpenAPI (`swaggo/swag`) |
 | Testing | `testify`, `pgxmock`, `mockery` |
 | Decimal math | `shopspring/decimal` |
@@ -93,6 +94,7 @@ graph TD
         COMMON["common/ — ResponseWrapper"]
         DB["database/ — ConnectDB, migrations"]
         OS["opensearch/ — ConnectOpenSearch"]
+        FB["firebase/ — Firebase app initialization"]
     end
 
     MAIN --> ROUTER
@@ -100,7 +102,8 @@ graph TD
     ROUTER --> AUTH & USER & MERCH & PROD & WALLET & CART & ORDER & HEALTH
     AUTH & USER & MERCH & PROD & WALLET & CART & ORDER --> DOMAIN
     AUTH & USER & MERCH & PROD & WALLET & CART & ORDER & HEALTH --> COMMON
-    MAIN --> DB & OS
+    MAIN --> DB & OS & FB
+    AUTH --> FB
 ```
 
 ### Module Structure (per feature)
@@ -137,6 +140,9 @@ Each feature package contains:
 | `OPENSEARCH_PORT` | OpenSearch port | No |
 | `OPENSEARCH_USER` | OpenSearch auth user | No |
 | `OPENSEARCH_PASSWORD` | OpenSearch auth password | No |
+| `FIREBASE_PROJECT_ID` | GCP Project ID for Firebase | Yes (if social auth enabled) |
+| `FIREBASE_AUTH_EMULATOR_HOST` | Host for Firebase Auth Emulator | No |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP credentials for ADC | Yes (if not on GCP/Emulator) |
 
 ---
 
@@ -161,8 +167,9 @@ Authorization: Bearer <access_token>
 
 | Method | Path | Auth | Description |
 |:---|:---|:---|:---|
-| `POST` | `/api/auth/register` | ❌ | Register a new user |
-| `POST` | `/api/auth/login` | ❌ | Login and receive tokens |
+| `POST` | `/api/auth/register` | ❌ | Register a new local user |
+| `POST` | `/api/auth/login` | ❌ | Local login and receive tokens |
+| `POST` | `/api/auth/firebase` | ❌ | Social login via Firebase |
 | `POST` | `/api/auth/refresh` | ❌ | Rotate refresh token |
 | `POST` | `/api/auth/logout` | ✅ | Revoke token family |
 | `POST` | `/api/auth/register-merchant` | ✅ | Register as merchant |
@@ -213,6 +220,24 @@ Authorization: Bearer <access_token>
 **Success Response** (`200`): Same shape as register response.
 
 **Errors:** `400` (validation), `401` (invalid credentials), `500`
+
+---
+
+#### `POST /api/auth/firebase`
+
+**Request Body:**
+```json
+{
+  "id_token": "string (required - Firebase ID Token)"
+}
+```
+
+**Success Response** (`200`): Same shape as register response.
+
+> [!IMPORTANT]
+> Social login is restricted to verified social providers (Google, Facebook, etc.). Email/password sign-in results via Firebase ID tokens are rejected with `403 Forbidden` to favor the local auth flow for password-based credentials.
+
+**Errors:** `400`, `401` (invalid/unverified token), `403` (password sign-in forbidden), `409` (email mismatch), `500`
 
 ---
 
@@ -767,7 +792,12 @@ Merchant cancellation is permitted anytime **before shipping**. Triggers refund 
   "data": {
     "components": {
       "database": "up",
-      "opensearch": "up"
+      "opensearch": "up",
+      "firebase": {
+        "status": "up | down | unconfigured",
+        "mode": "production | emulator | none",
+        "project_id": "string"
+      }
     }
   }
 }
@@ -787,7 +817,9 @@ Merchant cancellation is permitted anytime **before shipping**. Triggers refund 
 | `full_name` | string | Display name |
 | `username` | string | Unique username |
 | `email` | string | Unique email |
-| `password` | string | bcrypt hash |
+| `password` | *string | bcrypt hash (nullable for social-only users) |
+| `auth_provider` | AuthProvider | `local`, `google.com`, etc. |
+| `provider_id` | *string | External UID from social provider |
 | `created_at` | timestamp | Registration time |
 
 ### UserAddress

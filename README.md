@@ -59,6 +59,9 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
    DB_PASS=your_db_password
    DB_NAME=your_dbname
    JWT_SECRET=your_jwt_secret_key_here
+   APP_ENV=development
+   FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+   FIREBASE_PROJECT_ID=fb-go-commerce-auth
    ```
 
 3. **Install Dependencies**:
@@ -75,6 +78,24 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
    ```bash
    make run
    ```
+
+### 🔐 Firebase Auth Emulator
+
+For local development, the application is configured to use the **Firebase Auth Emulator**. This allows you to test social login and token verification without real Firebase credentials.
+
+1.  **Install Firebase CLI**:
+    ```bash
+    npm install -g firebase-tools
+    ```
+
+2.  **Start the Auth Emulator**:
+    ```bash
+    firebase emulators:start --only auth
+    ```
+    The emulator will run at `localhost:9099` (Auth) and `localhost:4000` (UI Dashboard) by default.
+
+3.  **Application Config**:
+    When `APP_ENV=development`, the application automatically connects to the emulator. You can customize the emulator host and project ID via environment variables (see below).
 
 ---
 

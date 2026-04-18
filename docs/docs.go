@@ -1980,9 +1980,6 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "password": {
-                    "type": "string"
-                },
                 "provider_id": {
                     "type": "string"
                 },
