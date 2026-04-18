@@ -69,9 +69,8 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 			statusCode = fiber.StatusServiceUnavailable
 		}
 	} else {
-		firebaseStatus = "down"
-		message = "application is unhealthy"
-		statusCode = fiber.StatusServiceUnavailable
+		firebaseStatus = "unconfigured"
+		// Do NOT set 503 or "unhealthy" if firebase is just not configured
 	}
 
 	return common.NewResponse(c, statusCode, message, fiber.Map{

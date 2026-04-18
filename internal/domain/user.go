@@ -11,7 +11,7 @@ type User struct {
 	FullName     string    `json:"full_name" db:"full_name"`
 	Username     string    `json:"username" db:"username"`
 	Email        string    `json:"email" db:"email"`
-	Password     *string   `json:"password" db:"password"`
+	Password     *string   `json:"-" db:"password"`
 	AuthProvider string    `json:"auth_provider" db:"auth_provider"`
 	ProviderID   *string   `json:"provider_id" db:"provider_id"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
