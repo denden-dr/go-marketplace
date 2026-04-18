@@ -135,14 +135,17 @@ Each feature package contains:
 | `DB_PASS` | PostgreSQL password | Yes |
 | `DB_NAME` | PostgreSQL database name | Yes |
 | `JWT_SECRET` | Secret key for JWT signing | Yes |
-| `APP_ENV` | Environment mode (`development` enables Swagger UI) | No |
+| `APP_ENV` | Environment mode (`development` enables Swagger UI and Firebase Emulator) | No |
 | `OPENSEARCH_HOST` | OpenSearch cluster host | No |
 | `OPENSEARCH_PORT` | OpenSearch port | No |
 | `OPENSEARCH_USER` | OpenSearch auth user | No |
 | `OPENSEARCH_PASSWORD` | OpenSearch auth password | No |
-| `FIREBASE_PROJECT_ID` | GCP Project ID for Firebase | Yes (if social auth enabled) |
-| `FIREBASE_AUTH_EMULATOR_HOST` | Host for Firebase Auth Emulator | No |
+| `FIREBASE_PROJECT_ID` | GCP Project ID for Firebase | Yes (defaults to `fb-go-commerce-auth` in dev) |
+| `FIREBASE_AUTH_EMULATOR_HOST` | Host for Firebase Auth Emulator | No (defaults to `localhost:9099` in dev) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP credentials for ADC | Yes (if not on GCP/Emulator) |
+
+> [!NOTE]
+> In **development** mode (`APP_ENV=development`), the application will automatically unset `GOOGLE_APPLICATION_CREDENTIALS` if they are present. This ensures the Firebase SDK uses the Emulator in insecure mode, allowing it to accept "alg: none" tokens without real service account verification.
 
 ---
 
@@ -1003,6 +1006,9 @@ make swagger        # Regenerate Swagger docs
 make migrate-up     # Apply migrations
 make migrate-down   # Rollback last migration
 make migrate-create name=<name>  # Create new migration
+make firebase-emulator # Start Firebase Auth Emulator
+make firebase-setup    # Provision test users in Emulator
+make gen-token provider=<url> # Generate mock Firebase token
 make fmt            # Format code
 make tidy           # Tidy go modules
 make clean          # Remove binary
