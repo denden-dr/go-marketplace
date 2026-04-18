@@ -230,3 +230,34 @@ func TestAuthHandler_Logout_Success(t *testing.T) {
 	json.NewDecoder(resp.Body).Decode(&result)
 	assert.Equal(t, "Logout successful", result.Message)
 }
+
+func TestAuthHandler_FirebaseLogin_Success(t *testing.T) {
+	mockService := NewMockAuthServiceInterface(t)
+	handler := NewAuthHandler(mockService)
+	app := testutil.SetupTestApp()
+	app.Post("/firebase", handler.FirebaseLogin)
+
+	reqBody := FirebaseLoginRequest{
+		IDToken: "valid-firebase-token",
+	}
+	body, _ := json.Marshal(reqBody)
+
+	authRes := &AuthResponse{
+		ID:           uuid.New(),
+		AccessToken:  "access",
+		RefreshToken: "refresh",
+	}
+
+	mockService.On("FirebaseLogin", mock.Anything, reqBody.IDToken).Return(authRes, nil)
+
+	req := httptest.NewRequest("POST", "/firebase", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var result common.ResponseWrapper
+	json.NewDecoder(resp.Body).Decode(&result)
+	assert.Equal(t, "Firebase login successful", result.Message)
+}

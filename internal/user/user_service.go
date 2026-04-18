@@ -23,6 +23,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, u *domain.User) error
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	GetUserByProviderID(ctx context.Context, provider string, providerID string) (*domain.User, error)
 
 	// Addresses
 	CreateAddress(ctx context.Context, addr *domain.UserAddress) error
