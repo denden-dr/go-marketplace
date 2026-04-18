@@ -8,7 +8,7 @@ endif
 DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_PATH=internal/database/migrations
 
-.PHONY: help build run clean fmt tidy migrate-up migrate-down migrate-create test mock swagger
+.PHONY: help build run clean fmt tidy migrate-up migrate-down migrate-create test mock swagger firebase-emulator firebase-setup
 
 swagger: ## Generate swagger documentation
 	@echo "Generating swagger..."
@@ -60,3 +60,16 @@ migrate-create: ## Create a new migration file (usage: make migrate-create name=
 mock: ## Generate mocks using mockery
 	@echo "Generating mocks..."
 	mockery
+
+firebase-emulator: ## Run Firebase Auth Emulator
+	@echo "Starting Firebase Auth Emulator..."
+	firebase emulators:start --only auth --project $(FIREBASE_PROJECT_ID)
+
+firebase-setup: ## Setup initial test users (Google, FB, Apple, Twitter) in Firebase Emulator
+	@echo "Setting up social test users in emulator..."
+	go run scratch/setup_social_users/main.go
+
+# Example to generate a token:
+# make gen-token provider=facebook.com
+gen-token: ## Generate a mock Firebase ID token (usage: make gen-token provider=google.com)
+	@go run scratch/gen_token/main.go -provider=$(provider)

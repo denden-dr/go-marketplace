@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log"
 	"go-shop-yourself/internal/domain"
 
 	firebase "firebase.google.com/go/v4"
@@ -34,6 +35,7 @@ func NewFirebaseAuthClient(app *firebase.App) (FirebaseAuthClient, error) {
 func (c *firebaseAuthClient) VerifyIDToken(ctx context.Context, idToken string) (*FirebaseTokenResult, error) {
 	token, err := c.client.VerifyIDToken(ctx, idToken)
 	if err != nil {
+		log.Printf("Firebase Auth: failed to verify ID token: %v", err)
 		return nil, domain.ErrInvalidFirebaseToken
 	}
 
