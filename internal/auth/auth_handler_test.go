@@ -154,6 +154,31 @@ func TestAuthHandler_Login_Fail_InvalidCredentials(t *testing.T) {
 	assert.Equal(t, domain.ErrInvalidCredentials.Error(), result.Message)
 }
 
+func TestAuthHandler_Login_Fail_AuthProviderMismatch(t *testing.T) {
+	mockService := NewMockAuthServiceInterface(t)
+	handler := NewAuthHandler(mockService)
+	app := testutil.SetupTestApp()
+	app.Post("/login", handler.Login)
+
+	reqBody := LoginRequest{
+		Email:    "social@example.com",
+		Password: "password",
+	}
+	body, _ := json.Marshal(reqBody)
+
+	mockService.On("Login", mock.Anything, mock.Anything, mock.Anything).Return(nil, domain.ErrAuthProviderMismatch)
+
+	req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, http.StatusConflict, resp.StatusCode)
+
+	var result common.ResponseWrapper
+	json.NewDecoder(resp.Body).Decode(&result)
+	assert.Equal(t, domain.ErrAuthProviderMismatch.Error(), result.Message)
+}
+
 func TestAuthHandler_RefreshTokens_Success(t *testing.T) {
 	mockService := NewMockAuthServiceInterface(t)
 	handler := NewAuthHandler(mockService)
@@ -260,4 +285,29 @@ func TestAuthHandler_FirebaseLogin_Success(t *testing.T) {
 	var result common.ResponseWrapper
 	json.NewDecoder(resp.Body).Decode(&result)
 	assert.Equal(t, "Firebase login successful", result.Message)
+}
+
+func TestAuthHandler_FirebaseLogin_Fail_EmailNotVerified(t *testing.T) {
+	mockService := NewMockAuthServiceInterface(t)
+	handler := NewAuthHandler(mockService)
+	app := testutil.SetupTestApp()
+	app.Post("/firebase", handler.FirebaseLogin)
+
+	reqBody := FirebaseLoginRequest{
+		IDToken: "unverified-token",
+	}
+	body, _ := json.Marshal(reqBody)
+
+	mockService.On("FirebaseLogin", mock.Anything, reqBody.IDToken).Return(nil, domain.ErrEmailNotVerified)
+
+	req := httptest.NewRequest("POST", "/firebase", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+
+	var result common.ResponseWrapper
+	json.NewDecoder(resp.Body).Decode(&result)
+	assert.Equal(t, domain.ErrEmailNotVerified.Error(), result.Message)
 }

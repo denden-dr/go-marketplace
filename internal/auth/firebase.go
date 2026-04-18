@@ -45,6 +45,10 @@ func (c *firebaseAuthClient) VerifyIDToken(ctx context.Context, idToken string) 
 		res.Email = email
 	}
 
+	if verified, ok := token.Claims["email_verified"].(bool); !ok || !verified {
+		return nil, domain.ErrEmailNotVerified
+	}
+
 	if name, ok := token.Claims["name"].(string); ok {
 		res.Name = name
 	}
