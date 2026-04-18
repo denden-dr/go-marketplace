@@ -65,6 +65,19 @@ func (r *userRepository) GetUserByProviderID(ctx context.Context, provider strin
 	return &user, nil
 }
 
+func (r *userRepository) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {
+	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, created_at FROM users WHERE username = $1`
+	var user domain.User
+	err := r.db.QueryRow(ctx, query, username).Scan(&user.ID, &user.FullName, &user.Username, &user.Email, &user.Password, &user.AuthProvider, &user.ProviderID, &user.CreatedAt)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *userRepository) CreateAddress(ctx context.Context, addr *domain.UserAddress) error {
 	query := `INSERT INTO user_addresses (id, user_id, tag, recipient_name, phone_number, street_address, city, province, postal_code, is_default, created_at, updated_at)
 	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
