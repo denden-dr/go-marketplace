@@ -184,6 +184,9 @@ func (h *AuthHandler) FirebaseLogin(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrEmailAlreadyUsedByOtherMethod) || errors.Is(err, domain.ErrAuthProviderMismatch) {
 			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
 		}
+		if errors.Is(err, domain.ErrFirebasePasswordSignInNotAllowed) {
+			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
+		}
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 

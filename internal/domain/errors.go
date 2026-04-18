@@ -20,6 +20,7 @@ var (
 	ErrEmailAlreadyUsedByOtherMethod = errors.New("this email is already registered with another method")
 	ErrInvalidFirebaseToken  = errors.New("invalid or expired Firebase token")
 	ErrEmailNotVerified      = errors.New("email not verified by provider")
+	ErrFirebasePasswordSignInNotAllowed = errors.New("email/password sign-in must use local authentication")
 
 	ErrOrderNotFound            = errors.New("order not found")
 	ErrOrderNotCancellable      = errors.New("order cannot be cancelled at this stage or time")

@@ -9,6 +9,7 @@ import (
 	"github.com/opensearch-project/opensearch-go/v3/opensearchapi"
 
 	firebase "firebase.google.com/go/v4"
+	"os"
 )
 
 type HealthHandler struct {
@@ -59,8 +60,12 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 		statusCode = fiber.StatusServiceUnavailable
 	}
 
-	// Check Firebase
 	firebaseStatus := "up"
+	firebaseMode := "production"
+	if os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") != "" {
+		firebaseMode = "emulator"
+	}
+
 	if h.fb != nil {
 		// Attempt to initialize Auth client as a health check
 		if _, err := h.fb.Auth(context.Background()); err != nil {
@@ -70,6 +75,7 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 		}
 	} else {
 		firebaseStatus = "unconfigured"
+		firebaseMode = "none"
 		// Do NOT set 503 or "unhealthy" if firebase is just not configured
 	}
 
@@ -77,7 +83,11 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 		"components": fiber.Map{
 			"database":   dbStatus,
 			"opensearch": osStatus,
-			"firebase":   firebaseStatus,
+			"firebase": fiber.Map{
+				"status":     firebaseStatus,
+				"mode":       firebaseMode,
+				"project_id": os.Getenv("FIREBASE_PROJECT_ID"),
+			},
 		},
 	})
 }
