@@ -21,6 +21,7 @@ import (
 	firebase "firebase.google.com/go/v4"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"google.golang.org/api/option"
 )
 
 // @title Go Shop Yourself API
@@ -73,6 +74,7 @@ func main() {
 	var firebaseAuthClient auth.FirebaseAuthClient
 	var fbApp *firebase.App
 	var fbConfig *firebase.Config
+	var opts []option.ClientOption
 
 	if appEnv == "development" {
 		emulatorHost := os.Getenv("FIREBASE_AUTH_EMULATOR_HOST")
@@ -88,9 +90,17 @@ func main() {
 			os.Setenv("FIREBASE_PROJECT_ID", projectID)
 		}
 		fbConfig = &firebase.Config{ProjectID: projectID}
+
+		// In development with emulator, we skip real credentials to avoid strict signature verification
+		// of "alg: none" tokens which are common in emulator usage.
+		if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") != "" {
+			log.Println("Development mode: Unsetting GOOGLE_APPLICATION_CREDENTIALS for Firebase Emulator compatibility")
+			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		}
+		opts = append(opts, option.WithoutAuthentication())
 	}
 
-	fbApp, err = firebase.NewApp(context.Background(), fbConfig)
+	fbApp, err = firebase.NewApp(context.Background(), fbConfig, opts...)
 	if err != nil {
 		log.Printf("Warning: Error initializing firebase app: %v. Social login will be disabled.", err)
 	} else {
