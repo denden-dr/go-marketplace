@@ -67,9 +67,30 @@ func main() {
 		log.Fatalf("JWT_SECRET environment variable is not set")
 	}
 
+	appEnv := os.Getenv("APP_ENV")
+
 	// Initialize Firebase
 	var firebaseAuthClient auth.FirebaseAuthClient
-	fbApp, err := firebase.NewApp(context.Background(), nil)
+	var fbApp *firebase.App
+	var fbConfig *firebase.Config
+
+	if appEnv == "development" {
+		emulatorHost := os.Getenv("FIREBASE_AUTH_EMULATOR_HOST")
+		if emulatorHost == "" {
+			emulatorHost = "localhost:9099"
+			os.Setenv("FIREBASE_AUTH_EMULATOR_HOST", emulatorHost)
+		}
+		log.Printf("Firebase Auth using emulator at %s", emulatorHost)
+
+		projectID := os.Getenv("FIREBASE_PROJECT_ID")
+		if projectID == "" {
+			projectID = "fb-go-commerce-auth"
+			os.Setenv("FIREBASE_PROJECT_ID", projectID)
+		}
+		fbConfig = &firebase.Config{ProjectID: projectID}
+	}
+
+	fbApp, err = firebase.NewApp(context.Background(), fbConfig)
 	if err != nil {
 		log.Printf("Warning: Error initializing firebase app: %v. Social login will be disabled.", err)
 	} else {
@@ -124,8 +145,6 @@ func main() {
 
 	// Initialize Fiber app
 	app := fiber.New()
-
-	appEnv := os.Getenv("APP_ENV")
 
 	// Setup Routes
 	server.SetupRoutes(
