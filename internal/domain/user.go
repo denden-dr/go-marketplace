@@ -23,6 +23,7 @@ const (
 	AuthProviderFacebook = "facebook"
 	AuthProviderApple    = "apple"
 	AuthProviderTwitter  = "twitter"
+	AuthProviderFirebase = "firebase"
 )
 
 type AddressTag string

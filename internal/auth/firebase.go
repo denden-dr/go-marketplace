@@ -64,8 +64,12 @@ func (c *firebaseAuthClient) VerifyIDToken(ctx context.Context, idToken string) 
 		res.Provider = domain.AuthProviderApple
 	case "twitter.com":
 		res.Provider = domain.AuthProviderTwitter
+	case "password":
+		// Email/Password sign-in via Firebase is explicitly disallowed to prefer local auth
+		return nil, domain.ErrFirebasePasswordSignInNotAllowed
 	default:
-		res.Provider = domain.AuthProviderLocal
+		// Any other unknown providers are tagged as generic firebase social login
+		res.Provider = domain.AuthProviderFirebase
 	}
 
 	return res, nil
