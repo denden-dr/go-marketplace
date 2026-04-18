@@ -18,6 +18,7 @@ import (
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
 
+	firebase "firebase.google.com/go/v4"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
@@ -66,6 +67,18 @@ func main() {
 		log.Fatalf("JWT_SECRET environment variable is not set")
 	}
 
+	// Initialize Firebase
+	var firebaseAuthClient auth.FirebaseAuthClient
+	fbApp, err := firebase.NewApp(context.Background(), nil)
+	if err != nil {
+		log.Printf("Warning: Error initializing firebase app: %v. Social login will be disabled.", err)
+	} else {
+		firebaseAuthClient, err = auth.NewFirebaseAuthClient(fbApp)
+		if err != nil {
+			log.Printf("Warning: Error initializing firebase auth client: %v. Social login will be disabled.", err)
+		}
+	}
+
 	// Initialize Layers
 	userRepo := user.NewUserRepository(db)
 	merchantRepo := merchant.NewMerchantRepository(db)
@@ -86,7 +99,7 @@ func main() {
 		}
 	}()
 
-	authService := auth.NewAuthService(userRepo, refreshTokenRepo, jwtSecret)
+	authService := auth.NewAuthService(userRepo, refreshTokenRepo, firebaseAuthClient, jwtSecret)
 	userService := user.NewUserService(userRepo)
 	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := product.NewProductService(productRepo, merchantRepo)
@@ -101,7 +114,7 @@ func main() {
 	walletHandler := wallet.NewWalletHandler(walletService)
 	cartHandler := cart.NewCartHandler(cartService)
 	orderHandler := order.NewOrderHandler(orderService, merchantRepo)
-	healthHandler := health.NewHealthHandler(db, osClient)
+	healthHandler := health.NewHealthHandler(db, osClient, fbApp)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
