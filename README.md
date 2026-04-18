@@ -83,19 +83,26 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 
 For local development, the application is configured to use the **Firebase Auth Emulator**. This allows you to test social login and token verification without real Firebase credentials.
 
-1.  **Install Firebase CLI**:
+1.  **Start the Auth Emulator**:
     ```bash
-    npm install -g firebase-tools
-    ```
-
-2.  **Start the Auth Emulator**:
-    ```bash
-    firebase emulators:start --only auth
+    make firebase-emulator
     ```
     The emulator will run at `localhost:9099` (Auth) and `localhost:4000` (UI Dashboard) by default.
 
-3.  **Application Config**:
-    When `APP_ENV=development`, the application automatically connects to the emulator. You can customize the emulator host and project ID via environment variables (see below).
+2.  **Setup Social Test Users**:
+    Provision test users for Google, Facebook, etc., in the emulator:
+    ```bash
+    make firebase-setup
+    ```
+
+3.  **Generate Test Tokens**:
+    Generate a mock Firebase ID token for a specific provider:
+    ```bash
+    make gen-token provider=google.com
+    ```
+
+4.  **Application Config**:
+    When `APP_ENV=development`, the application automatically connects to the emulator. It will automatically unset `GOOGLE_APPLICATION_CREDENTIALS` to ensure the SDK uses the insecure emulator mode.
 
 ---
 
@@ -114,6 +121,9 @@ The project includes a `Makefile` for common development tasks:
 | `make fmt` | Format the Go source code. |
 | `make tidy` | Tidy up Go modules. |
 | `make swagger` | Generate Swagger API documentation. |
+| `make firebase-emulator` | Start the Firebase Auth Emulator. |
+| `make firebase-setup` | Provision social test users in the emulator. |
+| `make gen-token` | Generate a mock Firebase ID token (usage: `make gen-token provider=google.com`). |
 | `make clean` | Remove the compiled binary. |
 
 ---
