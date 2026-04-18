@@ -77,6 +77,9 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
+		if errors.Is(err, domain.ErrAuthProviderMismatch) {
+			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
+		}
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
@@ -175,7 +178,7 @@ func (h *AuthHandler) FirebaseLogin(c *fiber.Ctx) error {
 
 	res, err := h.authService.FirebaseLogin(c.Context(), req.IDToken)
 	if err != nil {
-		if errors.Is(err, domain.ErrInvalidFirebaseToken) {
+		if errors.Is(err, domain.ErrInvalidFirebaseToken) || errors.Is(err, domain.ErrEmailNotVerified) {
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
 		if errors.Is(err, domain.ErrEmailAlreadyUsedByOtherMethod) || errors.Is(err, domain.ErrAuthProviderMismatch) {

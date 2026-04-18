@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"go-shop-yourself/internal/domain"
@@ -102,6 +104,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 }
 
 func (s *AuthService) FirebaseLogin(ctx context.Context, idToken string) (*AuthResponse, error) {
+	if s.firebaseClient == nil {
+		return nil, errors.New("social login is not available")
+	}
+
 	// 1. Verify token
 	tokenResult, err := s.firebaseClient.VerifyIDToken(ctx, idToken)
 	if err != nil {
@@ -129,13 +135,26 @@ func (s *AuthService) FirebaseLogin(ctx context.Context, idToken string) (*AuthR
 	}
 
 	// 5. Create new user
-	// Generate username from email
-	username := tokenResult.Email
+	// Generate unique username from email prefix
+	baseUsername := tokenResult.Email
 	for i, char := range tokenResult.Email {
 		if char == '@' {
-			username = tokenResult.Email[:i]
+			baseUsername = tokenResult.Email[:i]
 			break
 		}
+	}
+
+	username := baseUsername
+	for {
+		u, err := s.userRepo.GetUserByUsername(ctx, username)
+		if err != nil {
+			return nil, err
+		}
+		if u == nil {
+			break
+		}
+		// Collision! Append random suffix
+		username = fmt.Sprintf("%s_%s", baseUsername, uuid.New().String()[:4])
 	}
 
 	newUser := &domain.User{
