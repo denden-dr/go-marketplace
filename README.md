@@ -15,7 +15,8 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Order Processing**: Complete checkout flow, order status tracking, and history.
 - **Wallet System**: Internal wallet for users to manage balances and pay for orders.
 - **Product Search**: Robust full-text and fuzzy search powered by PostgreSQL `pg_trgm` and `tsvector`.
-- **Health Monitoring**: Real-time monitoring of application, database, and OpenSearch connectivity.
+- **Security**: Built-in rate limiting on authentication endpoints and strict input validation.
+- **Health Monitoring**: Real-time monitoring of application, database, Firebase and OpenSearch connectivity.
 - **DB Migrations**: Automated database versioning and migrations.
 
 ---
@@ -103,6 +104,21 @@ For local development, the application is configured to use the **Firebase Auth 
 
 4.  **Application Config**:
     When `APP_ENV=development`, the application automatically connects to the emulator. It will automatically unset `GOOGLE_APPLICATION_CREDENTIALS` to ensure the SDK uses the insecure emulator mode.
+
+---
+
+---
+
+## 🛡️ Security
+
+### Rate Limiting
+To prevent brute-force attacks and abuse, the following rate limits are applied to authentication endpoints (`/api/auth/*`):
+- **Limit**: 10 requests per minute per IP address.
+- **Scope**: Includes `/login`, `/register`, `/firebase`, and `/refresh`.
+- **Response**: Exceeding the limit results in a `429 Too Many Requests` error.
+
+### Input Validation
+The API enforces strict validation on all inputs. For example, Firebase ID tokens are capped at 5KB to prevent oversized payload attacks.
 
 ---
 

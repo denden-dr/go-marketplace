@@ -143,8 +143,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/common.ResponseWrapper"
                         }
                     },
-                    "410": {
-                        "description": "Gone",
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/common.ResponseWrapper"
                         }
