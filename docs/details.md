@@ -53,6 +53,7 @@ All responses follow a consistent envelope format:
 | Migrations | `golang-migrate` |
 | Auth (Local) | JWT (`golang-jwt/v5`) + bcrypt |
 | Auth (Social) | Firebase Authentication (Social-only) |
+| Security | Rate Limiting (fiber/limiter) |
 | Docs | Swagger/OpenAPI (`swaggo/swag`) |
 | Testing | `testify`, `pgxmock`, `mockery` |
 | Decimal math | `shopspring/decimal` |
@@ -238,9 +239,11 @@ Authorization: Bearer <access_token>
 **Success Response** (`200`): Same shape as register response.
 
 > [!IMPORTANT]
-> Social login is restricted to verified social providers (Google, Facebook, etc.). Email/password sign-in results via Firebase ID tokens are rejected with `403 Forbidden` to favor the local auth flow for password-based credentials.
+> **Token Validation:** Firebase ID tokens are subject to a maximum length of 5KB to prevent resource exhaustion attacks.
+> 
+> **Provider Integrity:** Social login is restricted to verified social providers (Google, Facebook, etc.). Email/password sign-in results via Firebase ID tokens are rejected with `403 Forbidden` to favor the local auth flow for password-based credentials.
 
-**Errors:** `400`, `401` (invalid/unverified token), `403` (password sign-in forbidden), `409` (email mismatch), `500`
+**Errors:** `400` (validation/length), `401` (invalid/unverified token), `403` (password sign-in forbidden), `409` (email mismatch), `503` (service not configured), `500`
 
 ---
 
@@ -795,10 +798,10 @@ Merchant cancellation is permitted anytime **before shipping**. Triggers refund 
   "data": {
     "components": {
       "database": "up",
-      "opensearch": "up",
+      "opensearch": "up | down | unconfigured",
       "firebase": {
         "status": "up | down | unconfigured",
-        "mode": "production | emulator | none",
+        "mode": "emulator | production",
         "project_id": "string"
       }
     }
