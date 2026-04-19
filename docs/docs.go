@@ -24,6 +24,76 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/firebase": {
+            "post": {
+                "description": "Authenticates a user using a Firebase ID token and returns access and refresh tokens.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Firebase social login",
+                "parameters": [
+                    {
+                        "description": "Firebase ID Token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.FirebaseLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.ResponseWrapper"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/auth.AuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.ResponseWrapper"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticates a user and returns access and refresh tokens.",
@@ -73,8 +143,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/common.ResponseWrapper"
                         }
                     },
-                    "410": {
-                        "description": "Gone",
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/common.ResponseWrapper"
                         }
@@ -350,7 +420,7 @@ const docTemplate = `{
         },
         "/health": {
             "get": {
-                "description": "Checks connectivity to the database and OpenSearch.",
+                "description": "Checks connectivity to the database, OpenSearch, and Firebase.",
                 "produces": [
                     "application/json"
                 ],
@@ -1742,6 +1812,14 @@ const docTemplate = `{
                 }
             }
         },
+        "auth.FirebaseLoginRequest": {
+            "type": "object",
+            "properties": {
+                "id_token": {
+                    "type": "string"
+                }
+            }
+        },
         "auth.LoginRequest": {
             "type": "object",
             "properties": {
@@ -1887,6 +1965,9 @@ const docTemplate = `{
         "domain.User": {
             "type": "object",
             "properties": {
+                "auth_provider": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1899,7 +1980,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "password": {
+                "provider_id": {
                     "type": "string"
                 },
                 "username": {

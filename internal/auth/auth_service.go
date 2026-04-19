@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go-shop-yourself/internal/domain"
@@ -15,6 +16,7 @@ import (
 type AuthServiceInterface interface {
 	Register(ctx context.Context, fullName, email, password, username string) (*AuthResponse, error)
 	Login(ctx context.Context, email, password string) (*AuthResponse, error)
+	FirebaseLogin(ctx context.Context, idToken string) (*AuthResponse, error)
 	RefreshTokens(ctx context.Context, rawToken string) (*AuthResponse, error)
 	Logout(ctx context.Context, rawToken string) error
 }
@@ -30,13 +32,15 @@ type RefreshTokenRepository interface {
 type AuthService struct {
 	userRepo         user.UserRepository
 	refreshTokenRepo RefreshTokenRepository
+	firebaseClient   FirebaseAuthClient
 	jwtSecret        string
 }
 
-func NewAuthService(userRepo user.UserRepository, refreshTokenRepo RefreshTokenRepository, jwtSecret string) *AuthService {
+func NewAuthService(userRepo user.UserRepository, refreshTokenRepo RefreshTokenRepository, firebaseClient FirebaseAuthClient, jwtSecret string) *AuthService {
 	return &AuthService{
 		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
+		firebaseClient:   firebaseClient,
 		jwtSecret:        jwtSecret,
 	}
 }
@@ -54,22 +58,124 @@ func (s *AuthService) Register(ctx context.Context, fullName, email, password, u
 	if err != nil {
 		return nil, err
 	}
+	hashedPasswordStr := string(hashedPassword)
 
 	user := &domain.User{
-		ID:        uuid.New(),
-		FullName:  fullName,
-		Username:  username,
-		Email:     email,
-		Password:  string(hashedPassword),
-		CreatedAt: time.Now(),
+		ID:           uuid.New(),
+		FullName:     fullName,
+		Username:     username,
+		Email:        email,
+		Password:     &hashedPasswordStr,
+		AuthProvider: domain.AuthProviderLocal,
+		ProviderID:   nil,
+		CreatedAt:    time.Now(),
 	}
 
 	if err := s.userRepo.CreateUser(ctx, user); err != nil {
 		return nil, err
 	}
 
-	// Generate tokens for immediate login after registration
-	accessToken, err := GenerateAccessToken(user.ID, s.jwtSecret)
+	return s.generateAuthResponse(ctx, user)
+}
+
+func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthResponse, error) {
+	user, err := s.userRepo.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, domain.ErrInvalidCredentials
+	}
+
+	if user.AuthProvider != domain.AuthProviderLocal {
+		return nil, domain.ErrAuthProviderMismatch
+	}
+
+	if user.Password == nil {
+		return nil, domain.ErrInvalidCredentials
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(password)); err != nil {
+		return nil, domain.ErrInvalidCredentials
+	}
+
+	return s.generateAuthResponse(ctx, user)
+}
+
+func (s *AuthService) FirebaseLogin(ctx context.Context, idToken string) (*AuthResponse, error) {
+	if s.firebaseClient == nil {
+		return nil, domain.ErrSocialLoginNotAvailable
+	}
+
+	// 1. Verify token
+	tokenResult, err := s.firebaseClient.VerifyIDToken(ctx, idToken)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Lookup user by ProviderID
+	user, err := s.userRepo.GetUserByProviderID(ctx, tokenResult.Provider, tokenResult.UID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. If user exists, generate tokens
+	if user != nil {
+		return s.generateAuthResponse(ctx, user)
+	}
+
+	// 4. New User - Check if email is taken
+	existingUser, err := s.userRepo.GetUserByEmail(ctx, tokenResult.Email)
+	if err != nil {
+		return nil, err
+	}
+	if existingUser != nil {
+		return nil, domain.ErrEmailAlreadyUsedByOtherMethod
+	}
+
+	// 5. Create new user
+	// Generate unique username from email prefix
+	baseUsername := tokenResult.Email
+	for i, char := range tokenResult.Email {
+		if char == '@' {
+			baseUsername = tokenResult.Email[:i]
+			break
+		}
+	}
+
+	username := baseUsername
+	for {
+		u, err := s.userRepo.GetUserByUsername(ctx, username)
+		if err != nil {
+			return nil, err
+		}
+		if u == nil {
+			break
+		}
+		// Collision! Append random suffix
+		username = fmt.Sprintf("%s_%s", baseUsername, uuid.New().String()[:4])
+	}
+
+	newUser := &domain.User{
+		ID:           uuid.New(),
+		FullName:     tokenResult.Name,
+		Username:     username,
+		Email:        tokenResult.Email,
+		Password:     nil,
+		AuthProvider: tokenResult.Provider,
+		ProviderID:   &tokenResult.UID,
+		CreatedAt:    time.Now(),
+	}
+
+	if err := s.userRepo.CreateUser(ctx, newUser); err != nil {
+		return nil, err
+	}
+
+	return s.generateAuthResponse(ctx, newUser)
+}
+
+func (s *AuthService) generateAuthResponse(ctx context.Context, u *domain.User) (*AuthResponse, error) {
+	accessToken, err := GenerateAccessToken(u.ID, s.jwtSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -79,12 +185,11 @@ func (s *AuthService) Register(ctx context.Context, fullName, email, password, u
 		return nil, err
 	}
 
-	// Store refresh token
 	familyID := uuid.New()
 	tokenHash := HashToken(refreshToken)
 	rt := &domain.RefreshToken{
 		ID:        uuid.New(),
-		UserID:    user.ID,
+		UserID:    u.ID,
 		TokenHash: tokenHash,
 		FamilyID:  familyID,
 		IsRevoked: false,
@@ -97,63 +202,11 @@ func (s *AuthService) Register(ctx context.Context, fullName, email, password, u
 	}
 
 	return &AuthResponse{
-		ID:           user.ID,
-		FullName:     user.FullName,
-		Username:     user.Username,
-		Email:        user.Email,
-		CreatedAt:    user.CreatedAt,
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
-}
-
-func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthResponse, error) {
-	user, err := s.userRepo.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		return nil, domain.ErrInvalidCredentials
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return nil, domain.ErrInvalidCredentials
-	}
-
-	// Generate tokens
-	accessToken, err := GenerateAccessToken(user.ID, s.jwtSecret)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := GenerateRefreshToken()
-	if err != nil {
-		return nil, err
-	}
-
-	// Store refresh token
-	familyID := uuid.New()
-	tokenHash := HashToken(refreshToken)
-	rt := &domain.RefreshToken{
-		ID:        uuid.New(),
-		UserID:    user.ID,
-		TokenHash: tokenHash,
-		FamilyID:  familyID,
-		IsRevoked: false,
-		ExpiresAt: time.Now().Add(time.Hour * 24 * 7), // 7 days
-		CreatedAt: time.Now(),
-	}
-
-	if err := s.refreshTokenRepo.Create(ctx, rt); err != nil {
-		return nil, err
-	}
-
-	return &AuthResponse{
-		ID:           user.ID,
-		FullName:     user.FullName,
-		Username:     user.Username,
-		Email:        user.Email,
-		CreatedAt:    user.CreatedAt,
+		ID:           u.ID,
+		FullName:     u.FullName,
+		Username:     u.Username,
+		Email:        u.Email,
+		CreatedAt:    u.CreatedAt,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil

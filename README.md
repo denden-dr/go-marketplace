@@ -15,7 +15,8 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Order Processing**: Complete checkout flow, order status tracking, and history.
 - **Wallet System**: Internal wallet for users to manage balances and pay for orders.
 - **Product Search**: Robust full-text and fuzzy search powered by PostgreSQL `pg_trgm` and `tsvector`.
-- **Health Monitoring**: Real-time monitoring of application, database, and OpenSearch connectivity.
+- **Security**: Built-in rate limiting on authentication endpoints and strict input validation.
+- **Health Monitoring**: Real-time monitoring of application, database, Firebase and OpenSearch connectivity.
 - **DB Migrations**: Automated database versioning and migrations.
 
 ---
@@ -59,6 +60,9 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
    DB_PASS=your_db_password
    DB_NAME=your_dbname
    JWT_SECRET=your_jwt_secret_key_here
+   APP_ENV=development
+   FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+   FIREBASE_PROJECT_ID=fb-go-commerce-auth
    ```
 
 3. **Install Dependencies**:
@@ -75,6 +79,46 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
    ```bash
    make run
    ```
+
+### 🔐 Firebase Auth Emulator
+
+For local development, the application is configured to use the **Firebase Auth Emulator**. This allows you to test social login and token verification without real Firebase credentials.
+
+1.  **Start the Auth Emulator**:
+    ```bash
+    make firebase-emulator
+    ```
+    The emulator will run at `localhost:9099` (Auth) and `localhost:4000` (UI Dashboard) by default.
+
+2.  **Setup Social Test Users**:
+    Provision test users for Google, Facebook, etc., in the emulator:
+    ```bash
+    make firebase-setup
+    ```
+
+3.  **Generate Test Tokens**:
+    Generate a mock Firebase ID token for a specific provider:
+    ```bash
+    make gen-token provider=google.com
+    ```
+
+4.  **Application Config**:
+    When `APP_ENV=development`, the application automatically connects to the emulator. It will automatically unset `GOOGLE_APPLICATION_CREDENTIALS` to ensure the SDK uses the insecure emulator mode.
+
+---
+
+---
+
+## 🛡️ Security
+
+### Rate Limiting
+To prevent brute-force attacks and abuse, the following rate limits are applied to authentication endpoints (`/api/auth/*`):
+- **Limit**: 10 requests per minute per IP address.
+- **Scope**: Includes `/login`, `/register`, `/firebase`, and `/refresh`.
+- **Response**: Exceeding the limit results in a `429 Too Many Requests` error.
+
+### Input Validation
+The API enforces strict validation on all inputs. For example, Firebase ID tokens are capped at 5KB to prevent oversized payload attacks.
 
 ---
 
@@ -93,6 +137,9 @@ The project includes a `Makefile` for common development tasks:
 | `make fmt` | Format the Go source code. |
 | `make tidy` | Tidy up Go modules. |
 | `make swagger` | Generate Swagger API documentation. |
+| `make firebase-emulator` | Start the Firebase Auth Emulator. |
+| `make firebase-setup` | Provision social test users in the emulator. |
+| `make gen-token` | Generate a mock Firebase ID token (usage: `make gen-token provider=google.com`). |
 | `make clean` | Remove the compiled binary. |
 
 ---

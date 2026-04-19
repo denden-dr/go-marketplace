@@ -51,7 +51,9 @@ All responses follow a consistent envelope format:
 | Database | PostgreSQL (via `pgxpool`) |
 | Search Engine | OpenSearch v3 |
 | Migrations | `golang-migrate` |
-| Auth | JWT (`golang-jwt/v5`) + bcrypt |
+| Auth (Local) | JWT (`golang-jwt/v5`) + bcrypt |
+| Auth (Social) | Firebase Authentication (Social-only) |
+| Security | Rate Limiting (fiber/limiter) |
 | Docs | Swagger/OpenAPI (`swaggo/swag`) |
 | Testing | `testify`, `pgxmock`, `mockery` |
 | Decimal math | `shopspring/decimal` |
@@ -93,6 +95,7 @@ graph TD
         COMMON["common/ — ResponseWrapper"]
         DB["database/ — ConnectDB, migrations"]
         OS["opensearch/ — ConnectOpenSearch"]
+        FB["firebase/ — Firebase app initialization"]
     end
 
     MAIN --> ROUTER
@@ -100,7 +103,8 @@ graph TD
     ROUTER --> AUTH & USER & MERCH & PROD & WALLET & CART & ORDER & HEALTH
     AUTH & USER & MERCH & PROD & WALLET & CART & ORDER --> DOMAIN
     AUTH & USER & MERCH & PROD & WALLET & CART & ORDER & HEALTH --> COMMON
-    MAIN --> DB & OS
+    MAIN --> DB & OS & FB
+    AUTH --> FB
 ```
 
 ### Module Structure (per feature)
@@ -132,11 +136,17 @@ Each feature package contains:
 | `DB_PASS` | PostgreSQL password | Yes |
 | `DB_NAME` | PostgreSQL database name | Yes |
 | `JWT_SECRET` | Secret key for JWT signing | Yes |
-| `APP_ENV` | Environment mode (`development` enables Swagger UI) | No |
+| `APP_ENV` | Environment mode (`development` enables Swagger UI and Firebase Emulator) | No |
 | `OPENSEARCH_HOST` | OpenSearch cluster host | No |
 | `OPENSEARCH_PORT` | OpenSearch port | No |
 | `OPENSEARCH_USER` | OpenSearch auth user | No |
 | `OPENSEARCH_PASSWORD` | OpenSearch auth password | No |
+| `FIREBASE_PROJECT_ID` | GCP Project ID for Firebase | Yes (defaults to `fb-go-commerce-auth` in dev) |
+| `FIREBASE_AUTH_EMULATOR_HOST` | Host for Firebase Auth Emulator | No (defaults to `localhost:9099` in dev) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP credentials for ADC | Yes (if not on GCP/Emulator) |
+
+> [!NOTE]
+> In **development** mode (`APP_ENV=development`), the application will automatically unset `GOOGLE_APPLICATION_CREDENTIALS` if they are present. This ensures the Firebase SDK uses the Emulator in insecure mode, allowing it to accept "alg: none" tokens without real service account verification.
 
 ---
 
@@ -161,8 +171,9 @@ Authorization: Bearer <access_token>
 
 | Method | Path | Auth | Description |
 |:---|:---|:---|:---|
-| `POST` | `/api/auth/register` | ❌ | Register a new user |
-| `POST` | `/api/auth/login` | ❌ | Login and receive tokens |
+| `POST` | `/api/auth/register` | ❌ | Register a new local user |
+| `POST` | `/api/auth/login` | ❌ | Local login and receive tokens |
+| `POST` | `/api/auth/firebase` | ❌ | Social login via Firebase |
 | `POST` | `/api/auth/refresh` | ❌ | Rotate refresh token |
 | `POST` | `/api/auth/logout` | ✅ | Revoke token family |
 | `POST` | `/api/auth/register-merchant` | ✅ | Register as merchant |
@@ -213,6 +224,26 @@ Authorization: Bearer <access_token>
 **Success Response** (`200`): Same shape as register response.
 
 **Errors:** `400` (validation), `401` (invalid credentials), `500`
+
+---
+
+#### `POST /api/auth/firebase`
+
+**Request Body:**
+```json
+{
+  "id_token": "string (required - Firebase ID Token)"
+}
+```
+
+**Success Response** (`200`): Same shape as register response.
+
+> [!IMPORTANT]
+> **Token Validation:** Firebase ID tokens are subject to a maximum length of 5KB to prevent resource exhaustion attacks.
+> 
+> **Provider Integrity:** Social login is restricted to verified social providers (Google, Facebook, etc.). Email/password sign-in results via Firebase ID tokens are rejected with `403 Forbidden` to favor the local auth flow for password-based credentials.
+
+**Errors:** `400` (validation/length), `401` (invalid/unverified token), `403` (password sign-in forbidden), `409` (email mismatch), `503` (service not configured), `500`
 
 ---
 
@@ -767,7 +798,12 @@ Merchant cancellation is permitted anytime **before shipping**. Triggers refund 
   "data": {
     "components": {
       "database": "up",
-      "opensearch": "up"
+      "opensearch": "up | down | unconfigured",
+      "firebase": {
+        "status": "up | down | unconfigured",
+        "mode": "emulator | production",
+        "project_id": "string"
+      }
     }
   }
 }
@@ -787,7 +823,9 @@ Merchant cancellation is permitted anytime **before shipping**. Triggers refund 
 | `full_name` | string | Display name |
 | `username` | string | Unique username |
 | `email` | string | Unique email |
-| `password` | string | bcrypt hash |
+| `password` | *string | bcrypt hash (nullable for social-only users) |
+| `auth_provider` | AuthProvider | `local`, `google.com`, etc. |
+| `provider_id` | *string | External UID from social provider |
 | `created_at` | timestamp | Registration time |
 
 ### UserAddress
@@ -971,6 +1009,9 @@ make swagger        # Regenerate Swagger docs
 make migrate-up     # Apply migrations
 make migrate-down   # Rollback last migration
 make migrate-create name=<name>  # Create new migration
+make firebase-emulator # Start Firebase Auth Emulator
+make firebase-setup    # Provision test users in Emulator
+make gen-token provider=<url> # Generate mock Firebase token
 make fmt            # Format code
 make tidy           # Tidy go modules
 make clean          # Remove binary

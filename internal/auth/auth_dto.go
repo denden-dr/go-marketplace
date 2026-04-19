@@ -79,3 +79,17 @@ func (r LoginRequest) Validate() error {
 	}
 	return nil
 }
+
+type FirebaseLoginRequest struct {
+	IDToken string `json:"id_token"`
+}
+
+func (r FirebaseLoginRequest) Validate() error {
+	if r.IDToken == "" {
+		return errors.New("id token is required")
+	}
+	if len(r.IDToken) > 5120 {
+		return errors.New("id token is too long")
+	}
+	return nil
+}

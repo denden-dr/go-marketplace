@@ -23,6 +23,8 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, u *domain.User) error
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	GetUserByProviderID(ctx context.Context, provider string, providerID string) (*domain.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
 
 	// Addresses
 	CreateAddress(ctx context.Context, addr *domain.UserAddress) error
@@ -51,11 +53,13 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*UserRespo
 	}
 
 	return &UserResponse{
-		ID:        user.ID,
-		FullName:  user.FullName,
-		Username:  user.Username,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
+		ID:           user.ID,
+		FullName:     user.FullName,
+		Username:     user.Username,
+		Email:        user.Email,
+		AuthProvider: user.AuthProvider,
+		ProviderID:   user.ProviderID,
+		CreatedAt:    user.CreatedAt,
 	}, nil
 }
 

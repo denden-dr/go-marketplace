@@ -59,7 +59,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 // @Param request body LoginRequest true "Login Credentials"
 // @Success 200 {object} common.ResponseWrapper{data=AuthResponse}
 // @Failure 400 {object} common.ResponseWrapper
-// @Failure 410 {object} common.ResponseWrapper
+// @Failure 409 {object} common.ResponseWrapper
 // @Failure 500 {object} common.ResponseWrapper
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
@@ -76,6 +76,9 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
+		}
+		if errors.Is(err, domain.ErrAuthProviderMismatch) {
+			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
 		}
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
@@ -148,4 +151,47 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	}
 
 	return common.NewResponse(c, http.StatusOK, "Logout successful", nil)
+}
+
+// FirebaseLogin handles social sign-in via Firebase
+// @Summary Firebase social login
+// @Description Authenticates a user using a Firebase ID token and returns access and refresh tokens.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body FirebaseLoginRequest true "Firebase ID Token"
+// @Success 200 {object} common.ResponseWrapper{data=AuthResponse}
+// @Failure 400 {object} common.ResponseWrapper
+// @Failure 401 {object} common.ResponseWrapper
+// @Failure 409 {object} common.ResponseWrapper
+// @Failure 500 {object} common.ResponseWrapper
+// @Router /auth/firebase [post]
+func (h *AuthHandler) FirebaseLogin(c *fiber.Ctx) error {
+	var req FirebaseLoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+	}
+
+	if err := req.Validate(); err != nil {
+		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
+	}
+
+	res, err := h.authService.FirebaseLogin(c.Context(), req.IDToken)
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidFirebaseToken) || errors.Is(err, domain.ErrEmailNotVerified) {
+			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
+		}
+		if errors.Is(err, domain.ErrEmailAlreadyUsedByOtherMethod) || errors.Is(err, domain.ErrAuthProviderMismatch) {
+			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
+		}
+		if errors.Is(err, domain.ErrFirebasePasswordSignInNotAllowed) {
+			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
+		}
+		if errors.Is(err, domain.ErrSocialLoginNotAvailable) {
+			return common.NewResponse(c, http.StatusServiceUnavailable, err.Error(), nil)
+		}
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+	}
+
+	return common.NewResponse(c, http.StatusOK, "Firebase login successful", res)
 }
