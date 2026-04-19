@@ -21,6 +21,7 @@ var (
 	ErrInvalidFirebaseToken             = errors.New("invalid or expired Firebase token")
 	ErrEmailNotVerified                 = errors.New("email not verified by provider")
 	ErrFirebasePasswordSignInNotAllowed = errors.New("email/password sign-in must use local authentication")
+	ErrSocialLoginNotAvailable          = errors.New("social login is not available on this server")
 
 	ErrOrderNotFound            = errors.New("order not found")
 	ErrOrderNotCancellable      = errors.New("order cannot be cancelled at this stage or time")
