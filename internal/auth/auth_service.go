@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -105,7 +104,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 
 func (s *AuthService) FirebaseLogin(ctx context.Context, idToken string) (*AuthResponse, error) {
 	if s.firebaseClient == nil {
-		return nil, errors.New("social login is not available")
+		return nil, domain.ErrSocialLoginNotAvailable
 	}
 
 	// 1. Verify token

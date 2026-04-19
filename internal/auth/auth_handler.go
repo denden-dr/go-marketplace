@@ -59,7 +59,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 // @Param request body LoginRequest true "Login Credentials"
 // @Success 200 {object} common.ResponseWrapper{data=AuthResponse}
 // @Failure 400 {object} common.ResponseWrapper
-// @Failure 410 {object} common.ResponseWrapper
+// @Failure 409 {object} common.ResponseWrapper
 // @Failure 500 {object} common.ResponseWrapper
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
@@ -186,6 +186,9 @@ func (h *AuthHandler) FirebaseLogin(c *fiber.Ctx) error {
 		}
 		if errors.Is(err, domain.ErrFirebasePasswordSignInNotAllowed) {
 			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
+		}
+		if errors.Is(err, domain.ErrSocialLoginNotAvailable) {
+			return common.NewResponse(c, http.StatusServiceUnavailable, err.Error(), nil)
 		}
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
