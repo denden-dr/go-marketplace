@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 package main
 
 import (
@@ -15,6 +18,7 @@ func main() {
 	email := flag.String("email", "", "User Email (defaults based on provider)")
 	name := flag.String("name", "", "User Name (defaults based on provider)")
 	projectID := flag.String("project", "fb-go-commerce-auth", "Firebase Project ID")
+	verified := flag.Bool("verified", true, "Email verified status")
 	flag.Parse()
 
 	// Defaults based on provider
@@ -70,7 +74,7 @@ func main() {
 
 	payload := map[string]interface{}{
 		"email":          *email,
-		"email_verified": true,
+		"email_verified": *verified,
 		"name":           *name,
 		"auth_time":      time.Now().Unix(),
 		"user_id":        *uid,
