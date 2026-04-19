@@ -3,6 +3,7 @@ package server
 import (
 	"go-shop-yourself/internal/auth"
 	"go-shop-yourself/internal/cart"
+	"go-shop-yourself/internal/common"
 	"go-shop-yourself/internal/health"
 	"go-shop-yourself/internal/merchant"
 	"go-shop-yourself/internal/middleware"
@@ -12,8 +13,10 @@ import (
 	"go-shop-yourself/internal/wallet"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
 	_ "go-shop-yourself/docs"
+	"time"
 )
 
 func SetupRoutes(
@@ -28,6 +31,7 @@ func SetupRoutes(
 	healthHandler *health.HealthHandler,
 	jwtSecret string,
 	appEnv string,
+	firebaseEnabled bool,
 ) {
 	// Swagger UI
 	if appEnv == "development" {
@@ -42,8 +46,21 @@ func SetupRoutes(
 
 	// Public Auth routes
 	authRoutes := apiBase.Group("/auth")
+	authRoutes.Use(limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: 1 * time.Minute,
+		LimitReached: func(c *fiber.Ctx) error {
+			return common.NewResponse(c, fiber.StatusTooManyRequests, "Too many requests, please try again later", nil)
+		},
+	}))
+
 	authRoutes.Post("/register", authHandler.Register)
 	authRoutes.Post("/login", authHandler.Login)
+
+	if firebaseEnabled {
+		authRoutes.Post("/firebase", authHandler.FirebaseLogin)
+	}
+
 	authRoutes.Post("/refresh", authHandler.RefreshTokens)
 
 	// Public products

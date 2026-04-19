@@ -9,11 +9,13 @@ import (
 )
 
 type UserResponse struct {
-	ID        uuid.UUID `json:"id"`
-	FullName  string    `json:"full_name"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
+	ID           uuid.UUID `json:"id"`
+	FullName     string    `json:"full_name"`
+	Username     string    `json:"username"`
+	Email        string    `json:"email"`
+	AuthProvider string    `json:"auth_provider"`
+	ProviderID   *string   `json:"provider_id"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type AddressRequest struct {

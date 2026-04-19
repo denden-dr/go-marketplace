@@ -401,6 +401,125 @@ func (_c *MockUserRepository_GetUserByID_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
+// GetUserByProviderID provides a mock function with given fields: ctx, provider, providerID
+func (_m *MockUserRepository) GetUserByProviderID(ctx context.Context, provider string, providerID string) (*domain.User, error) {
+	ret := _m.Called(ctx, provider, providerID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserByProviderID")
+	}
+
+	var r0 *domain.User
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*domain.User, error)); ok {
+		return rf(ctx, provider, providerID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *domain.User); ok {
+		r0 = rf(ctx, provider, providerID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, provider, providerID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserRepository_GetUserByProviderID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserByProviderID'
+type MockUserRepository_GetUserByProviderID_Call struct {
+	*mock.Call
+}
+
+// GetUserByProviderID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - provider string
+//   - providerID string
+func (_e *MockUserRepository_Expecter) GetUserByProviderID(ctx interface{}, provider interface{}, providerID interface{}) *MockUserRepository_GetUserByProviderID_Call {
+	return &MockUserRepository_GetUserByProviderID_Call{Call: _e.mock.On("GetUserByProviderID", ctx, provider, providerID)}
+}
+
+func (_c *MockUserRepository_GetUserByProviderID_Call) Run(run func(ctx context.Context, provider string, providerID string)) *MockUserRepository_GetUserByProviderID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_GetUserByProviderID_Call) Return(_a0 *domain.User, _a1 error) *MockUserRepository_GetUserByProviderID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserRepository_GetUserByProviderID_Call) RunAndReturn(run func(context.Context, string, string) (*domain.User, error)) *MockUserRepository_GetUserByProviderID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetUserByUsername provides a mock function with given fields: ctx, username
+func (_m *MockUserRepository) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {
+	ret := _m.Called(ctx, username)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserByUsername")
+	}
+
+	var r0 *domain.User
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*domain.User, error)); ok {
+		return rf(ctx, username)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *domain.User); ok {
+		r0 = rf(ctx, username)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, username)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockUserRepository_GetUserByUsername_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserByUsername'
+type MockUserRepository_GetUserByUsername_Call struct {
+	*mock.Call
+}
+
+// GetUserByUsername is a helper method to define mock.On call
+//   - ctx context.Context
+//   - username string
+func (_e *MockUserRepository_Expecter) GetUserByUsername(ctx interface{}, username interface{}) *MockUserRepository_GetUserByUsername_Call {
+	return &MockUserRepository_GetUserByUsername_Call{Call: _e.mock.On("GetUserByUsername", ctx, username)}
+}
+
+func (_c *MockUserRepository_GetUserByUsername_Call) Run(run func(ctx context.Context, username string)) *MockUserRepository_GetUserByUsername_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_GetUserByUsername_Call) Return(_a0 *domain.User, _a1 error) *MockUserRepository_GetUserByUsername_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockUserRepository_GetUserByUsername_Call) RunAndReturn(run func(context.Context, string) (*domain.User, error)) *MockUserRepository_GetUserByUsername_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UnsetDefaultAddresses provides a mock function with given fields: ctx, userID
 func (_m *MockUserRepository) UnsetDefaultAddresses(ctx context.Context, userID uuid.UUID) error {
 	ret := _m.Called(ctx, userID)

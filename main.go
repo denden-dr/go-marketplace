@@ -18,8 +18,10 @@ import (
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
 
+	firebase "firebase.google.com/go/v4"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"google.golang.org/api/option"
 )
 
 // @title Go Shop Yourself API
@@ -66,6 +68,40 @@ func main() {
 		log.Fatalf("JWT_SECRET environment variable is not set")
 	}
 
+	appEnv := os.Getenv("APP_ENV")
+
+	// Initialize Firebase
+	var firebaseAuthClient auth.FirebaseAuthClient
+	var fbApp *firebase.App
+	var fbConfig *firebase.Config
+	var opts []option.ClientOption
+
+	if appEnv == "development" {
+		emulatorHost := os.Getenv("FIREBASE_AUTH_EMULATOR_HOST")
+		log.Printf("Firebase Auth using emulator at %s", emulatorHost)
+
+		projectID := os.Getenv("FIREBASE_PROJECT_ID")
+		fbConfig = &firebase.Config{ProjectID: projectID}
+
+		// In development with emulator, we skip real credentials to avoid strict signature verification
+		// of "alg: none" tokens which are common in emulator usage.
+		if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") != "" {
+			log.Println("Development mode: Unsetting GOOGLE_APPLICATION_CREDENTIALS for Firebase Emulator compatibility")
+			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		}
+		opts = append(opts, option.WithoutAuthentication())
+	}
+
+	fbApp, err = firebase.NewApp(context.Background(), fbConfig, opts...)
+	if err != nil {
+		log.Printf("Warning: Error initializing firebase app: %v. Social login will be disabled.", err)
+	} else {
+		firebaseAuthClient, err = auth.NewFirebaseAuthClient(fbApp)
+		if err != nil {
+			log.Printf("Warning: Error initializing firebase auth client: %v. Social login will be disabled.", err)
+		}
+	}
+
 	// Initialize Layers
 	userRepo := user.NewUserRepository(db)
 	merchantRepo := merchant.NewMerchantRepository(db)
@@ -76,6 +112,11 @@ func main() {
 	orderRepo := order.NewOrderRepository(db)
 
 	// Background cleanup for expired refresh tokens
+	log.Printf("Running initial background cleanup for expired refresh tokens...")
+	if err := refreshTokenRepo.DeleteExpiredTokens(context.Background()); err != nil {
+		log.Printf("Error during initial background cleanup: %v", err)
+	}
+
 	go func() {
 		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
@@ -86,7 +127,7 @@ func main() {
 		}
 	}()
 
-	authService := auth.NewAuthService(userRepo, refreshTokenRepo, jwtSecret)
+	authService := auth.NewAuthService(userRepo, refreshTokenRepo, firebaseAuthClient, jwtSecret)
 	userService := user.NewUserService(userRepo)
 	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := product.NewProductService(productRepo, merchantRepo)
@@ -101,7 +142,7 @@ func main() {
 	walletHandler := wallet.NewWalletHandler(walletService)
 	cartHandler := cart.NewCartHandler(cartService)
 	orderHandler := order.NewOrderHandler(orderService, merchantRepo)
-	healthHandler := health.NewHealthHandler(db, osClient)
+	healthHandler := health.NewHealthHandler(db, osClient, fbApp)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
@@ -112,15 +153,14 @@ func main() {
 	// Initialize Fiber app
 	app := fiber.New()
 
-	appEnv := os.Getenv("APP_ENV")
-
 	// Setup Routes
+	firebaseEnabled := firebaseAuthClient != nil
 	server.SetupRoutes(
 		app,
 		authHandler,
 		userHandler,
 		merchantHandler, productHandler, walletHandler,
-		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv)
+		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv, firebaseEnabled)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)

@@ -7,13 +7,24 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id" db:"id"`
-	FullName  string    `json:"full_name" db:"full_name"`
-	Username  string    `json:"username" db:"username"`
-	Email     string    `json:"email" db:"email"`
-	Password  string    `json:"password" db:"password"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	ID           uuid.UUID `json:"id" db:"id"`
+	FullName     string    `json:"full_name" db:"full_name"`
+	Username     string    `json:"username" db:"username"`
+	Email        string    `json:"email" db:"email"`
+	Password     *string   `json:"-" db:"password"`
+	AuthProvider string    `json:"auth_provider" db:"auth_provider"`
+	ProviderID   *string   `json:"provider_id" db:"provider_id"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
+
+const (
+	AuthProviderLocal    = "local"
+	AuthProviderGoogle   = "google"
+	AuthProviderFacebook = "facebook"
+	AuthProviderApple    = "apple"
+	AuthProviderTwitter  = "twitter"
+	AuthProviderFirebase = "firebase"
+)
 
 type AddressTag string
 
