@@ -55,9 +55,8 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 			statusCode = fiber.StatusServiceUnavailable
 		}
 	} else {
-		osStatus = "down"
-		message = "application is unhealthy"
-		statusCode = fiber.StatusServiceUnavailable
+		osStatus = "unconfigured"
+		// Do NOT set 503 or "unhealthy" if OpenSearch is just not configured
 	}
 
 	firebaseStatus := "up"

@@ -78,17 +78,9 @@ func main() {
 
 	if appEnv == "development" {
 		emulatorHost := os.Getenv("FIREBASE_AUTH_EMULATOR_HOST")
-		if emulatorHost == "" {
-			emulatorHost = "localhost:9099"
-			os.Setenv("FIREBASE_AUTH_EMULATOR_HOST", emulatorHost)
-		}
 		log.Printf("Firebase Auth using emulator at %s", emulatorHost)
 
 		projectID := os.Getenv("FIREBASE_PROJECT_ID")
-		if projectID == "" {
-			projectID = "fb-go-commerce-auth"
-			os.Setenv("FIREBASE_PROJECT_ID", projectID)
-		}
 		fbConfig = &firebase.Config{ProjectID: projectID}
 
 		// In development with emulator, we skip real credentials to avoid strict signature verification
@@ -120,6 +112,11 @@ func main() {
 	orderRepo := order.NewOrderRepository(db)
 
 	// Background cleanup for expired refresh tokens
+	log.Printf("Running initial background cleanup for expired refresh tokens...")
+	if err := refreshTokenRepo.DeleteExpiredTokens(context.Background()); err != nil {
+		log.Printf("Error during initial background cleanup: %v", err)
+	}
+
 	go func() {
 		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
@@ -157,12 +154,13 @@ func main() {
 	app := fiber.New()
 
 	// Setup Routes
+	firebaseEnabled := firebaseAuthClient != nil
 	server.SetupRoutes(
 		app,
 		authHandler,
 		userHandler,
 		merchantHandler, productHandler, walletHandler,
-		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv)
+		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv, firebaseEnabled)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)

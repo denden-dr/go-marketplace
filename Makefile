@@ -67,9 +67,9 @@ firebase-emulator: ## Run Firebase Auth Emulator
 
 firebase-setup: ## Setup initial test users (Google, FB, Apple, Twitter) in Firebase Emulator
 	@echo "Setting up social test users in emulator..."
-	go run scratch/setup_social_users/main.go
+	@go run scratch/setup_social_users.go
 
 # Example to generate a token:
 # make gen-token provider=facebook.com
 gen-token: ## Generate a mock Firebase ID token (usage: make gen-token provider=google.com)
-	@go run scratch/gen_token/main.go -provider=$(provider)
+	@go run scratch/gen_token.go -provider=$(provider)
