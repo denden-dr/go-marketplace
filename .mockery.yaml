@@ -14,6 +14,7 @@ packages:
     interfaces:
       AuthServiceInterface:
       RefreshTokenRepository:
+      SupabaseAuthClient:
   go-shop-yourself/internal/merchant:
     interfaces:
       MerchantServiceInterface:
