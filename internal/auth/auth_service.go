@@ -16,7 +16,7 @@ import (
 type AuthServiceInterface interface {
 	Register(ctx context.Context, fullName, email, password, username string) (*AuthResponse, error)
 	Login(ctx context.Context, email, password string) (*AuthResponse, error)
-	FirebaseLogin(ctx context.Context, idToken string) (*AuthResponse, error)
+	SocialLogin(ctx context.Context, accessToken string) (*AuthResponse, error)
 	RefreshTokens(ctx context.Context, rawToken string) (*AuthResponse, error)
 	Logout(ctx context.Context, rawToken string) error
 }
@@ -32,15 +32,15 @@ type RefreshTokenRepository interface {
 type AuthService struct {
 	userRepo         user.UserRepository
 	refreshTokenRepo RefreshTokenRepository
-	firebaseClient   FirebaseAuthClient
+	socialAuthClient SupabaseAuthClient
 	jwtSecret        string
 }
 
-func NewAuthService(userRepo user.UserRepository, refreshTokenRepo RefreshTokenRepository, firebaseClient FirebaseAuthClient, jwtSecret string) *AuthService {
+func NewAuthService(userRepo user.UserRepository, refreshTokenRepo RefreshTokenRepository, socialAuthClient SupabaseAuthClient, jwtSecret string) *AuthService {
 	return &AuthService{
 		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
-		firebaseClient:   firebaseClient,
+		socialAuthClient: socialAuthClient,
 		jwtSecret:        jwtSecret,
 	}
 }
@@ -102,19 +102,19 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 	return s.generateAuthResponse(ctx, user)
 }
 
-func (s *AuthService) FirebaseLogin(ctx context.Context, idToken string) (*AuthResponse, error) {
-	if s.firebaseClient == nil {
+func (s *AuthService) SocialLogin(ctx context.Context, accessToken string) (*AuthResponse, error) {
+	if s.socialAuthClient == nil {
 		return nil, domain.ErrSocialLoginNotAvailable
 	}
 
 	// 1. Verify token
-	tokenResult, err := s.firebaseClient.VerifyIDToken(ctx, idToken)
+	tokenResult, err := s.socialAuthClient.VerifyAccessToken(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
 
 	// 2. Lookup user by ProviderID
-	user, err := s.userRepo.GetUserByProviderID(ctx, tokenResult.Provider, tokenResult.UID)
+	user, err := s.userRepo.GetUserByProviderID(ctx, tokenResult.Provider, tokenResult.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (s *AuthService) FirebaseLogin(ctx context.Context, idToken string) (*AuthR
 		Email:        tokenResult.Email,
 		Password:     nil,
 		AuthProvider: tokenResult.Provider,
-		ProviderID:   &tokenResult.UID,
+		ProviderID:   &tokenResult.UserID,
 		CreatedAt:    time.Now(),
 	}
 

@@ -153,21 +153,21 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	return common.NewResponse(c, http.StatusOK, "Logout successful", nil)
 }
 
-// FirebaseLogin handles social sign-in via Firebase
-// @Summary Firebase social login
-// @Description Authenticates a user using a Firebase ID token and returns access and refresh tokens.
+// SocialLogin handles social sign-in via Supabase
+// @Summary Social login
+// @Description Authenticates a user using a Supabase access token and returns access and refresh tokens.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body FirebaseLoginRequest true "Firebase ID Token"
+// @Param request body SocialLoginRequest true "Supabase Access Token"
 // @Success 200 {object} common.ResponseWrapper{data=AuthResponse}
 // @Failure 400 {object} common.ResponseWrapper
 // @Failure 401 {object} common.ResponseWrapper
 // @Failure 409 {object} common.ResponseWrapper
 // @Failure 500 {object} common.ResponseWrapper
-// @Router /auth/firebase [post]
-func (h *AuthHandler) FirebaseLogin(c *fiber.Ctx) error {
-	var req FirebaseLoginRequest
+// @Router /auth/social [post]
+func (h *AuthHandler) SocialLogin(c *fiber.Ctx) error {
+	var req SocialLoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
 	}
@@ -176,15 +176,15 @@ func (h *AuthHandler) FirebaseLogin(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
 	}
 
-	res, err := h.authService.FirebaseLogin(c.Context(), req.IDToken)
+	res, err := h.authService.SocialLogin(c.Context(), req.AccessToken)
 	if err != nil {
-		if errors.Is(err, domain.ErrInvalidFirebaseToken) || errors.Is(err, domain.ErrEmailNotVerified) {
+		if errors.Is(err, domain.ErrInvalidSocialToken) || errors.Is(err, domain.ErrEmailNotVerified) {
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
 		if errors.Is(err, domain.ErrEmailAlreadyUsedByOtherMethod) || errors.Is(err, domain.ErrAuthProviderMismatch) {
 			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
 		}
-		if errors.Is(err, domain.ErrFirebasePasswordSignInNotAllowed) {
+		if errors.Is(err, domain.ErrEmailPasswordSignInNotAllowed) {
 			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
 		}
 		if errors.Is(err, domain.ErrSocialLoginNotAvailable) {
@@ -193,5 +193,5 @@ func (h *AuthHandler) FirebaseLogin(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Firebase login successful", res)
+	return common.NewResponse(c, http.StatusOK, "Social login successful", res)
 }

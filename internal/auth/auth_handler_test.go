@@ -256,58 +256,58 @@ func TestAuthHandler_Logout_Success(t *testing.T) {
 	assert.Equal(t, "Logout successful", result.Message)
 }
 
-func TestAuthHandler_FirebaseLogin_Success(t *testing.T) {
+func TestAuthHandler_SocialLogin_Success(t *testing.T) {
 	mockService := NewMockAuthServiceInterface(t)
 	handler := NewAuthHandler(mockService)
 	app := testutil.SetupTestApp()
-	app.Post("/firebase", handler.FirebaseLogin)
+	app.Post("/social", handler.SocialLogin)
+ 
+ 	reqBody := SocialLoginRequest{
+ 		AccessToken: "valid-social-token",
+ 	}
+ 	body, _ := json.Marshal(reqBody)
+ 
+ 	authRes := &AuthResponse{
+ 		ID:           uuid.New(),
+ 		AccessToken:  "access",
+ 		RefreshToken: "refresh",
+ 	}
+ 
+ 	mockService.On("SocialLogin", mock.Anything, reqBody.AccessToken).Return(authRes, nil)
+ 
+ 	req := httptest.NewRequest("POST", "/social", bytes.NewBuffer(body))
+ 	req.Header.Set("Content-Type", "application/json")
+ 
+ 	resp, _ := app.Test(req)
+ 
+ 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+ 
+ 	var result common.ResponseWrapper
+ 	json.NewDecoder(resp.Body).Decode(&result)
+ 	assert.Equal(t, "Social login successful", result.Message)
+ }
 
-	reqBody := FirebaseLoginRequest{
-		IDToken: "valid-firebase-token",
-	}
-	body, _ := json.Marshal(reqBody)
-
-	authRes := &AuthResponse{
-		ID:           uuid.New(),
-		AccessToken:  "access",
-		RefreshToken: "refresh",
-	}
-
-	mockService.On("FirebaseLogin", mock.Anything, reqBody.IDToken).Return(authRes, nil)
-
-	req := httptest.NewRequest("POST", "/firebase", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, _ := app.Test(req)
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	var result common.ResponseWrapper
-	json.NewDecoder(resp.Body).Decode(&result)
-	assert.Equal(t, "Firebase login successful", result.Message)
-}
-
-func TestAuthHandler_FirebaseLogin_Fail_EmailNotVerified(t *testing.T) {
+func TestAuthHandler_SocialLogin_Fail_EmailNotVerified(t *testing.T) {
 	mockService := NewMockAuthServiceInterface(t)
 	handler := NewAuthHandler(mockService)
 	app := testutil.SetupTestApp()
-	app.Post("/firebase", handler.FirebaseLogin)
-
-	reqBody := FirebaseLoginRequest{
-		IDToken: "unverified-token",
-	}
-	body, _ := json.Marshal(reqBody)
-
-	mockService.On("FirebaseLogin", mock.Anything, reqBody.IDToken).Return(nil, domain.ErrEmailNotVerified)
-
-	req := httptest.NewRequest("POST", "/firebase", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, _ := app.Test(req)
-
-	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-
-	var result common.ResponseWrapper
-	json.NewDecoder(resp.Body).Decode(&result)
-	assert.Equal(t, domain.ErrEmailNotVerified.Error(), result.Message)
-}
+	app.Post("/social", handler.SocialLogin)
+ 
+ 	reqBody := SocialLoginRequest{
+ 		AccessToken: "unverified-token",
+ 	}
+ 	body, _ := json.Marshal(reqBody)
+ 
+ 	mockService.On("SocialLogin", mock.Anything, reqBody.AccessToken).Return(nil, domain.ErrEmailNotVerified)
+ 
+ 	req := httptest.NewRequest("POST", "/social", bytes.NewBuffer(body))
+ 	req.Header.Set("Content-Type", "application/json")
+ 
+ 	resp, _ := app.Test(req)
+ 
+ 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+ 
+ 	var result common.ResponseWrapper
+ 	json.NewDecoder(resp.Body).Decode(&result)
+ 	assert.Equal(t, domain.ErrEmailNotVerified.Error(), result.Message)
+ }
