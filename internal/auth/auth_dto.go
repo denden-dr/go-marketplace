@@ -80,16 +80,16 @@ func (r LoginRequest) Validate() error {
 	return nil
 }
 
-type FirebaseLoginRequest struct {
-	IDToken string `json:"id_token"`
+type SocialLoginRequest struct {
+	AccessToken string `json:"access_token"`
 }
 
-func (r FirebaseLoginRequest) Validate() error {
-	if r.IDToken == "" {
-		return errors.New("id token is required")
+func (r SocialLoginRequest) Validate() error {
+	if r.AccessToken == "" {
+		return errors.New("access token is required")
 	}
-	if len(r.IDToken) > 5120 {
-		return errors.New("id token is too long")
+	if len(r.AccessToken) > 5120 {
+		return errors.New("access token is too long")
 	}
 	return nil
 }
