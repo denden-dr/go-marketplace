@@ -52,7 +52,7 @@ All responses follow a consistent envelope format:
 | Search Engine | OpenSearch v3 |
 | Migrations | `golang-migrate` |
 | Auth (Local) | JWT (`golang-jwt/v5`) + bcrypt |
-| Auth (Social) | Firebase Authentication (Social-only) |
+| Auth (Social) | Supabase Auth (Social-only) |
 | Security | Rate Limiting (fiber/limiter) |
 | Docs | Swagger/OpenAPI (`swaggo/swag`) |
 | Testing | `testify`, `pgxmock`, `mockery` |
@@ -103,8 +103,7 @@ graph TD
     ROUTER --> AUTH & USER & MERCH & PROD & WALLET & CART & ORDER & HEALTH
     AUTH & USER & MERCH & PROD & WALLET & CART & ORDER --> DOMAIN
     AUTH & USER & MERCH & PROD & WALLET & CART & ORDER & HEALTH --> COMMON
-    MAIN --> DB & OS & FB
-    AUTH --> FB
+    MAIN --> DB & OS
 ```
 
 ### Module Structure (per feature)
@@ -141,12 +140,11 @@ Each feature package contains:
 | `OPENSEARCH_PORT` | OpenSearch port | No |
 | `OPENSEARCH_USER` | OpenSearch auth user | No |
 | `OPENSEARCH_PASSWORD` | OpenSearch auth password | No |
-| `FIREBASE_PROJECT_ID` | GCP Project ID for Firebase | Yes (defaults to `fb-go-commerce-auth` in dev) |
-| `FIREBASE_AUTH_EMULATOR_HOST` | Host for Firebase Auth Emulator | No (defaults to `localhost:9099` in dev) |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP credentials for ADC | Yes (if not on GCP/Emulator) |
+| `SUPABASE_URL` | Supabase project URL | No |
+| `SUPABASE_JWT_SECRET` | Supabase JWT signing secret | Yes |
 
 > [!NOTE]
-> In **development** mode (`APP_ENV=development`), the application will automatically unset `GOOGLE_APPLICATION_CREDENTIALS` if they are present. This ensures the Firebase SDK uses the Emulator in insecure mode, allowing it to accept "alg: none" tokens without real service account verification.
+> For social login, the application verifies Supabase-issued JWTs locally using the `SUPABASE_JWT_SECRET`. This secret must match findings in the Supabase Dashboard (Settings > API).
 
 ---
 
@@ -173,7 +171,7 @@ Authorization: Bearer <access_token>
 |:---|:---|:---|:---|
 | `POST` | `/api/auth/register` | ❌ | Register a new local user |
 | `POST` | `/api/auth/login` | ❌ | Local login and receive tokens |
-| `POST` | `/api/auth/firebase` | ❌ | Social login via Firebase |
+| `POST` | `/api/auth/social` | ❌ | Social login via Supabase |
 | `POST` | `/api/auth/refresh` | ❌ | Rotate refresh token |
 | `POST` | `/api/auth/logout` | ✅ | Revoke token family |
 | `POST` | `/api/auth/register-merchant` | ✅ | Register as merchant |
@@ -227,21 +225,21 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### `POST /api/auth/firebase`
+#### `POST /api/auth/social`
 
 **Request Body:**
 ```json
 {
-  "id_token": "string (required - Firebase ID Token)"
+  "access_token": "string (required - Supabase Access Token)"
 }
 ```
 
 **Success Response** (`200`): Same shape as register response.
 
 > [!IMPORTANT]
-> **Token Validation:** Firebase ID tokens are subject to a maximum length of 5KB to prevent resource exhaustion attacks.
+> **Token Validation:** Supabase Access tokens are subject to a maximum length of 5KB to prevent resource exhaustion attacks.
 > 
-> **Provider Integrity:** Social login is restricted to verified social providers (Google, Facebook, etc.). Email/password sign-in results via Firebase ID tokens are rejected with `403 Forbidden` to favor the local auth flow for password-based credentials.
+> **Provider Integrity:** Social login is restricted to verified social providers (Google, Facebook, etc.). Email/password sign-in results via Supabase result in `403 Forbidden` to favor the local auth flow for password-based credentials.
 
 **Errors:** `400` (validation/length), `401` (invalid/unverified token), `403` (password sign-in forbidden), `409` (email mismatch), `503` (service not configured), `500`
 
