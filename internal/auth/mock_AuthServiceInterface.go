@@ -21,65 +21,6 @@ func (_m *MockAuthServiceInterface) EXPECT() *MockAuthServiceInterface_Expecter 
 	return &MockAuthServiceInterface_Expecter{mock: &_m.Mock}
 }
 
-// FirebaseLogin provides a mock function with given fields: ctx, idToken
-func (_m *MockAuthServiceInterface) FirebaseLogin(ctx context.Context, idToken string) (*AuthResponse, error) {
-	ret := _m.Called(ctx, idToken)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FirebaseLogin")
-	}
-
-	var r0 *AuthResponse
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*AuthResponse, error)); ok {
-		return rf(ctx, idToken)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *AuthResponse); ok {
-		r0 = rf(ctx, idToken)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*AuthResponse)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, idToken)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockAuthServiceInterface_FirebaseLogin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FirebaseLogin'
-type MockAuthServiceInterface_FirebaseLogin_Call struct {
-	*mock.Call
-}
-
-// FirebaseLogin is a helper method to define mock.On call
-//   - ctx context.Context
-//   - idToken string
-func (_e *MockAuthServiceInterface_Expecter) FirebaseLogin(ctx interface{}, idToken interface{}) *MockAuthServiceInterface_FirebaseLogin_Call {
-	return &MockAuthServiceInterface_FirebaseLogin_Call{Call: _e.mock.On("FirebaseLogin", ctx, idToken)}
-}
-
-func (_c *MockAuthServiceInterface_FirebaseLogin_Call) Run(run func(ctx context.Context, idToken string)) *MockAuthServiceInterface_FirebaseLogin_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
-	})
-	return _c
-}
-
-func (_c *MockAuthServiceInterface_FirebaseLogin_Call) Return(_a0 *AuthResponse, _a1 error) *MockAuthServiceInterface_FirebaseLogin_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockAuthServiceInterface_FirebaseLogin_Call) RunAndReturn(run func(context.Context, string) (*AuthResponse, error)) *MockAuthServiceInterface_FirebaseLogin_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // Login provides a mock function with given fields: ctx, email, password
 func (_m *MockAuthServiceInterface) Login(ctx context.Context, email string, password string) (*AuthResponse, error) {
 	ret := _m.Called(ctx, email, password)
@@ -304,6 +245,65 @@ func (_c *MockAuthServiceInterface_Register_Call) Return(_a0 *AuthResponse, _a1 
 }
 
 func (_c *MockAuthServiceInterface_Register_Call) RunAndReturn(run func(context.Context, string, string, string, string) (*AuthResponse, error)) *MockAuthServiceInterface_Register_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SocialLogin provides a mock function with given fields: ctx, accessToken
+func (_m *MockAuthServiceInterface) SocialLogin(ctx context.Context, accessToken string) (*AuthResponse, error) {
+	ret := _m.Called(ctx, accessToken)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SocialLogin")
+	}
+
+	var r0 *AuthResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*AuthResponse, error)); ok {
+		return rf(ctx, accessToken)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *AuthResponse); ok {
+		r0 = rf(ctx, accessToken)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AuthResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, accessToken)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockAuthServiceInterface_SocialLogin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SocialLogin'
+type MockAuthServiceInterface_SocialLogin_Call struct {
+	*mock.Call
+}
+
+// SocialLogin is a helper method to define mock.On call
+//   - ctx context.Context
+//   - accessToken string
+func (_e *MockAuthServiceInterface_Expecter) SocialLogin(ctx interface{}, accessToken interface{}) *MockAuthServiceInterface_SocialLogin_Call {
+	return &MockAuthServiceInterface_SocialLogin_Call{Call: _e.mock.On("SocialLogin", ctx, accessToken)}
+}
+
+func (_c *MockAuthServiceInterface_SocialLogin_Call) Run(run func(ctx context.Context, accessToken string)) *MockAuthServiceInterface_SocialLogin_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockAuthServiceInterface_SocialLogin_Call) Return(_a0 *AuthResponse, _a1 error) *MockAuthServiceInterface_SocialLogin_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockAuthServiceInterface_SocialLogin_Call) RunAndReturn(run func(context.Context, string) (*AuthResponse, error)) *MockAuthServiceInterface_SocialLogin_Call {
 	_c.Call.Return(run)
 	return _c
 }

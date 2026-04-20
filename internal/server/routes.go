@@ -31,7 +31,7 @@ func SetupRoutes(
 	healthHandler *health.HealthHandler,
 	jwtSecret string,
 	appEnv string,
-	firebaseEnabled bool,
+	socialLoginEnabled bool,
 ) {
 	// Swagger UI
 	if appEnv == "development" {
@@ -57,8 +57,8 @@ func SetupRoutes(
 	authRoutes.Post("/register", authHandler.Register)
 	authRoutes.Post("/login", authHandler.Login)
 
-	if firebaseEnabled {
-		authRoutes.Post("/firebase", authHandler.FirebaseLogin)
+	if socialLoginEnabled {
+		authRoutes.Post("/social", authHandler.SocialLogin)
 	}
 
 	authRoutes.Post("/refresh", authHandler.RefreshTokens)

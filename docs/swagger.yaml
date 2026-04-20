@@ -17,11 +17,6 @@ definitions:
       username:
         type: string
     type: object
-  auth.FirebaseLoginRequest:
-    properties:
-      id_token:
-        type: string
-    type: object
   auth.LoginRequest:
     properties:
       email:
@@ -48,6 +43,11 @@ definitions:
       password:
         type: string
       username:
+        type: string
+    type: object
+  auth.SocialLoginRequest:
+    properties:
+      access_token:
         type: string
     type: object
   cart.AddToCartRequest:
@@ -388,50 +388,6 @@ info:
   title: Go Shop Yourself API
   version: "1.0"
 paths:
-  /auth/firebase:
-    post:
-      consumes:
-      - application/json
-      description: Authenticates a user using a Firebase ID token and returns access
-        and refresh tokens.
-      parameters:
-      - description: Firebase ID Token
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/auth.FirebaseLoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
-            - properties:
-                data:
-                  $ref: '#/definitions/auth.AuthResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.ResponseWrapper'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/common.ResponseWrapper'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/common.ResponseWrapper'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/common.ResponseWrapper'
-      summary: Firebase social login
-      tags:
-      - auth
   /auth/login:
     post:
       consumes:
@@ -631,9 +587,53 @@ paths:
       summary: Register as merchant
       tags:
       - merchants
+  /auth/social:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user using a Supabase access token and returns
+        access and refresh tokens.
+      parameters:
+      - description: Supabase Access Token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.SocialLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.ResponseWrapper'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.AuthResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.ResponseWrapper'
+      summary: Social login
+      tags:
+      - auth
   /health:
     get:
-      description: Checks connectivity to the database, OpenSearch, and Firebase.
+      description: Checks connectivity to the database, OpenSearch, and Supabase configuration.
       produces:
       - application/json
       responses:

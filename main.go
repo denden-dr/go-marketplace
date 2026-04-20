@@ -18,10 +18,8 @@ import (
 	"go-shop-yourself/internal/user"
 	"go-shop-yourself/internal/wallet"
 
-	firebase "firebase.google.com/go/v4"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
-	"google.golang.org/api/option"
 )
 
 // @title Go Shop Yourself API
@@ -70,36 +68,14 @@ func main() {
 
 	appEnv := os.Getenv("APP_ENV")
 
-	// Initialize Firebase
-	var firebaseAuthClient auth.FirebaseAuthClient
-	var fbApp *firebase.App
-	var fbConfig *firebase.Config
-	var opts []option.ClientOption
-
-	if appEnv == "development" {
-		emulatorHost := os.Getenv("FIREBASE_AUTH_EMULATOR_HOST")
-		log.Printf("Firebase Auth using emulator at %s", emulatorHost)
-
-		projectID := os.Getenv("FIREBASE_PROJECT_ID")
-		fbConfig = &firebase.Config{ProjectID: projectID}
-
-		// In development with emulator, we skip real credentials to avoid strict signature verification
-		// of "alg: none" tokens which are common in emulator usage.
-		if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") != "" {
-			log.Println("Development mode: Unsetting GOOGLE_APPLICATION_CREDENTIALS for Firebase Emulator compatibility")
-			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
-		}
-		opts = append(opts, option.WithoutAuthentication())
-	}
-
-	fbApp, err = firebase.NewApp(context.Background(), fbConfig, opts...)
-	if err != nil {
-		log.Printf("Warning: Error initializing firebase app: %v. Social login will be disabled.", err)
+	// Initialize Supabase Auth
+	supabaseJWTSecret := os.Getenv("SUPABASE_JWT_SECRET")
+	var socialAuthClient auth.SupabaseAuthClient
+	if supabaseJWTSecret != "" {
+		socialAuthClient = auth.NewSupabaseAuthClient(supabaseJWTSecret)
+		log.Println("Supabase Auth initialized successfully")
 	} else {
-		firebaseAuthClient, err = auth.NewFirebaseAuthClient(fbApp)
-		if err != nil {
-			log.Printf("Warning: Error initializing firebase auth client: %v. Social login will be disabled.", err)
-		}
+		log.Println("Warning: SUPABASE_JWT_SECRET not set. Social login will be disabled.")
 	}
 
 	// Initialize Layers
@@ -127,7 +103,7 @@ func main() {
 		}
 	}()
 
-	authService := auth.NewAuthService(userRepo, refreshTokenRepo, firebaseAuthClient, jwtSecret)
+	authService := auth.NewAuthService(userRepo, refreshTokenRepo, socialAuthClient, jwtSecret)
 	userService := user.NewUserService(userRepo)
 	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := product.NewProductService(productRepo, merchantRepo)
@@ -142,7 +118,7 @@ func main() {
 	walletHandler := wallet.NewWalletHandler(walletService)
 	cartHandler := cart.NewCartHandler(cartService)
 	orderHandler := order.NewOrderHandler(orderService, merchantRepo)
-	healthHandler := health.NewHealthHandler(db, osClient, fbApp)
+	healthHandler := health.NewHealthHandler(db, osClient)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
@@ -154,13 +130,13 @@ func main() {
 	app := fiber.New()
 
 	// Setup Routes
-	firebaseEnabled := firebaseAuthClient != nil
+	socialLoginEnabled := socialAuthClient != nil
 	server.SetupRoutes(
 		app,
 		authHandler,
 		userHandler,
 		merchantHandler, productHandler, walletHandler,
-		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv, firebaseEnabled)
+		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv, socialLoginEnabled)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)

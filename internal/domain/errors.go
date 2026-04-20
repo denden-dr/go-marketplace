@@ -18,9 +18,9 @@ var (
 	ErrRefreshTokenReused               = errors.New("token reuse detected - all tokens in family revoked")
 	ErrAuthProviderMismatch             = errors.New("this email is registered via a different sign-in method")
 	ErrEmailAlreadyUsedByOtherMethod    = errors.New("this email is already registered with another method")
-	ErrInvalidFirebaseToken             = errors.New("invalid or expired Firebase token")
+	ErrInvalidSocialToken               = errors.New("invalid or expired social authentication token")
 	ErrEmailNotVerified                 = errors.New("email not verified by provider")
-	ErrFirebasePasswordSignInNotAllowed = errors.New("email/password sign-in must use local authentication")
+	ErrEmailPasswordSignInNotAllowed    = errors.New("email/password sign-in must use local authentication")
 	ErrSocialLoginNotAvailable          = errors.New("social login is not available on this server")
 
 	ErrOrderNotFound            = errors.New("order not found")
