@@ -1,10 +1,10 @@
-# Go Shop Yourself
+# Go Marketplace
 
 A robust e-commerce backend built with Go, featuring a clean, feature-based architecture.
 
 ## 🚀 Overview
 
-**Go Shop Yourself** is a comprehensive e-commerce API service designed for scalability and maintainability. It provides a full set of features for users, merchants, products, and order management, all powered by High-performance technologies like Go and Fiber.
+**Go Marketplace** is a comprehensive e-commerce API service designed for scalability and maintainability. It provides a full set of features for users, merchants, products, and order management, all powered by High-performance technologies like Go and Fiber.
 
 ### Key Features
 - **Authentication**: JWT-based auth with refresh token family support for secure sessions.
@@ -46,8 +46,8 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/go-shop-yourself.git
-   cd go-shop-yourself
+   git clone https://github.com/yourusername/go-marketplace.git
+   cd go-marketplace
    ```
 
 2. **Configure Environment Variables**:

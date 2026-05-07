@@ -1,92 +1,6 @@
 basePath: /api
 definitions:
-  auth.AuthResponse:
-    properties:
-      access_token:
-        type: string
-      created_at:
-        type: string
-      email:
-        type: string
-      full_name:
-        type: string
-      id:
-        type: string
-      refresh_token:
-        type: string
-      username:
-        type: string
-    type: object
-  auth.LoginRequest:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-    type: object
-  auth.LogoutRequest:
-    properties:
-      refresh_token:
-        type: string
-    type: object
-  auth.RefreshRequest:
-    properties:
-      refresh_token:
-        type: string
-    type: object
-  auth.RegisterRequest:
-    properties:
-      email:
-        type: string
-      full_name:
-        type: string
-      password:
-        type: string
-      username:
-        type: string
-    type: object
-  auth.SocialLoginRequest:
-    properties:
-      access_token:
-        type: string
-    type: object
-  cart.AddToCartRequest:
-    properties:
-      product_id:
-        type: string
-      quantity:
-        type: integer
-    type: object
-  cart.CartItemResponse:
-    properties:
-      id:
-        type: string
-      price:
-        type: number
-      product_id:
-        type: string
-      product_name:
-        type: string
-      quantity:
-        type: integer
-      subtotal:
-        type: number
-    type: object
-  cart.CartResponse:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/cart.CartItemResponse'
-        type: array
-      total_price:
-        type: number
-    type: object
-  cart.UpdateCartItemRequest:
-    properties:
-      quantity:
-        type: integer
-    type: object
-  common.ResponseWrapper:
+  go-marketplace_internal_common.ResponseWrapper:
     properties:
       data: {}
       message:
@@ -94,7 +8,7 @@ definitions:
       status:
         type: integer
     type: object
-  domain.AddressTag:
+  go-marketplace_internal_domain.AddressTag:
     enum:
     - home
     - work
@@ -102,7 +16,7 @@ definitions:
     x-enum-varnames:
     - AddressTagHome
     - AddressTagWork
-  domain.OrderStatus:
+  go-marketplace_internal_domain.OrderStatus:
     enum:
     - pending
     - processing
@@ -118,7 +32,7 @@ definitions:
     - OrderStatusShipping
     - OrderStatusDelivered
     - OrderStatusCancelled
-  domain.User:
+  go-marketplace_internal_domain.User:
     properties:
       auth_provider:
         type: string
@@ -135,7 +49,93 @@ definitions:
       username:
         type: string
     type: object
-  merchant.MerchantRegisterRequest:
+  internal_core_auth.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      refresh_token:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_core_auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  internal_core_auth.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  internal_core_auth.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  internal_core_auth.RegisterRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_core_auth.SocialLoginRequest:
+    properties:
+      access_token:
+        type: string
+    type: object
+  internal_core_cart.AddToCartRequest:
+    properties:
+      product_id:
+        type: string
+      quantity:
+        type: integer
+    type: object
+  internal_core_cart.CartItemResponse:
+    properties:
+      id:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: string
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      subtotal:
+        type: number
+    type: object
+  internal_core_cart.CartResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_core_cart.CartItemResponse'
+        type: array
+      total_price:
+        type: number
+    type: object
+  internal_core_cart.UpdateCartItemRequest:
+    properties:
+      quantity:
+        type: integer
+    type: object
+  internal_core_merchant.MerchantRegisterRequest:
     properties:
       about:
         type: string
@@ -144,7 +144,7 @@ definitions:
       tax_id:
         type: string
     type: object
-  merchant.MerchantResponse:
+  internal_core_merchant.MerchantResponse:
     properties:
       about:
         type: string
@@ -155,12 +155,12 @@ definitions:
       name:
         type: string
     type: object
-  order.AppealOrderRequest:
+  internal_core_order.AppealOrderRequest:
     properties:
       reason:
         type: string
     type: object
-  order.CheckoutRequest:
+  internal_core_order.CheckoutRequest:
     properties:
       address_id:
         type: string
@@ -179,7 +179,7 @@ definitions:
       shipping_street_address:
         type: string
     type: object
-  order.OrderItemResponse:
+  internal_core_order.OrderItemResponse:
     properties:
       id:
         type: string
@@ -190,7 +190,7 @@ definitions:
       quantity:
         type: integer
     type: object
-  order.OrderResponse:
+  internal_core_order.OrderResponse:
     properties:
       created_at:
         type: string
@@ -200,7 +200,7 @@ definitions:
         type: boolean
       items:
         items:
-          $ref: '#/definitions/order.OrderItemResponse'
+          $ref: '#/definitions/internal_core_order.OrderItemResponse'
         type: array
       merchant_id:
         type: string
@@ -219,18 +219,18 @@ definitions:
       shipping_street_address:
         type: string
       status:
-        $ref: '#/definitions/domain.OrderStatus'
+        $ref: '#/definitions/go-marketplace_internal_domain.OrderStatus'
       total_amount:
         type: number
       updated_at:
         type: string
     type: object
-  order.UpdateStatusRequest:
+  internal_core_order.UpdateStatusRequest:
     properties:
       status:
-        $ref: '#/definitions/domain.OrderStatus'
+        $ref: '#/definitions/go-marketplace_internal_domain.OrderStatus'
     type: object
-  product.ProductCreateRequest:
+  internal_core_product.ProductCreateRequest:
     properties:
       depth_cm:
         type: number
@@ -253,7 +253,7 @@ definitions:
       width_cm:
         type: number
     type: object
-  product.ProductResponse:
+  internal_core_product.ProductResponse:
     properties:
       created_at:
         type: string
@@ -270,7 +270,7 @@ definitions:
       stock:
         type: integer
     type: object
-  product.ProductUpdateRequest:
+  internal_core_product.ProductUpdateRequest:
     properties:
       description:
         type: string
@@ -283,7 +283,7 @@ definitions:
       stock:
         type: integer
     type: object
-  user.AddressRequest:
+  internal_core_user.AddressRequest:
     properties:
       city:
         type: string
@@ -300,9 +300,9 @@ definitions:
       street_address:
         type: string
       tag:
-        $ref: '#/definitions/domain.AddressTag'
+        $ref: '#/definitions/go-marketplace_internal_domain.AddressTag'
     type: object
-  user.AddressResponse:
+  internal_core_user.AddressResponse:
     properties:
       city:
         type: string
@@ -323,9 +323,9 @@ definitions:
       street_address:
         type: string
       tag:
-        $ref: '#/definitions/domain.AddressTag'
+        $ref: '#/definitions/go-marketplace_internal_domain.AddressTag'
     type: object
-  wallet.TransactionResponse:
+  internal_core_wallet.TransactionResponse:
     properties:
       amount:
         type: number
@@ -348,7 +348,7 @@ definitions:
       wallet_id:
         type: string
     type: object
-  wallet.WalletResponse:
+  internal_core_wallet.WalletResponse:
     properties:
       balance:
         type: number
@@ -367,7 +367,7 @@ definitions:
       wallet_number:
         type: string
     type: object
-  wallet.WithdrawRequest:
+  internal_core_wallet.WithdrawRequest:
     properties:
       amount:
         type: number
@@ -385,7 +385,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: Go Shop Yourself API
+  title: Go Marketplace API
   version: "1.0"
 paths:
   /auth/login:
@@ -399,7 +399,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.LoginRequest'
+          $ref: '#/definitions/internal_core_auth.LoginRequest'
       produces:
       - application/json
       responses:
@@ -407,23 +407,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/auth.AuthResponse'
+                  $ref: '#/definitions/internal_core_auth.AuthResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       summary: Login user
       tags:
       - auth
@@ -438,26 +438,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.LogoutRequest'
+          $ref: '#/definitions/internal_core_auth.LogoutRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Logout user
@@ -474,7 +474,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.RefreshRequest'
+          $ref: '#/definitions/internal_core_auth.RefreshRequest'
       produces:
       - application/json
       responses:
@@ -482,23 +482,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/auth.AuthResponse'
+                  $ref: '#/definitions/internal_core_auth.AuthResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       summary: Refresh access tokens
       tags:
       - auth
@@ -513,7 +513,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.RegisterRequest'
+          $ref: '#/definitions/internal_core_auth.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -521,23 +521,23 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/auth.AuthResponse'
+                  $ref: '#/definitions/internal_core_auth.AuthResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       summary: Register a new user
       tags:
       - auth
@@ -553,7 +553,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/merchant.MerchantRegisterRequest'
+          $ref: '#/definitions/internal_core_merchant.MerchantRegisterRequest'
       produces:
       - application/json
       responses:
@@ -561,27 +561,27 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/merchant.MerchantResponse'
+                  $ref: '#/definitions/internal_core_merchant.MerchantResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Register as merchant
@@ -599,7 +599,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.SocialLoginRequest'
+          $ref: '#/definitions/internal_core_auth.SocialLoginRequest'
       produces:
       - application/json
       responses:
@@ -607,27 +607,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/auth.AuthResponse'
+                  $ref: '#/definitions/internal_core_auth.AuthResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       summary: Social login
       tags:
       - auth
@@ -640,11 +640,11 @@ paths:
         "200":
           description: Application is healthy
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "503":
           description: Application is unhealthy
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       summary: Check application health
       tags:
       - Health
@@ -665,19 +665,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Cancel order (Merchant)
@@ -700,26 +700,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/order.UpdateStatusRequest'
+          $ref: '#/definitions/internal_core_order.UpdateStatusRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Update order status (Merchant)
@@ -736,7 +736,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/product.ProductCreateRequest'
+          $ref: '#/definitions/internal_core_product.ProductCreateRequest'
       produces:
       - application/json
       responses:
@@ -744,23 +744,23 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/product.ProductResponse'
+                  $ref: '#/definitions/internal_core_product.ProductResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Create product
@@ -782,7 +782,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/product.ProductUpdateRequest'
+          $ref: '#/definitions/internal_core_product.ProductUpdateRequest'
       produces:
       - application/json
       responses:
@@ -790,23 +790,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/product.ProductResponse'
+                  $ref: '#/definitions/internal_core_product.ProductResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Update product
@@ -837,21 +837,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/product.ProductResponse'
+                    $ref: '#/definitions/internal_core_product.ProductResponse'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       summary: Search products
       tags:
       - products
@@ -865,21 +865,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/user.AddressResponse'
+                    $ref: '#/definitions/internal_core_user.AddressResponse'
                   type: array
               type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: List user addresses
@@ -895,7 +895,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/user.AddressRequest'
+          $ref: '#/definitions/internal_core_user.AddressRequest'
       produces:
       - application/json
       responses:
@@ -903,23 +903,23 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/user.AddressResponse'
+                  $ref: '#/definitions/internal_core_user.AddressResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Add user address
@@ -938,23 +938,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Delete user address
@@ -975,7 +975,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/user.AddressRequest'
+          $ref: '#/definitions/internal_core_user.AddressRequest'
       produces:
       - application/json
       responses:
@@ -983,27 +983,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/user.AddressResponse'
+                  $ref: '#/definitions/internal_core_user.AddressResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Update user address
@@ -1020,11 +1020,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Clear cart
@@ -1042,15 +1042,15 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/cart.CartResponse'
+                  $ref: '#/definitions/internal_core_cart.CartResponse'
               type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get cart
@@ -1067,26 +1067,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/cart.AddToCartRequest'
+          $ref: '#/definitions/internal_core_cart.AddToCartRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Add to cart
@@ -1109,15 +1109,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Remove from cart
@@ -1139,22 +1139,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/cart.UpdateCartItemRequest'
+          $ref: '#/definitions/internal_core_cart.UpdateCartItemRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Update cart item
@@ -1170,23 +1170,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/domain.User'
+                  $ref: '#/definitions/go-marketplace_internal_domain.User'
               type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get user profile
@@ -1204,7 +1204,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/order.CheckoutRequest'
+          $ref: '#/definitions/internal_core_order.CheckoutRequest'
       produces:
       - application/json
       responses:
@@ -1212,19 +1212,19 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/order.OrderResponse'
+                  $ref: '#/definitions/internal_core_order.OrderResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Create order from cart
@@ -1248,23 +1248,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/order.OrderResponse'
+                  $ref: '#/definitions/internal_core_order.OrderResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get order details
@@ -1286,22 +1286,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/order.AppealOrderRequest'
+          $ref: '#/definitions/internal_core_order.AppealOrderRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Appeal order (User)
@@ -1325,15 +1325,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Cancel order (User)
@@ -1351,19 +1351,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/wallet.WalletResponse'
+                  $ref: '#/definitions/internal_core_wallet.WalletResponse'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get wallet
@@ -1380,19 +1380,19 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
-                  $ref: '#/definitions/wallet.WalletResponse'
+                  $ref: '#/definitions/internal_core_wallet.WalletResponse'
               type: object
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Create wallet
@@ -1419,21 +1419,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/common.ResponseWrapper'
+            - $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/wallet.TransactionResponse'
+                    $ref: '#/definitions/internal_core_wallet.TransactionResponse'
                   type: array
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get wallet history
@@ -1450,22 +1450,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/wallet.WithdrawRequest'
+          $ref: '#/definitions/internal_core_wallet.WithdrawRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/common.ResponseWrapper'
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
       security:
       - BearerAuth: []
       summary: Withdraw from wallet
