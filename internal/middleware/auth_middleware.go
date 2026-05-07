@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"go-shop-yourself/internal/auth"
-	"go-shop-yourself/internal/common"
+	"go-marketplace/internal/common"
+	"go-marketplace/internal/core/auth"
 
 	"github.com/gofiber/fiber/v2"
 )

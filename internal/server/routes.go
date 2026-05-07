@@ -1,22 +1,23 @@
 package server
 
 import (
-	"go-shop-yourself/internal/auth"
-	"go-shop-yourself/internal/cart"
-	"go-shop-yourself/internal/common"
-	"go-shop-yourself/internal/health"
-	"go-shop-yourself/internal/merchant"
-	"go-shop-yourself/internal/middleware"
-	"go-shop-yourself/internal/order"
-	"go-shop-yourself/internal/product"
-	"go-shop-yourself/internal/user"
-	"go-shop-yourself/internal/wallet"
+	"go-marketplace/internal/common"
+	"go-marketplace/internal/core/auth"
+	"go-marketplace/internal/core/cart"
+	"go-marketplace/internal/core/health"
+	"go-marketplace/internal/core/merchant"
+	"go-marketplace/internal/core/order"
+	"go-marketplace/internal/core/product"
+	"go-marketplace/internal/core/user"
+	"go-marketplace/internal/core/wallet"
+	"go-marketplace/internal/middleware"
+
+	_ "go-marketplace/docs"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/swagger"
-	_ "go-shop-yourself/docs"
-	"time"
 )
 
 func SetupRoutes(
