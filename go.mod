@@ -1,4 +1,4 @@
-module go-shop-yourself
+module go-marketplace
 
 go 1.25.8
 
@@ -9,7 +9,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/joho/godotenv v1.5.1
-	github.com/opensearch-project/opensearch-go/v3 v3.1.0
 	github.com/pashagolub/pgxmock/v4 v4.9.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.11.1

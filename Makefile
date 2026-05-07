@@ -11,7 +11,7 @@ MIGRATIONS_PATH=internal/database/migrations
 
 swagger: ## Generate swagger documentation
 	@echo "Generating swagger..."
-	swag init -g main.go --parseDependency --parseInternal
+	swag init -g cmd/api/main.go --parseDependency --parseInternal
 
 test: ## Run all tests
 	@echo "Running tests..."
@@ -26,15 +26,15 @@ help: ## Show this help message
 
 build: ## Build the application
 	@echo "Building application..."
-	go build -o go-shop-yourself main.go
+	go build -o go-marketplace cmd/api/main.go
 
 run: ## Run the application
 	@echo "Running application..."
-	go run main.go
+	go run cmd/api/main.go
 
 clean: ## Remove the compiled binary
 	@echo "Cleaning up..."
-	rm -f go-shop-yourself
+	rm -f go-marketplace
 
 fmt: ## Format the code
 	@echo "Formatting code..."
@@ -59,10 +59,3 @@ migrate-create: ## Create a new migration file (usage: make migrate-create name=
 mock: ## Generate mocks using mockery
 	@echo "Generating mocks..."
 	mockery
-
-
-	@echo "Setting up social test users in emulator..."
-	@go run scratch/setup_social_users.go
-
-# Example to generate a token:
-	@go run scratch/gen_token.go -provider=$(provider)
