@@ -26,11 +26,11 @@ help: ## Show this help message
 
 build: ## Build the application
 	@echo "Building application..."
-	go build -o go-marketplace main.go
+	go build -o go-marketplace cmd/api/main.go
 
 run: ## Run the application
 	@echo "Running application..."
-	go run main.go
+	go run cmd/api/main.go
 
 clean: ## Remove the compiled binary
 	@echo "Cleaning up..."
@@ -59,10 +59,3 @@ migrate-create: ## Create a new migration file (usage: make migrate-create name=
 mock: ## Generate mocks using mockery
 	@echo "Generating mocks..."
 	mockery
-
-
-	@echo "Setting up social test users in emulator..."
-	@go run scratch/setup_social_users.go
-
-# Example to generate a token:
-	@go run scratch/gen_token.go -provider=$(provider)
