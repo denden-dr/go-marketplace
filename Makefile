@@ -11,7 +11,7 @@ MIGRATIONS_PATH=internal/database/migrations
 
 swagger: ## Generate swagger documentation
 	@echo "Generating swagger..."
-	swag init -g main.go --parseDependency --parseInternal
+	swag init -g cmd/api/main.go --parseDependency --parseInternal
 
 test: ## Run all tests
 	@echo "Running tests..."
@@ -26,7 +26,7 @@ help: ## Show this help message
 
 build: ## Build the application
 	@echo "Building application..."
-	go build -o go-shop-yourself main.go
+	go build -o go-marketplace main.go
 
 run: ## Run the application
 	@echo "Running application..."
@@ -34,7 +34,7 @@ run: ## Run the application
 
 clean: ## Remove the compiled binary
 	@echo "Cleaning up..."
-	rm -f go-shop-yourself
+	rm -f go-marketplace
 
 fmt: ## Format the code
 	@echo "Formatting code..."
