@@ -10,7 +10,7 @@ import (
 	"go-marketplace/internal/core/wallet"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 )
 
@@ -22,7 +22,7 @@ type MerchantRepository interface {
 	Create(ctx context.Context, m *domain.Merchant) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Merchant, error)
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Merchant, error)
-	CreateTx(ctx context.Context, tx pgx.Tx, m *domain.Merchant) error
+	CreateTx(ctx context.Context, tx *sqlx.Tx, m *domain.Merchant) error
 	GetPool() domain.Pool
 }
 
@@ -77,11 +77,11 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID
 	}
 
 	// Start transaction
-	tx, err := s.repo.GetPool().Begin(ctx)
+	tx, err := s.repo.GetPool().BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
 	// Create Merchant
 	if err := s.repo.CreateTx(ctx, tx, merchant); err != nil {
@@ -94,7 +94,7 @@ func (s *MerchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID
 	}
 
 	// Commit transaction
-	if err := tx.Commit(ctx); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

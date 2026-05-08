@@ -8,7 +8,7 @@ import (
 	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 )
 
@@ -25,7 +25,7 @@ type CartRepository interface {
 	UpdateCartItem(ctx context.Context, userID, productID uuid.UUID, quantity int) error
 	DeleteCartItem(ctx context.Context, userID, productID uuid.UUID) error
 	ClearCart(ctx context.Context, userID uuid.UUID) error
-	ClearCartTX(ctx context.Context, tx pgx.Tx, userID uuid.UUID) error
+	ClearCartTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID) error
 	GetCartByUserID(ctx context.Context, userID uuid.UUID) ([]domain.CartItem, error)
 }
 

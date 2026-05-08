@@ -9,7 +9,7 @@ import (
 	"go-marketplace/internal/core/merchant"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jmoiron/sqlx"
 )
 
 type ProductServiceInterface interface {
@@ -22,8 +22,8 @@ type ProductRepository interface {
 	Create(ctx context.Context, p *domain.Product) error
 	Update(ctx context.Context, p *domain.Product) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, error)
-	GetByIDForUpdateTX(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*domain.Product, error)
-	UpdateStockTX(ctx context.Context, tx pgx.Tx, id uuid.UUID, stock int) error
+	GetByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Product, error)
+	UpdateStockTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, stock int) error
 	Search(ctx context.Context, query string, limit, offset int) ([]domain.Product, error)
 }
 
