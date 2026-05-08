@@ -2,35 +2,35 @@ package merchant
 
 import (
 	"context"
+	"database/sql"
 
 	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 )
 
 type merchantRepository struct {
-	db *pgxpool.Pool
+	db *sqlx.DB
 }
 
-func NewMerchantRepository(db *pgxpool.Pool) MerchantRepository {
+func NewMerchantRepository(db *sqlx.DB) MerchantRepository {
 	return &merchantRepository{db: db}
 }
 
 func (r *merchantRepository) Create(ctx context.Context, m *domain.Merchant) error {
 	query := `INSERT INTO merchants (id, user_id, name, about, tax_id, created_at) 
-	          VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := r.db.Exec(ctx, query, m.ID, m.UserID, m.Name, m.About, m.TaxID, m.CreatedAt)
+	          VALUES (:id, :user_id, :name, :about, :tax_id, :created_at)`
+	_, err := r.db.NamedExecContext(ctx, query, m)
 	return err
 }
 
 func (r *merchantRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Merchant, error) {
 	query := `SELECT id, user_id, name, about, tax_id, created_at FROM merchants WHERE id = $1`
 	var m domain.Merchant
-	err := r.db.QueryRow(ctx, query, id).Scan(&m.ID, &m.UserID, &m.Name, &m.About, &m.TaxID, &m.CreatedAt)
+	err := r.db.GetContext(ctx, &m, query, id)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
@@ -41,9 +41,9 @@ func (r *merchantRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain
 func (r *merchantRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Merchant, error) {
 	query := `SELECT id, user_id, name, about, tax_id, created_at FROM merchants WHERE user_id = $1`
 	var m domain.Merchant
-	err := r.db.QueryRow(ctx, query, userID).Scan(&m.ID, &m.UserID, &m.Name, &m.About, &m.TaxID, &m.CreatedAt)
+	err := r.db.GetContext(ctx, &m, query, userID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
@@ -51,10 +51,10 @@ func (r *merchantRepository) GetByUserID(ctx context.Context, userID uuid.UUID) 
 	return &m, nil
 }
 
-func (r *merchantRepository) CreateTx(ctx context.Context, tx pgx.Tx, m *domain.Merchant) error {
+func (r *merchantRepository) CreateTx(ctx context.Context, tx *sqlx.Tx, m *domain.Merchant) error {
 	query := `INSERT INTO merchants (id, user_id, name, about, tax_id, created_at) 
-	          VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := tx.Exec(ctx, query, m.ID, m.UserID, m.Name, m.About, m.TaxID, m.CreatedAt)
+	          VALUES (:id, :user_id, :name, :about, :tax_id, :created_at)`
+	_, err := tx.NamedExecContext(ctx, query, m)
 	return err
 }
 
