@@ -21,7 +21,7 @@ func NewHealthHandler(db *sqlx.DB) *HealthHandler {
 
 // CheckStatus handles the health check request.
 // @Summary Check application health
-// @Description Checks connectivity to the database, OpenSearch, and Supabase configuration.
+// @Description Checks connectivity to the database and Supabase configuration.
 // @Tags Health
 // @Produce json
 // @Success 200 {object} common.ResponseWrapper "Application is healthy"

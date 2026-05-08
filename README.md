@@ -14,9 +14,8 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Shopping Cart**: Real-time cart management with price calculations.
 - **Order Processing**: Complete checkout flow, order status tracking, and history.
 - **Wallet System**: Internal wallet for users to manage balances and pay for orders.
-- **Product Search**: Robust full-text and fuzzy search powered by PostgreSQL `pg_trgm` and `tsvector`.
-- **Security**: Built-in rate limiting on authentication endpoints and strict input validation.
-- **Health Monitoring**: Real-time monitoring of application, database, Supabase and OpenSearch connectivity.
+- **Health Monitoring**: Real-time monitoring of application, database, and Supabase connectivity.
+- **Product Search**: Robust semantic and full-text search powered by PostgreSQL `pg_trgm`, `tsvector`, and `pgvector`.
 - **DB Migrations**: Automated database versioning and migrations.
 
 ---
@@ -27,7 +26,7 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Web Framework**: [Fiber v2](https://gofiber.io/)
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
 - **Database Tooling**: [sqlx](https://github.com/jmoiron/sqlx) (abstraction), [pgx](https://github.com/jackc/pgx) (stdlib driver), [golang-migrate](https://github.com/golang-migrate/migrate)
-- **Search Engine**: [OpenSearch](https://opensearch.org/)
+- **Search Engine**: [PostgreSQL pgvector](https://github.com/pgvector/pgvector)
 - **JSON Web Tokens**: [golang-jwt](https://github.com/golang-jwt/jwt)
 - **Unit Testing**: [testify](https://github.com/stretchr/testify), [sqlmock](https://github.com/DATA-DOG/go-sqlmock), [mockery](https://github.com/vektra/mockery)
 - **Utilities**: [godotenv](https://github.com/joho/godotenv), [shopspring/decimal](https://github.com/shopspring/decimal)
@@ -139,7 +138,7 @@ internal/
 ├── product/     # Product catalog
 ├── user/        # User accounts & profiles
 ├── wallet/      # Digital balance & transactions
-├── health/      # Application health checks (DB, OS)
+├── health/      # Application health checks (DB, Supabase)
 └── server/      # Router & Fiber initialization
 ```
 
@@ -158,7 +157,7 @@ make test
 
 ## 🏥 Health Monitoring
 
-The application provides a public health check endpoint to monitor the status of the service and its dependencies (Database and OpenSearch).
+The application provides a public health check endpoint to monitor the status of the service and its dependencies (Database and Supabase).
 
 - **Endpoint**: `GET /api/health`
 - **Response Format**: JSON
@@ -178,7 +177,6 @@ curl http://localhost:3000/api/health
   "data": {
     "components": {
       "database": "up",
-      "opensearch": "up",
       "supabase": "configured"
     }
   }
@@ -187,23 +185,13 @@ curl http://localhost:3000/api/health
 
 ---
 
-## 🔍 OpenSearch Integration
+## 🔍 Vector Search Integration
 
-The project integrates with **OpenSearch** for advanced search capabilities and real-time indexing.
+The project integrates with **pgvector** for advanced semantic search capabilities.
 
 ### Purpose
-- **Health Monitoring**: Connectivity checks are performed as part of the system health status.
-*Next Steps*: OpenSearch will be used to power product search features, providing fast, full-text search and filtering.
+- **Semantic Search**: Leverages vector embeddings to provide more relevant search results beyond keyword matching.
+- **Efficiency**: Integrated directly into PostgreSQL, reducing infrastructure complexity.
 
-### Configuration
-Configure OpenSearch using the following environment variables in your `.env` file:
-
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `OPENSEARCH_HOST` | Hostname of the OpenSearch cluster | `localhost` |
-| `OPENSEARCH_PORT` | Port for OpenSearch service | `9200` |
-| `OPENSEARCH_USER` | Username for authentication | `admin` |
-| `OPENSEARCH_PASSWORD` | Password for authentication | `admin` |
-
-### Connection logic
-The application uses the `opensearch-go/v3` client. Connections are initialized in `main.go` and verified during startup. If OpenSearch is unavailable, the application will log a warning but continue to run (depending on feature availability).
+### Next Steps
+The application will use `pgvector-go` to manage embeddings and perform similarity searches.

@@ -420,7 +420,7 @@ const docTemplate = `{
         },
         "/health": {
             "get": {
-                "description": "Checks connectivity to the database, OpenSearch, and Supabase configuration.",
+                "description": "Checks connectivity to the database and Supabase configuration.",
                 "produces": [
                     "application/json"
                 ],
