@@ -4,9 +4,32 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
+# Container engine auto-detection
+DOCKER_BIN := $(shell which podman 2>/dev/null || which docker 2>/dev/null)
+DOCKER_COMPOSE := $(shell if $(DOCKER_BIN) compose version >/dev/null 2>&1; then echo "$(DOCKER_BIN) compose"; else echo "docker-compose"; fi)
+
 # Database connection string
 DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_PATH=internal/database/migrations
+
+
+docker-up: ## Start containers in detached mode
+	@echo "Starting containers..."
+	$(DOCKER_COMPOSE) up -d
+
+docker-down: ## Stop and remove containers
+	@echo "Stopping containers..."
+	$(DOCKER_COMPOSE) down
+
+docker-logs: ## Follow container logs
+	@echo "Following logs..."
+	$(DOCKER_COMPOSE) logs -f
+
+docker-shell: ## Interactive shell in the API container
+	@echo "Opening shell..."
+	$(DOCKER_BIN) exec -it marketplace-api sh
+
+
 
 
 swagger: ## Generate swagger documentation
@@ -26,7 +49,7 @@ help: ## Show this help message
 
 build: ## Build the application
 	@echo "Building application..."
-	go build -o go-marketplace cmd/api/main.go
+	go build -o bin/go-marketplace cmd/api/main.go
 
 run: ## Run the application
 	@echo "Running application..."
