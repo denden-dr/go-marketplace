@@ -43,3 +43,4 @@ _*.md
 .superpowers/
 .worktrees/
 
+!Dockerfile.test
