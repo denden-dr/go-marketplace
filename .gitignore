@@ -41,4 +41,6 @@ secret/
 
 _*.md
 .superpowers/
+.worktrees/
 
+!Dockerfile.test

@@ -29,6 +29,11 @@ docker-shell: ## Interactive shell in the API container
 	@echo "Opening shell..."
 	$(DOCKER_BIN) exec -it marketplace-api sh
 
+test-docker: ## Run tests in Docker containers
+	@echo "Running tests in Docker..."
+	$(DOCKER_COMPOSE) -f docker-compose.test.yaml up --build --abort-on-container-exit --exit-code-from test-runner
+	$(DOCKER_COMPOSE) -f docker-compose.test.yaml down -v
+
 
 
 
