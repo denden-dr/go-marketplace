@@ -6,32 +6,32 @@ dir: "{{.InterfaceDir}}"
 mockname: "Mock{{.InterfaceName}}"
 filename: "mock_{{.InterfaceName}}.go"
 packages:
-  go-marketplace/internal/user:
+  go-marketplace/internal/core/user:
     interfaces:
       UserRepository:
       UserServiceInterface:
-  go-marketplace/internal/auth:
+  go-marketplace/internal/core/auth:
     interfaces:
       AuthServiceInterface:
       RefreshTokenRepository:
       SupabaseAuthClient:
-  go-marketplace/internal/merchant:
+  go-marketplace/internal/core/merchant:
     interfaces:
       MerchantServiceInterface:
       MerchantRepository:
-  go-marketplace/internal/product:
+  go-marketplace/internal/core/product:
     interfaces:
       ProductServiceInterface:
       ProductRepository:
-  go-marketplace/internal/wallet:
+  go-marketplace/internal/core/wallet:
     interfaces:
       WalletServiceInterface:
       WalletRepository:
-  go-marketplace/internal/cart:
+  go-marketplace/internal/core/cart:
     interfaces:
       CartServiceInterface:
       CartRepository:
-  go-marketplace/internal/order:
+  go-marketplace/internal/core/order:
     interfaces:
       OrderServiceInterface:
       OrderRepository:

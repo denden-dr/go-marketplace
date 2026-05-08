@@ -9,11 +9,22 @@ import (
 	"go-marketplace/internal/core/wallet"
 	"go-marketplace/internal/domain"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
-	"github.com/pashagolub/pgxmock/v4"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func getSqlxTx(t *testing.T) (*sqlx.Tx, sqlmock.Sqlmock) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	mock.ExpectBegin()
+	tx, err := sqlxDB.BeginTxx(context.Background(), nil)
+	assert.NoError(t, err)
+	return tx, mock
+}
 
 func TestMerchantService_RegisterMerchant_Success(t *testing.T) {
 	mockRepo := NewMockMerchantRepository(t)
@@ -32,27 +43,26 @@ func TestMerchantService_RegisterMerchant_Success(t *testing.T) {
 
 	u := &domain.User{ID: userID, Email: "test@example.com"}
 
-	// Create pgxmock to simulate the transaction
-	mockTx, err := pgxmock.NewConn()
-	assert.NoError(t, err)
+	// Create sqlmock to simulate the transaction
+	mockTx, sqlMock := getSqlxTx(t)
 
 	mockUserRepo.On("GetUserByID", mock.Anything, userID).Return(u, nil)
 	mockRepo.On("GetByUserID", mock.Anything, userID).Return(nil, nil)
 	mockRepo.On("GetPool").Return(mockPool)
 
-	mockPool.On("Begin", mock.Anything).Return(mockTx, nil)
+	mockPool.On("BeginTxx", mock.Anything, mock.Anything).Return(mockTx, nil)
 	mockRepo.On("CreateTx", mock.Anything, mockTx, mock.Anything).Return(nil)
 	mockWalletRepo.On("CreateTx", mock.Anything, mockTx, mock.Anything).Return(nil)
 
-	// We need to handle the commit since mockTx is a pgxmock
-	mockTx.ExpectCommit()
+	// We need to handle the commit since mockTx is a sqlmock
+	sqlMock.ExpectCommit()
 
 	res, err := service.RegisterMerchant(context.Background(), userID, req)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, "Test Shop", res.Name)
-	assert.NoError(t, mockTx.ExpectationsWereMet())
+	assert.NoError(t, sqlMock.ExpectationsWereMet())
 }
 
 func TestMerchantService_RegisterMerchant_Fail_UserNotFound(t *testing.T) {
@@ -98,7 +108,7 @@ func TestMerchantService_RegisterMerchant_Fail_BeginTxError(t *testing.T) {
 	mockUserRepo.On("GetUserByID", mock.Anything, userID).Return(u, nil)
 	mockRepo.On("GetByUserID", mock.Anything, userID).Return(nil, nil)
 	mockRepo.On("GetPool").Return(mockPool)
-	mockPool.On("Begin", mock.Anything).Return(nil, errors.New("begin fail"))
+	mockPool.On("BeginTxx", mock.Anything, mock.Anything).Return(nil, errors.New("begin fail"))
 
 	_, err := service.RegisterMerchant(context.Background(), userID, MerchantRegisterRequest{Name: "New"})
 

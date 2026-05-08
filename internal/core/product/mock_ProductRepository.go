@@ -8,7 +8,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	pgx "github.com/jackc/pgx/v5"
+	sqlx "github.com/jmoiron/sqlx"
 
 	uuid "github.com/google/uuid"
 )
@@ -133,7 +133,7 @@ func (_c *MockProductRepository_GetByID_Call) RunAndReturn(run func(context.Cont
 }
 
 // GetByIDForUpdateTX provides a mock function with given fields: ctx, tx, id
-func (_m *MockProductRepository) GetByIDForUpdateTX(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*domain.Product, error) {
+func (_m *MockProductRepository) GetByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Product, error) {
 	ret := _m.Called(ctx, tx, id)
 
 	if len(ret) == 0 {
@@ -142,10 +142,10 @@ func (_m *MockProductRepository) GetByIDForUpdateTX(ctx context.Context, tx pgx.
 
 	var r0 *domain.Product
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID) (*domain.Product, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) (*domain.Product, error)); ok {
 		return rf(ctx, tx, id)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID) *domain.Product); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) *domain.Product); ok {
 		r0 = rf(ctx, tx, id)
 	} else {
 		if ret.Get(0) != nil {
@@ -153,7 +153,7 @@ func (_m *MockProductRepository) GetByIDForUpdateTX(ctx context.Context, tx pgx.
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, pgx.Tx, uuid.UUID) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *sqlx.Tx, uuid.UUID) error); ok {
 		r1 = rf(ctx, tx, id)
 	} else {
 		r1 = ret.Error(1)
@@ -169,15 +169,15 @@ type MockProductRepository_GetByIDForUpdateTX_Call struct {
 
 // GetByIDForUpdateTX is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - id uuid.UUID
 func (_e *MockProductRepository_Expecter) GetByIDForUpdateTX(ctx interface{}, tx interface{}, id interface{}) *MockProductRepository_GetByIDForUpdateTX_Call {
 	return &MockProductRepository_GetByIDForUpdateTX_Call{Call: _e.mock.On("GetByIDForUpdateTX", ctx, tx, id)}
 }
 
-func (_c *MockProductRepository_GetByIDForUpdateTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, id uuid.UUID)) *MockProductRepository_GetByIDForUpdateTX_Call {
+func (_c *MockProductRepository_GetByIDForUpdateTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, id uuid.UUID)) *MockProductRepository_GetByIDForUpdateTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID))
 	})
 	return _c
 }
@@ -187,7 +187,7 @@ func (_c *MockProductRepository_GetByIDForUpdateTX_Call) Return(_a0 *domain.Prod
 	return _c
 }
 
-func (_c *MockProductRepository_GetByIDForUpdateTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID) (*domain.Product, error)) *MockProductRepository_GetByIDForUpdateTX_Call {
+func (_c *MockProductRepository_GetByIDForUpdateTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID) (*domain.Product, error)) *MockProductRepository_GetByIDForUpdateTX_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -301,7 +301,7 @@ func (_c *MockProductRepository_Update_Call) RunAndReturn(run func(context.Conte
 }
 
 // UpdateStockTX provides a mock function with given fields: ctx, tx, id, stock
-func (_m *MockProductRepository) UpdateStockTX(ctx context.Context, tx pgx.Tx, id uuid.UUID, stock int) error {
+func (_m *MockProductRepository) UpdateStockTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, stock int) error {
 	ret := _m.Called(ctx, tx, id, stock)
 
 	if len(ret) == 0 {
@@ -309,7 +309,7 @@ func (_m *MockProductRepository) UpdateStockTX(ctx context.Context, tx pgx.Tx, i
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID, int) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID, int) error); ok {
 		r0 = rf(ctx, tx, id, stock)
 	} else {
 		r0 = ret.Error(0)
@@ -325,16 +325,16 @@ type MockProductRepository_UpdateStockTX_Call struct {
 
 // UpdateStockTX is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - id uuid.UUID
 //   - stock int
 func (_e *MockProductRepository_Expecter) UpdateStockTX(ctx interface{}, tx interface{}, id interface{}, stock interface{}) *MockProductRepository_UpdateStockTX_Call {
 	return &MockProductRepository_UpdateStockTX_Call{Call: _e.mock.On("UpdateStockTX", ctx, tx, id, stock)}
 }
 
-func (_c *MockProductRepository_UpdateStockTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, id uuid.UUID, stock int)) *MockProductRepository_UpdateStockTX_Call {
+func (_c *MockProductRepository_UpdateStockTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, stock int)) *MockProductRepository_UpdateStockTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID), args[3].(int))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID), args[3].(int))
 	})
 	return _c
 }
@@ -344,7 +344,7 @@ func (_c *MockProductRepository_UpdateStockTX_Call) Return(_a0 error) *MockProdu
 	return _c
 }
 
-func (_c *MockProductRepository_UpdateStockTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID, int) error) *MockProductRepository_UpdateStockTX_Call {
+func (_c *MockProductRepository_UpdateStockTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID, int) error) *MockProductRepository_UpdateStockTX_Call {
 	_c.Call.Return(run)
 	return _c
 }

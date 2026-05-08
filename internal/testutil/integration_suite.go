@@ -4,19 +4,19 @@ import (
 	"context"
 	"go-marketplace/internal/database"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/suite"
 )
 
 type IntegrationSuite struct {
 	suite.Suite
-	DB *pgxpool.Pool
+	DB *sqlx.DB
 }
 
 func (s *IntegrationSuite) SetupSuite() {
-	pool, err := database.ConnectDB()
+	db, err := database.ConnectDB()
 	s.Require().NoError(err)
-	s.DB = pool
+	s.DB = db
 }
 
 func (s *IntegrationSuite) TearDownSuite() {
@@ -46,7 +46,7 @@ func (s *IntegrationSuite) TruncateTables() {
 	}
 
 	for _, table := range tables {
-		_, err := s.DB.Exec(context.Background(), "TRUNCATE TABLE "+table+" CASCADE")
+		_, err := s.DB.ExecContext(context.Background(), "TRUNCATE TABLE "+table+" CASCADE")
 		s.Require().NoError(err)
 	}
 }

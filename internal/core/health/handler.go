@@ -1,20 +1,19 @@
 package health
 
 import (
-	"context"
 	"go-marketplace/internal/common"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 
 	"os"
 )
 
 type HealthHandler struct {
-	db *pgxpool.Pool
+	db *sqlx.DB
 }
 
-func NewHealthHandler(db *pgxpool.Pool) *HealthHandler {
+func NewHealthHandler(db *sqlx.DB) *HealthHandler {
 	return &HealthHandler{
 		db: db,
 	}
@@ -34,7 +33,7 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 	statusCode := fiber.StatusOK
 
 	// Check Database
-	if err := h.db.Ping(context.Background()); err != nil {
+	if err := h.db.Ping(); err != nil {
 		dbStatus = "down"
 		message = "application is unhealthy"
 		statusCode = fiber.StatusServiceUnavailable

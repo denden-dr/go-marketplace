@@ -2,10 +2,11 @@ package domain
 
 import (
 	"context"
+	"database/sql"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jmoiron/sqlx"
 )
 
 type Pool interface {
-	Begin(ctx context.Context) (pgx.Tx, error)
+	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
 }

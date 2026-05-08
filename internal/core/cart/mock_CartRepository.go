@@ -8,7 +8,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	pgx "github.com/jackc/pgx/v5"
+	sqlx "github.com/jmoiron/sqlx"
 
 	uuid "github.com/google/uuid"
 )
@@ -74,7 +74,7 @@ func (_c *MockCartRepository_ClearCart_Call) RunAndReturn(run func(context.Conte
 }
 
 // ClearCartTX provides a mock function with given fields: ctx, tx, userID
-func (_m *MockCartRepository) ClearCartTX(ctx context.Context, tx pgx.Tx, userID uuid.UUID) error {
+func (_m *MockCartRepository) ClearCartTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID) error {
 	ret := _m.Called(ctx, tx, userID)
 
 	if len(ret) == 0 {
@@ -82,7 +82,7 @@ func (_m *MockCartRepository) ClearCartTX(ctx context.Context, tx pgx.Tx, userID
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) error); ok {
 		r0 = rf(ctx, tx, userID)
 	} else {
 		r0 = ret.Error(0)
@@ -98,15 +98,15 @@ type MockCartRepository_ClearCartTX_Call struct {
 
 // ClearCartTX is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - userID uuid.UUID
 func (_e *MockCartRepository_Expecter) ClearCartTX(ctx interface{}, tx interface{}, userID interface{}) *MockCartRepository_ClearCartTX_Call {
 	return &MockCartRepository_ClearCartTX_Call{Call: _e.mock.On("ClearCartTX", ctx, tx, userID)}
 }
 
-func (_c *MockCartRepository_ClearCartTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, userID uuid.UUID)) *MockCartRepository_ClearCartTX_Call {
+func (_c *MockCartRepository_ClearCartTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID)) *MockCartRepository_ClearCartTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID))
 	})
 	return _c
 }
@@ -116,7 +116,7 @@ func (_c *MockCartRepository_ClearCartTX_Call) Return(_a0 error) *MockCartReposi
 	return _c
 }
 
-func (_c *MockCartRepository_ClearCartTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID) error) *MockCartRepository_ClearCartTX_Call {
+func (_c *MockCartRepository_ClearCartTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID) error) *MockCartRepository_ClearCartTX_Call {
 	_c.Call.Return(run)
 	return _c
 }

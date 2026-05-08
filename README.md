@@ -26,10 +26,10 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Language**: [Go](https://go.dev/) (v1.25.8+)
 - **Web Framework**: [Fiber v2](https://gofiber.io/)
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
-- **Database Tooling**: [pgxpool](https://github.com/jackc/pgx) (Driver/Pool), [golang-migrate](https://github.com/golang-migrate/migrate)
+- **Database Tooling**: [sqlx](https://github.com/jmoiron/sqlx) (abstraction), [pgx](https://github.com/jackc/pgx) (stdlib driver), [golang-migrate](https://github.com/golang-migrate/migrate)
 - **Search Engine**: [OpenSearch](https://opensearch.org/)
 - **JSON Web Tokens**: [golang-jwt](https://github.com/golang-jwt/jwt)
-- **Unit Testing**: [testify](https://github.com/stretchr/testify), [pgxmock](https://github.com/pashagolub/pgxmock), [mockery](https://github.com/vektra/mockery)
+- **Unit Testing**: [testify](https://github.com/stretchr/testify), [sqlmock](https://github.com/DATA-DOG/go-sqlmock), [mockery](https://github.com/vektra/mockery)
 - **Utilities**: [godotenv](https://github.com/joho/godotenv), [shopspring/decimal](https://github.com/shopspring/decimal)
 
 ---

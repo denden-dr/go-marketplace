@@ -1,16 +1,16 @@
 package database
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 )
 
-// ConnectDB initializes the database connection pool.
-func ConnectDB() (*pgxpool.Pool, error) {
+// ConnectDB initializes the database connection using sqlx.
+func ConnectDB() (*sqlx.DB, error) {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	user := os.Getenv("DB_USER")
@@ -20,21 +20,11 @@ func ConnectDB() (*pgxpool.Pool, error) {
 	// Construct DSN string
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, pass, host, port, name)
 
-	config, err := pgxpool.ParseConfig(dsn)
+	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse DSN: %w", err)
-	}
-
-	dbPool, err := pgxpool.NewWithConfig(context.Background(), config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create connection pool: %w", err)
-	}
-
-	// Verify connection
-	if err := dbPool.Ping(context.Background()); err != nil {
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
-	log.Println("Connected to PostgreSQL successfully")
-	return dbPool, nil
+	log.Println("Connected to PostgreSQL via sqlx successfully")
+	return db, nil
 }

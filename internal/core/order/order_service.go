@@ -12,7 +12,7 @@ import (
 	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 )
 
@@ -26,15 +26,15 @@ type OrderServiceInterface interface {
 }
 
 type OrderRepository interface {
-	Begin(ctx context.Context) (pgx.Tx, error)
-	CreateOrderPaymentTX(ctx context.Context, tx pgx.Tx, p *domain.OrderPayment) error
-	CreateOrderTX(ctx context.Context, tx pgx.Tx, o *domain.Order) error
-	CreateOrderItemTX(ctx context.Context, tx pgx.Tx, item *domain.OrderItem) error
+	Begin(ctx context.Context) (*sqlx.Tx, error)
+	CreateOrderPaymentTX(ctx context.Context, tx *sqlx.Tx, p *domain.OrderPayment) error
+	CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error
+	CreateOrderItemTX(ctx context.Context, tx *sqlx.Tx, item *domain.OrderItem) error
 	GetOrderByID(ctx context.Context, id uuid.UUID) (*domain.Order, error)
 	UpdateOrderStatus(ctx context.Context, id uuid.UUID, status domain.OrderStatus) error
-	UpdateOrderStatusTX(ctx context.Context, tx pgx.Tx, id uuid.UUID, status domain.OrderStatus) error
+	UpdateOrderStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.OrderStatus) error
 	CreateAppeal(ctx context.Context, appeal *domain.CancellationAppeal) error
-	UpdateOrderAppealTX(ctx context.Context, tx pgx.Tx, orderID uuid.UUID, isAppealed bool) error
+	UpdateOrderAppealTX(ctx context.Context, tx *sqlx.Tx, orderID uuid.UUID, isAppealed bool) error
 	GetOrderItems(ctx context.Context, orderID uuid.UUID) ([]domain.OrderItem, error)
 }
 
@@ -67,7 +67,7 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
 	// 1. Get Cart Items
 	cartItems, err := s.cartRepo.GetCartByUserID(ctx, userID)
@@ -245,7 +245,7 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		return nil, err
 	}
 
-	if err := tx.Commit(ctx); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -279,7 +279,7 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
 	// Update Order Status
 	if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, orderID, domain.OrderStatusCancelled); err != nil {
@@ -321,7 +321,7 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 		}
 	}
 
-	return tx.Commit(ctx)
+	return tx.Commit()
 }
 
 func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid.UUID, reason string) error {
@@ -345,7 +345,7 @@ func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
 	appeal := &domain.CancellationAppeal{
 		ID:        uuid.New(),
@@ -362,7 +362,7 @@ func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid
 		return err
 	}
 
-	return tx.Commit(ctx)
+	return tx.Commit()
 }
 
 func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error {
@@ -423,7 +423,7 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
 	if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, orderID, domain.OrderStatusCancelled); err != nil {
 		return err
@@ -464,7 +464,7 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 		}
 	}
 
-	return tx.Commit(ctx)
+	return tx.Commit()
 }
 
 func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderResponse, error) {

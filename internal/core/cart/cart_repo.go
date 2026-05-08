@@ -6,51 +6,50 @@ import (
 	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 )
 
 type cartRepository struct {
-	db *pgxpool.Pool
+	db *sqlx.DB
 }
 
-func NewCartRepository(db *pgxpool.Pool) CartRepository {
+func NewCartRepository(db *sqlx.DB) CartRepository {
 	return &cartRepository{db: db}
 }
 
 func (r *cartRepository) UpsertCartItem(ctx context.Context, item *domain.CartItem) error {
 	query := `
 		INSERT INTO cart_items (id, user_id, product_id, quantity, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES (:id, :user_id, :product_id, :quantity, :created_at, :updated_at)
 		ON CONFLICT (user_id, product_id) DO UPDATE SET
 			quantity = cart_items.quantity + EXCLUDED.quantity,
 			updated_at = EXCLUDED.updated_at
 	`
-	_, err := r.db.Exec(ctx, query, item.ID, item.UserID, item.ProductID, item.Quantity, item.CreatedAt, item.UpdatedAt)
+	_, err := r.db.NamedExecContext(ctx, query, item)
 	return err
 }
 
 func (r *cartRepository) UpdateCartItem(ctx context.Context, userID, productID uuid.UUID, quantity int) error {
 	query := `UPDATE cart_items SET quantity = $1, updated_at = NOW() WHERE user_id = $2 AND product_id = $3`
-	_, err := r.db.Exec(ctx, query, quantity, userID, productID)
+	_, err := r.db.ExecContext(ctx, query, quantity, userID, productID)
 	return err
 }
 
 func (r *cartRepository) DeleteCartItem(ctx context.Context, userID, productID uuid.UUID) error {
 	query := `DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2`
-	_, err := r.db.Exec(ctx, query, userID, productID)
+	_, err := r.db.ExecContext(ctx, query, userID, productID)
 	return err
 }
 
 func (r *cartRepository) ClearCart(ctx context.Context, userID uuid.UUID) error {
 	query := `DELETE FROM cart_items WHERE user_id = $1`
-	_, err := r.db.Exec(ctx, query, userID)
+	_, err := r.db.ExecContext(ctx, query, userID)
 	return err
 }
 
-func (r *cartRepository) ClearCartTX(ctx context.Context, tx pgx.Tx, userID uuid.UUID) error {
+func (r *cartRepository) ClearCartTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID) error {
 	query := `DELETE FROM cart_items WHERE user_id = $1`
-	_, err := tx.Exec(ctx, query, userID)
+	_, err := tx.ExecContext(ctx, query, userID)
 	return err
 }
 
@@ -62,7 +61,7 @@ func (r *cartRepository) GetCartByUserID(ctx context.Context, userID uuid.UUID) 
 		JOIN products p ON ci.product_id = p.id
 		WHERE ci.user_id = $1
 	`
-	rows, err := r.db.Query(ctx, query, userID)
+	rows, err := r.db.QueryxContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
