@@ -12,12 +12,23 @@ import (
 	"go-marketplace/internal/core/wallet"
 	"go-marketplace/internal/domain"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
-	"github.com/pashagolub/pgxmock/v4"
+	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func getSqlxTx(t *testing.T) (*sqlx.Tx, sqlmock.Sqlmock) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	mock.ExpectBegin()
+	tx, err := sqlxDB.BeginTxx(context.Background(), nil)
+	assert.NoError(t, err)
+	return tx, mock
+}
 
 func TestOrderService_CreateUserCheckout_Success(t *testing.T) {
 	mockOrderRepo := NewMockOrderRepository(t)
@@ -32,8 +43,7 @@ func TestOrderService_CreateUserCheckout_Success(t *testing.T) {
 	req := CheckoutRequest{PaymentMethod: "wallet"}
 
 	// Mocks for transaction
-	mockTx, err := pgxmock.NewConn()
-	assert.NoError(t, err)
+	mockTx, sqlMock := getSqlxTx(t)
 
 	productID := uuid.New()
 	merchantID := uuid.New()
@@ -78,7 +88,7 @@ func TestOrderService_CreateUserCheckout_Success(t *testing.T) {
 	mockProductRepo.On("UpdateStockTX", mock.Anything, mockTx, productID, 8).Return(nil)
 	mockCartRepo.On("ClearCartTX", mock.Anything, mockTx, userID).Return(nil)
 
-	mockTx.ExpectCommit()
+	sqlMock.ExpectCommit()
 
 	res, err := service.CreateUserCheckout(context.Background(), userID, req)
 
@@ -86,7 +96,7 @@ func TestOrderService_CreateUserCheckout_Success(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.Equal(t, decimal.NewFromInt(100), res.Amount)
 	assert.Len(t, res.Orders, 1)
-	assert.NoError(t, mockTx.ExpectationsWereMet())
+	assert.NoError(t, sqlMock.ExpectationsWereMet())
 }
 
 func TestOrderService_CreateUserCheckout_CustomAddress(t *testing.T) {
@@ -109,8 +119,7 @@ func TestOrderService_CreateUserCheckout_CustomAddress(t *testing.T) {
 		ShippingPostalCode:    "99999",
 	}
 
-	mockTx, err := pgxmock.NewConn()
-	assert.NoError(t, err)
+	mockTx, sqlMock := getSqlxTx(t)
 
 	productID := uuid.New()
 	merchantID := uuid.New()
@@ -146,13 +155,13 @@ func TestOrderService_CreateUserCheckout_CustomAddress(t *testing.T) {
 	mockProductRepo.On("UpdateStockTX", mock.Anything, mockTx, productID, 9).Return(nil)
 	mockCartRepo.On("ClearCartTX", mock.Anything, mockTx, userID).Return(nil)
 
-	mockTx.ExpectCommit()
+	sqlMock.ExpectCommit()
 
 	res, err := service.CreateUserCheckout(context.Background(), userID, req)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.NoError(t, mockTx.ExpectationsWereMet())
+	assert.NoError(t, sqlMock.ExpectationsWereMet())
 }
 
 func TestOrderService_CancelUserOrder_Success(t *testing.T) {
@@ -174,8 +183,7 @@ func TestOrderService_CancelUserOrder_Success(t *testing.T) {
 		CreatedAt:   time.Now().Add(-10 * time.Minute), // Within 1 hour
 	}
 
-	mockTx, err := pgxmock.NewConn()
-	assert.NoError(t, err)
+	mockTx, sqlMock := getSqlxTx(t)
 
 	w := &domain.Wallet{ID: uuid.New(), UserID: userID}
 	items := []domain.OrderItem{{ProductID: productID, Quantity: 2}}
@@ -190,12 +198,12 @@ func TestOrderService_CancelUserOrder_Success(t *testing.T) {
 	mockProductRepo.On("GetByIDForUpdateTX", mock.Anything, mockTx, productID).Return(p, nil)
 	mockProductRepo.On("UpdateStockTX", mock.Anything, mockTx, productID, 7).Return(nil)
 
-	mockTx.ExpectCommit()
+	sqlMock.ExpectCommit()
 
-	err = service.CancelUserOrder(context.Background(), userID, orderID)
+	err := service.CancelUserOrder(context.Background(), userID, orderID)
 
 	assert.NoError(t, err)
-	assert.NoError(t, mockTx.ExpectationsWereMet())
+	assert.NoError(t, sqlMock.ExpectationsWereMet())
 }
 
 func TestOrderService_CancelUserOrder_FailAfterOneHour(t *testing.T) {
@@ -275,18 +283,17 @@ func TestOrderService_AppealUserOrder_Success(t *testing.T) {
 		CreatedAt: time.Now().Add(-2 * time.Hour), // Eligible for appeal
 	}
 
-	mockTx, err := pgxmock.NewConn()
-	assert.NoError(t, err)
+	mockTx, sqlMock := getSqlxTx(t)
 
 	mockOrderRepo.On("GetOrderByID", mock.Anything, orderID).Return(order, nil)
 	mockOrderRepo.On("Begin", mock.Anything).Return(mockTx, nil)
 	mockOrderRepo.On("CreateAppeal", mock.Anything, mock.Anything).Return(nil)
 	mockOrderRepo.On("UpdateOrderAppealTX", mock.Anything, mockTx, orderID, true).Return(nil)
 
-	mockTx.ExpectCommit()
+	sqlMock.ExpectCommit()
 
-	err = service.AppealUserOrder(context.Background(), userID, orderID, "Packaging took too long")
+	err := service.AppealUserOrder(context.Background(), userID, orderID, "Packaging took too long")
 
 	assert.NoError(t, err)
-	assert.NoError(t, mockTx.ExpectationsWereMet())
+	assert.NoError(t, sqlMock.ExpectationsWereMet())
 }
