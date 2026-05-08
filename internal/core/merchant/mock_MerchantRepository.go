@@ -8,7 +8,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	pgx "github.com/jackc/pgx/v5"
+	sqlx "github.com/jmoiron/sqlx"
 
 	uuid "github.com/google/uuid"
 )
@@ -74,7 +74,7 @@ func (_c *MockMerchantRepository_Create_Call) RunAndReturn(run func(context.Cont
 }
 
 // CreateTx provides a mock function with given fields: ctx, tx, m
-func (_m *MockMerchantRepository) CreateTx(ctx context.Context, tx pgx.Tx, m *domain.Merchant) error {
+func (_m *MockMerchantRepository) CreateTx(ctx context.Context, tx *sqlx.Tx, m *domain.Merchant) error {
 	ret := _m.Called(ctx, tx, m)
 
 	if len(ret) == 0 {
@@ -82,7 +82,7 @@ func (_m *MockMerchantRepository) CreateTx(ctx context.Context, tx pgx.Tx, m *do
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, *domain.Merchant) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, *domain.Merchant) error); ok {
 		r0 = rf(ctx, tx, m)
 	} else {
 		r0 = ret.Error(0)
@@ -98,15 +98,15 @@ type MockMerchantRepository_CreateTx_Call struct {
 
 // CreateTx is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - m *domain.Merchant
 func (_e *MockMerchantRepository_Expecter) CreateTx(ctx interface{}, tx interface{}, m interface{}) *MockMerchantRepository_CreateTx_Call {
 	return &MockMerchantRepository_CreateTx_Call{Call: _e.mock.On("CreateTx", ctx, tx, m)}
 }
 
-func (_c *MockMerchantRepository_CreateTx_Call) Run(run func(ctx context.Context, tx pgx.Tx, m *domain.Merchant)) *MockMerchantRepository_CreateTx_Call {
+func (_c *MockMerchantRepository_CreateTx_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, m *domain.Merchant)) *MockMerchantRepository_CreateTx_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(*domain.Merchant))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(*domain.Merchant))
 	})
 	return _c
 }
@@ -116,7 +116,7 @@ func (_c *MockMerchantRepository_CreateTx_Call) Return(_a0 error) *MockMerchantR
 	return _c
 }
 
-func (_c *MockMerchantRepository_CreateTx_Call) RunAndReturn(run func(context.Context, pgx.Tx, *domain.Merchant) error) *MockMerchantRepository_CreateTx_Call {
+func (_c *MockMerchantRepository_CreateTx_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, *domain.Merchant) error) *MockMerchantRepository_CreateTx_Call {
 	_c.Call.Return(run)
 	return _c
 }

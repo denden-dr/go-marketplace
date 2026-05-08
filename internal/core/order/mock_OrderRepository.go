@@ -8,7 +8,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	pgx "github.com/jackc/pgx/v5"
+	sqlx "github.com/jmoiron/sqlx"
 
 	uuid "github.com/google/uuid"
 )
@@ -27,23 +27,23 @@ func (_m *MockOrderRepository) EXPECT() *MockOrderRepository_Expecter {
 }
 
 // Begin provides a mock function with given fields: ctx
-func (_m *MockOrderRepository) Begin(ctx context.Context) (pgx.Tx, error) {
+func (_m *MockOrderRepository) Begin(ctx context.Context) (*sqlx.Tx, error) {
 	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Begin")
 	}
 
-	var r0 pgx.Tx
+	var r0 *sqlx.Tx
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (pgx.Tx, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context) (*sqlx.Tx, error)); ok {
 		return rf(ctx)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) pgx.Tx); ok {
+	if rf, ok := ret.Get(0).(func(context.Context) *sqlx.Tx); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(pgx.Tx)
+			r0 = ret.Get(0).(*sqlx.Tx)
 		}
 	}
 
@@ -74,12 +74,12 @@ func (_c *MockOrderRepository_Begin_Call) Run(run func(ctx context.Context)) *Mo
 	return _c
 }
 
-func (_c *MockOrderRepository_Begin_Call) Return(_a0 pgx.Tx, _a1 error) *MockOrderRepository_Begin_Call {
+func (_c *MockOrderRepository_Begin_Call) Return(_a0 *sqlx.Tx, _a1 error) *MockOrderRepository_Begin_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockOrderRepository_Begin_Call) RunAndReturn(run func(context.Context) (pgx.Tx, error)) *MockOrderRepository_Begin_Call {
+func (_c *MockOrderRepository_Begin_Call) RunAndReturn(run func(context.Context) (*sqlx.Tx, error)) *MockOrderRepository_Begin_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -132,7 +132,7 @@ func (_c *MockOrderRepository_CreateAppeal_Call) RunAndReturn(run func(context.C
 }
 
 // CreateOrderItemTX provides a mock function with given fields: ctx, tx, item
-func (_m *MockOrderRepository) CreateOrderItemTX(ctx context.Context, tx pgx.Tx, item *domain.OrderItem) error {
+func (_m *MockOrderRepository) CreateOrderItemTX(ctx context.Context, tx *sqlx.Tx, item *domain.OrderItem) error {
 	ret := _m.Called(ctx, tx, item)
 
 	if len(ret) == 0 {
@@ -140,7 +140,7 @@ func (_m *MockOrderRepository) CreateOrderItemTX(ctx context.Context, tx pgx.Tx,
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, *domain.OrderItem) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, *domain.OrderItem) error); ok {
 		r0 = rf(ctx, tx, item)
 	} else {
 		r0 = ret.Error(0)
@@ -156,15 +156,15 @@ type MockOrderRepository_CreateOrderItemTX_Call struct {
 
 // CreateOrderItemTX is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - item *domain.OrderItem
 func (_e *MockOrderRepository_Expecter) CreateOrderItemTX(ctx interface{}, tx interface{}, item interface{}) *MockOrderRepository_CreateOrderItemTX_Call {
 	return &MockOrderRepository_CreateOrderItemTX_Call{Call: _e.mock.On("CreateOrderItemTX", ctx, tx, item)}
 }
 
-func (_c *MockOrderRepository_CreateOrderItemTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, item *domain.OrderItem)) *MockOrderRepository_CreateOrderItemTX_Call {
+func (_c *MockOrderRepository_CreateOrderItemTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, item *domain.OrderItem)) *MockOrderRepository_CreateOrderItemTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(*domain.OrderItem))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(*domain.OrderItem))
 	})
 	return _c
 }
@@ -174,13 +174,13 @@ func (_c *MockOrderRepository_CreateOrderItemTX_Call) Return(_a0 error) *MockOrd
 	return _c
 }
 
-func (_c *MockOrderRepository_CreateOrderItemTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, *domain.OrderItem) error) *MockOrderRepository_CreateOrderItemTX_Call {
+func (_c *MockOrderRepository_CreateOrderItemTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, *domain.OrderItem) error) *MockOrderRepository_CreateOrderItemTX_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // CreateOrderPaymentTX provides a mock function with given fields: ctx, tx, p
-func (_m *MockOrderRepository) CreateOrderPaymentTX(ctx context.Context, tx pgx.Tx, p *domain.OrderPayment) error {
+func (_m *MockOrderRepository) CreateOrderPaymentTX(ctx context.Context, tx *sqlx.Tx, p *domain.OrderPayment) error {
 	ret := _m.Called(ctx, tx, p)
 
 	if len(ret) == 0 {
@@ -188,7 +188,7 @@ func (_m *MockOrderRepository) CreateOrderPaymentTX(ctx context.Context, tx pgx.
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, *domain.OrderPayment) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, *domain.OrderPayment) error); ok {
 		r0 = rf(ctx, tx, p)
 	} else {
 		r0 = ret.Error(0)
@@ -204,15 +204,15 @@ type MockOrderRepository_CreateOrderPaymentTX_Call struct {
 
 // CreateOrderPaymentTX is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - p *domain.OrderPayment
 func (_e *MockOrderRepository_Expecter) CreateOrderPaymentTX(ctx interface{}, tx interface{}, p interface{}) *MockOrderRepository_CreateOrderPaymentTX_Call {
 	return &MockOrderRepository_CreateOrderPaymentTX_Call{Call: _e.mock.On("CreateOrderPaymentTX", ctx, tx, p)}
 }
 
-func (_c *MockOrderRepository_CreateOrderPaymentTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, p *domain.OrderPayment)) *MockOrderRepository_CreateOrderPaymentTX_Call {
+func (_c *MockOrderRepository_CreateOrderPaymentTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, p *domain.OrderPayment)) *MockOrderRepository_CreateOrderPaymentTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(*domain.OrderPayment))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(*domain.OrderPayment))
 	})
 	return _c
 }
@@ -222,13 +222,13 @@ func (_c *MockOrderRepository_CreateOrderPaymentTX_Call) Return(_a0 error) *Mock
 	return _c
 }
 
-func (_c *MockOrderRepository_CreateOrderPaymentTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, *domain.OrderPayment) error) *MockOrderRepository_CreateOrderPaymentTX_Call {
+func (_c *MockOrderRepository_CreateOrderPaymentTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, *domain.OrderPayment) error) *MockOrderRepository_CreateOrderPaymentTX_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // CreateOrderTX provides a mock function with given fields: ctx, tx, o
-func (_m *MockOrderRepository) CreateOrderTX(ctx context.Context, tx pgx.Tx, o *domain.Order) error {
+func (_m *MockOrderRepository) CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error {
 	ret := _m.Called(ctx, tx, o)
 
 	if len(ret) == 0 {
@@ -236,7 +236,7 @@ func (_m *MockOrderRepository) CreateOrderTX(ctx context.Context, tx pgx.Tx, o *
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, *domain.Order) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, *domain.Order) error); ok {
 		r0 = rf(ctx, tx, o)
 	} else {
 		r0 = ret.Error(0)
@@ -252,15 +252,15 @@ type MockOrderRepository_CreateOrderTX_Call struct {
 
 // CreateOrderTX is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - o *domain.Order
 func (_e *MockOrderRepository_Expecter) CreateOrderTX(ctx interface{}, tx interface{}, o interface{}) *MockOrderRepository_CreateOrderTX_Call {
 	return &MockOrderRepository_CreateOrderTX_Call{Call: _e.mock.On("CreateOrderTX", ctx, tx, o)}
 }
 
-func (_c *MockOrderRepository_CreateOrderTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, o *domain.Order)) *MockOrderRepository_CreateOrderTX_Call {
+func (_c *MockOrderRepository_CreateOrderTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, o *domain.Order)) *MockOrderRepository_CreateOrderTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(*domain.Order))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(*domain.Order))
 	})
 	return _c
 }
@@ -270,7 +270,7 @@ func (_c *MockOrderRepository_CreateOrderTX_Call) Return(_a0 error) *MockOrderRe
 	return _c
 }
 
-func (_c *MockOrderRepository_CreateOrderTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, *domain.Order) error) *MockOrderRepository_CreateOrderTX_Call {
+func (_c *MockOrderRepository_CreateOrderTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, *domain.Order) error) *MockOrderRepository_CreateOrderTX_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -394,7 +394,7 @@ func (_c *MockOrderRepository_GetOrderItems_Call) RunAndReturn(run func(context.
 }
 
 // UpdateOrderAppealTX provides a mock function with given fields: ctx, tx, orderID, isAppealed
-func (_m *MockOrderRepository) UpdateOrderAppealTX(ctx context.Context, tx pgx.Tx, orderID uuid.UUID, isAppealed bool) error {
+func (_m *MockOrderRepository) UpdateOrderAppealTX(ctx context.Context, tx *sqlx.Tx, orderID uuid.UUID, isAppealed bool) error {
 	ret := _m.Called(ctx, tx, orderID, isAppealed)
 
 	if len(ret) == 0 {
@@ -402,7 +402,7 @@ func (_m *MockOrderRepository) UpdateOrderAppealTX(ctx context.Context, tx pgx.T
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID, bool) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID, bool) error); ok {
 		r0 = rf(ctx, tx, orderID, isAppealed)
 	} else {
 		r0 = ret.Error(0)
@@ -418,16 +418,16 @@ type MockOrderRepository_UpdateOrderAppealTX_Call struct {
 
 // UpdateOrderAppealTX is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - orderID uuid.UUID
 //   - isAppealed bool
 func (_e *MockOrderRepository_Expecter) UpdateOrderAppealTX(ctx interface{}, tx interface{}, orderID interface{}, isAppealed interface{}) *MockOrderRepository_UpdateOrderAppealTX_Call {
 	return &MockOrderRepository_UpdateOrderAppealTX_Call{Call: _e.mock.On("UpdateOrderAppealTX", ctx, tx, orderID, isAppealed)}
 }
 
-func (_c *MockOrderRepository_UpdateOrderAppealTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, orderID uuid.UUID, isAppealed bool)) *MockOrderRepository_UpdateOrderAppealTX_Call {
+func (_c *MockOrderRepository_UpdateOrderAppealTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, orderID uuid.UUID, isAppealed bool)) *MockOrderRepository_UpdateOrderAppealTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID), args[3].(bool))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID), args[3].(bool))
 	})
 	return _c
 }
@@ -437,7 +437,7 @@ func (_c *MockOrderRepository_UpdateOrderAppealTX_Call) Return(_a0 error) *MockO
 	return _c
 }
 
-func (_c *MockOrderRepository_UpdateOrderAppealTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID, bool) error) *MockOrderRepository_UpdateOrderAppealTX_Call {
+func (_c *MockOrderRepository_UpdateOrderAppealTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID, bool) error) *MockOrderRepository_UpdateOrderAppealTX_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -491,7 +491,7 @@ func (_c *MockOrderRepository_UpdateOrderStatus_Call) RunAndReturn(run func(cont
 }
 
 // UpdateOrderStatusTX provides a mock function with given fields: ctx, tx, id, status
-func (_m *MockOrderRepository) UpdateOrderStatusTX(ctx context.Context, tx pgx.Tx, id uuid.UUID, status domain.OrderStatus) error {
+func (_m *MockOrderRepository) UpdateOrderStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.OrderStatus) error {
 	ret := _m.Called(ctx, tx, id, status)
 
 	if len(ret) == 0 {
@@ -499,7 +499,7 @@ func (_m *MockOrderRepository) UpdateOrderStatusTX(ctx context.Context, tx pgx.T
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, pgx.Tx, uuid.UUID, domain.OrderStatus) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID, domain.OrderStatus) error); ok {
 		r0 = rf(ctx, tx, id, status)
 	} else {
 		r0 = ret.Error(0)
@@ -515,16 +515,16 @@ type MockOrderRepository_UpdateOrderStatusTX_Call struct {
 
 // UpdateOrderStatusTX is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tx pgx.Tx
+//   - tx *sqlx.Tx
 //   - id uuid.UUID
 //   - status domain.OrderStatus
 func (_e *MockOrderRepository_Expecter) UpdateOrderStatusTX(ctx interface{}, tx interface{}, id interface{}, status interface{}) *MockOrderRepository_UpdateOrderStatusTX_Call {
 	return &MockOrderRepository_UpdateOrderStatusTX_Call{Call: _e.mock.On("UpdateOrderStatusTX", ctx, tx, id, status)}
 }
 
-func (_c *MockOrderRepository_UpdateOrderStatusTX_Call) Run(run func(ctx context.Context, tx pgx.Tx, id uuid.UUID, status domain.OrderStatus)) *MockOrderRepository_UpdateOrderStatusTX_Call {
+func (_c *MockOrderRepository_UpdateOrderStatusTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.OrderStatus)) *MockOrderRepository_UpdateOrderStatusTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(pgx.Tx), args[2].(uuid.UUID), args[3].(domain.OrderStatus))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID), args[3].(domain.OrderStatus))
 	})
 	return _c
 }
@@ -534,7 +534,7 @@ func (_c *MockOrderRepository_UpdateOrderStatusTX_Call) Return(_a0 error) *MockO
 	return _c
 }
 
-func (_c *MockOrderRepository_UpdateOrderStatusTX_Call) RunAndReturn(run func(context.Context, pgx.Tx, uuid.UUID, domain.OrderStatus) error) *MockOrderRepository_UpdateOrderStatusTX_Call {
+func (_c *MockOrderRepository_UpdateOrderStatusTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID, domain.OrderStatus) error) *MockOrderRepository_UpdateOrderStatusTX_Call {
 	_c.Call.Return(run)
 	return _c
 }
