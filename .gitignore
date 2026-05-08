@@ -36,7 +36,9 @@ Thumbs.db
 # Logs
 *.log
 .agents/memories/
-go-marketplace
+bin/
 secret/
 
 _*.md
+.superpowers/
+
