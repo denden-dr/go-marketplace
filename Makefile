@@ -16,7 +16,7 @@ MIGRATIONS_PATH=internal/database/migrations
 
 seed: ## Seed the database with initial data
 	@echo "Seeding database..."
-	go run cmd/seed/main.go
+	go run -tags seed cmd/seed/main.go
 
 docker-up: ## Start containers in detached mode
 	@echo "Starting containers..."
