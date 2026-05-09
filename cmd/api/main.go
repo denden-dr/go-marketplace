@@ -62,14 +62,10 @@ func main() {
 
 	appEnv := os.Getenv("APP_ENV")
 
-	// Initialize Supabase Auth
-	supabaseJWTSecret := os.Getenv("SUPABASE_JWT_SECRET")
-	var socialAuthClient auth.SupabaseAuthClient
-	if supabaseJWTSecret != "" {
-		socialAuthClient = auth.NewSupabaseAuthClient(supabaseJWTSecret)
-		log.Println("Supabase Auth initialized successfully")
-	} else {
-		log.Println("Warning: SUPABASE_JWT_SECRET not set. Social login will be disabled.")
+	mailersendAPIKey := os.Getenv("MAILERSEND_API_KEY")
+	mailersendFromEmail := os.Getenv("MAILERSEND_FROM_EMAIL")
+	if mailersendAPIKey == "" || mailersendFromEmail == "" {
+		log.Fatalf("MAILERSEND_API_KEY and MAILERSEND_FROM_EMAIL must be set")
 	}
 
 	// Initialize Layers
@@ -77,13 +73,16 @@ func main() {
 	merchantRepo := merchant.NewMerchantRepository(db)
 	productRepo := product.NewProductRepository(db)
 	walletRepo := wallet.NewWalletRepository(db)
-	refreshTokenRepo := auth.NewRefreshTokenRepository(db)
+	sessionRepo := auth.NewSessionRepository(db)
+	verificationRepo := auth.NewVerificationRepository(db)
 	cartRepo := cart.NewCartRepository(db)
 	orderRepo := order.NewOrderRepository(db)
 
-	// Background cleanup for expired refresh tokens
-	log.Printf("Running initial background cleanup for expired refresh tokens...")
-	if err := refreshTokenRepo.DeleteExpiredTokens(context.Background()); err != nil {
+	mailService := auth.NewMailService(mailersendAPIKey, mailersendFromEmail)
+
+	// Background cleanup for expired sessions
+	log.Printf("Running initial background cleanup for expired sessions...")
+	if err := sessionRepo.DeleteExpiredSessions(context.Background()); err != nil {
 		log.Printf("Error during initial background cleanup: %v", err)
 	}
 
@@ -91,13 +90,13 @@ func main() {
 		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			if err := refreshTokenRepo.DeleteExpiredTokens(context.Background()); err != nil {
-				log.Printf("Error cleaning up expired refresh tokens: %v", err)
+			if err := sessionRepo.DeleteExpiredSessions(context.Background()); err != nil {
+				log.Printf("Error cleaning up expired sessions: %v", err)
 			}
 		}
 	}()
 
-	authService := auth.NewAuthService(userRepo, refreshTokenRepo, socialAuthClient, jwtSecret)
+	authService := auth.NewAuthService(userRepo, sessionRepo, verificationRepo, mailService, jwtSecret)
 	userService := user.NewUserService(userRepo)
 	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := product.NewProductService(productRepo, merchantRepo)
@@ -124,13 +123,12 @@ func main() {
 	app := fiber.New()
 
 	// Setup Routes
-	socialLoginEnabled := socialAuthClient != nil
 	server.SetupRoutes(
 		app,
 		authHandler,
 		userHandler,
 		merchantHandler, productHandler, walletHandler,
-		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv, socialLoginEnabled)
+		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)
