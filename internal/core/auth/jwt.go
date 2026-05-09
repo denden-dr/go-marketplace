@@ -62,3 +62,14 @@ func ValidateAccessToken(tokenString string, secret string) (uuid.UUID, error) {
 
 	return uuid.Nil, fmt.Errorf("invalid token")
 }
+
+func GenerateVerificationCode() (string, error) {
+	b := make([]byte, 3)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	// Simple numeric code from bytes
+	code := (uint32(b[0])<<16 | uint32(b[1])<<8 | uint32(b[2])) % 1000000
+	return fmt.Sprintf("%06d", code), nil
+}
