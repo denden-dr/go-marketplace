@@ -19,9 +19,11 @@ var (
 	ErrAuthProviderMismatch          = errors.New("this email is registered via a different sign-in method")
 	ErrEmailAlreadyUsedByOtherMethod = errors.New("this email is already registered with another method")
 	ErrInvalidSocialToken            = errors.New("invalid or expired social authentication token")
-	ErrEmailNotVerified              = errors.New("email not verified by provider")
+	ErrEmailNotVerified              = errors.New("email not verified")
 	ErrEmailPasswordSignInNotAllowed = errors.New("email/password sign-in must use local authentication")
 	ErrSocialLoginNotAvailable       = errors.New("social login is not available on this server")
+	ErrInvalidVerificationCode       = errors.New("invalid verification code")
+	ErrVerificationCodeExpired       = errors.New("verification code expired")
 
 	ErrOrderNotFound            = errors.New("order not found")
 	ErrOrderNotCancellable      = errors.New("order cannot be cancelled at this stage or time")
