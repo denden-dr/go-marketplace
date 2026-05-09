@@ -12,7 +12,11 @@ DOCKER_COMPOSE := $(shell if $(DOCKER_BIN) compose version >/dev/null 2>&1; then
 DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_PATH=internal/database/migrations
 
-.PHONY: docker-up docker-down docker-logs docker-shell test-docker swagger test help build run clean fmt tidy migrate-up migrate-down migrate-create mock
+.PHONY: docker-up docker-down docker-logs docker-shell test-docker swagger test help build run clean fmt tidy migrate-up migrate-down migrate-create mock seed
+
+seed: ## Seed the database with initial data
+	@echo "Seeding database..."
+	go run cmd/seed/main.go
 
 docker-up: ## Start containers in detached mode
 	@echo "Starting containers..."
