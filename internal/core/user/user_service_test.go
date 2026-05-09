@@ -12,84 +12,124 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestUserService_GetUserByID_Success(t *testing.T) {
-	mockRepo := NewMockUserRepository(t)
-	service := NewUserService(mockRepo)
-
+func TestUserService_GetUserByID(t *testing.T) {
 	id := uuid.New()
 	u := &domain.User{
 		ID:    id,
 		Email: "test@example.com",
 	}
 
-	mockRepo.On("GetUserByID", context.Background(), id).Return(u, nil)
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		mockSetup func(mr *MockUserRepository)
+		wantErr   bool
+		errType   error
+		errMsg    string
+	}{
+		{
+			name:   "Success",
+			userID: id,
+			mockSetup: func(mr *MockUserRepository) {
+				mr.On("GetUserByID", mock.Anything, id).Return(u, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:   "User Not Found",
+			userID: id,
+			mockSetup: func(mr *MockUserRepository) {
+				mr.On("GetUserByID", mock.Anything, id).Return(nil, nil)
+			},
+			wantErr: true,
+			errType: domain.ErrUserNotFound,
+		},
+		{
+			name:   "Database Error",
+			userID: id,
+			mockSetup: func(mr *MockUserRepository) {
+				mr.On("GetUserByID", mock.Anything, id).Return(nil, errors.New("db error"))
+			},
+			wantErr: true,
+			errMsg:  "db error",
+		},
+	}
 
-	res, err := service.GetUserByID(context.Background(), id)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockUserRepository(t)
+			tt.mockSetup(mockRepo)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, id, res.ID)
+			service := NewUserService(mockRepo)
+			res, err := service.GetUserByID(context.Background(), tt.userID)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errType != nil {
+					assert.ErrorIs(t, err, tt.errType)
+				}
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, tt.userID, res.ID)
+			}
+		})
+	}
 }
 
-func TestUserService_GetUserByID_Fail_NotFound(t *testing.T) {
-	mockRepo := NewMockUserRepository(t)
-	service := NewUserService(mockRepo)
-
-	id := uuid.New()
-	mockRepo.On("GetUserByID", context.Background(), id).Return(nil, nil)
-
-	_, err := service.GetUserByID(context.Background(), id)
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, domain.ErrUserNotFound))
-}
-
-func TestUserService_GetUserByID_Fail_RepoError(t *testing.T) {
-	mockRepo := NewMockUserRepository(t)
-	service := NewUserService(mockRepo)
-
-	id := uuid.New()
-	mockRepo.On("GetUserByID", context.Background(), id).Return(nil, errors.New("db error"))
-
-	_, err := service.GetUserByID(context.Background(), id)
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "db error")
-}
-
-func TestUserService_AddAddress_Success(t *testing.T) {
-	mockRepo := NewMockUserRepository(t)
-	service := NewUserService(mockRepo)
-
+func TestUserService_AddAddress(t *testing.T) {
 	userID := uuid.New()
 	req := &AddressRequest{
-		Tag:           "custom-tag",
-		RecipientName: "Jane Doe",
-		PhoneNumber:   "0812345678",
-		StreetAddress: "456 Side St",
-		City:          "Bandung",
-		Province:      "West Java",
-		PostalCode:    "40123",
+		Tag:           "home",
+		RecipientName: "John Doe",
 		IsDefault:     true,
 	}
 
-	mockRepo.On("UnsetDefaultAddresses", context.Background(), userID).Return(nil)
-	mockRepo.On("CreateAddress", context.Background(), mock.MatchedBy(func(addr *domain.UserAddress) bool {
-		return addr.UserID == userID && addr.Tag == "custom-tag" && addr.IsDefault == true
-	})).Return(nil)
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		request   *AddressRequest
+		mockSetup func(mr *MockUserRepository)
+		wantErr   bool
+	}{
+		{
+			name:    "Success",
+			userID:  userID,
+			request: req,
+			mockSetup: func(mr *MockUserRepository) {
+				mr.On("UnsetDefaultAddresses", mock.Anything, userID).Return(nil)
+				mr.On("CreateAddress", mock.Anything, mock.MatchedBy(func(addr *domain.UserAddress) bool {
+					return addr.UserID == userID && addr.Tag == domain.AddressTag(req.Tag) && addr.IsDefault == true
+				})).Return(nil)
+			},
+			wantErr: false,
+		},
+	}
 
-	res, err := service.AddAddress(context.Background(), userID, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockUserRepository(t)
+			tt.mockSetup(mockRepo)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, domain.AddressTag("custom-tag"), res.Tag)
-	assert.Equal(t, true, res.IsDefault)
+			service := NewUserService(mockRepo)
+			res, err := service.AddAddress(context.Background(), tt.userID, tt.request)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, domain.AddressTag(tt.request.Tag), res.Tag)
+				assert.True(t, res.IsDefault)
+			}
+		})
+	}
 }
 
-func TestUserService_UpdateAddress_Success(t *testing.T) {
-	mockRepo := NewMockUserRepository(t)
-	service := NewUserService(mockRepo)
-
+func TestUserService_UpdateAddress(t *testing.T) {
 	userID := uuid.New()
 	addressID := uuid.New()
 	existingAddr := &domain.UserAddress{
@@ -104,14 +144,44 @@ func TestUserService_UpdateAddress_Success(t *testing.T) {
 		IsDefault: true,
 	}
 
-	mockRepo.On("GetAddressByID", context.Background(), addressID).Return(existingAddr, nil)
-	mockRepo.On("UnsetDefaultAddresses", context.Background(), userID).Return(nil)
-	mockRepo.On("UpdateAddress", context.Background(), mock.Anything).Return(nil)
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		addressID uuid.UUID
+		request   *AddressRequest
+		mockSetup func(mr *MockUserRepository)
+		wantErr   bool
+	}{
+		{
+			name:      "Success",
+			userID:    userID,
+			addressID: addressID,
+			request:   req,
+			mockSetup: func(mr *MockUserRepository) {
+				mr.On("GetAddressByID", mock.Anything, addressID).Return(existingAddr, nil)
+				mr.On("UnsetDefaultAddresses", mock.Anything, userID).Return(nil)
+				mr.On("UpdateAddress", mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: false,
+		},
+	}
 
-	res, err := service.UpdateAddress(context.Background(), userID, addressID, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockUserRepository(t)
+			tt.mockSetup(mockRepo)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, domain.AddressTag("new"), res.Tag)
-	assert.True(t, res.IsDefault)
+			service := NewUserService(mockRepo)
+			res, err := service.UpdateAddress(context.Background(), tt.userID, tt.addressID, tt.request)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, domain.AddressTag(tt.request.Tag), res.Tag)
+				assert.True(t, res.IsDefault)
+			}
+		})
+	}
 }

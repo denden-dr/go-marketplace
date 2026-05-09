@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"go-marketplace/internal/domain"
@@ -13,10 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestWalletService_GetWalletByUserID_Success(t *testing.T) {
-	mockRepo := NewMockWalletRepository(t)
-	service := NewWalletService(mockRepo)
-
+func TestWalletService_GetWalletByUserID(t *testing.T) {
 	userID := uuid.New()
 	w := &domain.Wallet{
 		ID:           uuid.New(),
@@ -26,106 +22,189 @@ func TestWalletService_GetWalletByUserID_Success(t *testing.T) {
 		Status:       domain.WalletStatusActive,
 	}
 
-	mockRepo.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
-
-	res, err := service.GetWalletByUserID(context.Background(), userID)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, "WAL-123", res.WalletNumber)
-}
-
-func TestWalletService_GetWalletHistory_Success(t *testing.T) {
-	mockRepo := NewMockWalletRepository(t)
-	service := NewWalletService(mockRepo)
-
-	userID := uuid.New()
-	w := &domain.Wallet{ID: uuid.New(), UserID: userID}
-	txs := []domain.WalletTransaction{
-		{ID: uuid.New(), Amount: decimal.NewFromInt(100)},
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		mockSetup func(mr *MockWalletRepository)
+		wantErr   bool
+	}{
+		{
+			name:   "Success",
+			userID: userID,
+			mockSetup: func(mr *MockWalletRepository) {
+				mr.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
+			},
+			wantErr: false,
+		},
 	}
 
-	mockRepo.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
-	mockRepo.On("GetWalletHistory", mock.Anything, w.ID, 10, 0).Return(txs, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mr := NewMockWalletRepository(t)
+			tt.mockSetup(mr)
 
-	res, err := service.GetWalletHistory(context.Background(), userID, 1, 10)
+			service := NewWalletService(mr)
+			res, err := service.GetWalletByUserID(context.Background(), tt.userID)
 
-	assert.NoError(t, err)
-	assert.Len(t, res, 1)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, "WAL-123", res.WalletNumber)
+			}
+		})
+	}
 }
 
-func TestWalletService_Withdraw_Success(t *testing.T) {
-	mockRepo := NewMockWalletRepository(t)
-	service := NewWalletService(mockRepo)
-
+func TestWalletService_GetWalletHistory(t *testing.T) {
 	userID := uuid.New()
-	w := &domain.Wallet{
-		ID:      uuid.New(),
-		Balance: decimal.NewFromInt(1000),
-		Status:  domain.WalletStatusActive,
+	wID := uuid.New()
+	w := &domain.Wallet{ID: wID, UserID: userID}
+	txs := []domain.WalletTransaction{{ID: uuid.New(), Amount: decimal.NewFromInt(100)}}
+
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		page      int
+		limit     int
+		mockSetup func(mr *MockWalletRepository)
+		wantErr   bool
+	}{
+		{
+			name:   "Success",
+			userID: userID,
+			page:   1,
+			limit:  10,
+			mockSetup: func(mr *MockWalletRepository) {
+				mr.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
+				mr.On("GetWalletHistory", mock.Anything, wID, 10, 0).Return(txs, nil)
+			},
+			wantErr: false,
+		},
 	}
 
-	req := WithdrawRequest{
-		Amount:      decimal.NewFromInt(500),
-		Description: "Withdraw test",
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mr := NewMockWalletRepository(t)
+			tt.mockSetup(mr)
+
+			service := NewWalletService(mr)
+			res, err := service.GetWalletHistory(context.Background(), tt.userID, tt.page, tt.limit)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, res, 1)
+			}
+		})
 	}
-
-	mockRepo.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
-	mockRepo.On("Withdraw", mock.Anything, w.ID, req.Amount, mock.Anything).Return(nil)
-
-	err := service.Withdraw(context.Background(), userID, req)
-
-	assert.NoError(t, err)
 }
 
-func TestWalletService_Withdraw_Fail_InsufficientBalance(t *testing.T) {
-	mockRepo := NewMockWalletRepository(t)
-	service := NewWalletService(mockRepo)
-
+func TestWalletService_Withdraw(t *testing.T) {
 	userID := uuid.New()
-	w := &domain.Wallet{
-		Balance: decimal.NewFromInt(100),
-		Status:  domain.WalletStatusActive,
+	wID := uuid.New()
+
+	tests := []struct {
+		name      string
+		request   WithdrawRequest
+		mockSetup func(mr *MockWalletRepository)
+		wantErr   bool
+		errType   error
+	}{
+		{
+			name: "Success",
+			request: WithdrawRequest{
+				Amount:      decimal.NewFromInt(500),
+				Description: "Withdraw test",
+			},
+			mockSetup: func(mr *MockWalletRepository) {
+				w := &domain.Wallet{ID: wID, Balance: decimal.NewFromInt(1000), Status: domain.WalletStatusActive}
+				mr.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
+				mr.On("Withdraw", mock.Anything, wID, decimal.NewFromInt(500), mock.Anything).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Insufficient Balance",
+			request: WithdrawRequest{Amount: decimal.NewFromInt(500)},
+			mockSetup: func(mr *MockWalletRepository) {
+				w := &domain.Wallet{Balance: decimal.NewFromInt(100), Status: domain.WalletStatusActive}
+				mr.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
+			},
+			wantErr: true,
+			errType: domain.ErrInsufficientBalance,
+		},
 	}
 
-	req := WithdrawRequest{
-		Amount: decimal.NewFromInt(500),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mr := NewMockWalletRepository(t)
+			tt.mockSetup(mr)
+
+			service := NewWalletService(mr)
+			err := service.Withdraw(context.Background(), userID, tt.request)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errType != nil {
+					assert.ErrorIs(t, err, tt.errType)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestWalletService_CreateWallet(t *testing.T) {
+	userID := uuid.New()
+
+	tests := []struct {
+		name      string
+		mockSetup func(mr *MockWalletRepository)
+		wantErr   bool
+		errType   error
+	}{
+		{
+			name: "Success",
+			mockSetup: func(mr *MockWalletRepository) {
+				mr.On("GetWalletByUserID", mock.Anything, userID).Return(nil, nil)
+				mr.On("Create", mock.Anything, mock.MatchedBy(func(w *domain.Wallet) bool {
+					return w.UserID == userID
+				})).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "Already Exists",
+			mockSetup: func(mr *MockWalletRepository) {
+				existing := &domain.Wallet{ID: uuid.New(), UserID: userID}
+				mr.On("GetWalletByUserID", mock.Anything, userID).Return(existing, nil)
+			},
+			wantErr: true,
+			errType: domain.ErrWalletAlreadyExists,
+		},
 	}
 
-	mockRepo.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mr := NewMockWalletRepository(t)
+			tt.mockSetup(mr)
 
-	err := service.Withdraw(context.Background(), userID, req)
+			service := NewWalletService(mr)
+			res, err := service.CreateWallet(context.Background(), userID)
 
-	assert.Error(t, err)
-	assert.Equal(t, domain.ErrInsufficientBalance, err)
-}
-
-func TestWalletService_CreateWallet_Success(t *testing.T) {
-	mockRepo := NewMockWalletRepository(t)
-	service := NewWalletService(mockRepo)
-
-	userID := uuid.New()
-	mockRepo.On("GetWalletByUserID", mock.Anything, userID).Return(nil, nil)
-	mockRepo.On("Create", mock.Anything, mock.MatchedBy(func(w *domain.Wallet) bool {
-		return w.UserID == userID
-	})).Return(nil)
-
-	res, err := service.CreateWallet(context.Background(), userID)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-}
-
-func TestWalletService_CreateWallet_Fail_AlreadyExists(t *testing.T) {
-	mockRepo := NewMockWalletRepository(t)
-	service := NewWalletService(mockRepo)
-
-	userID := uuid.New()
-	existing := &domain.Wallet{ID: uuid.New(), UserID: userID}
-	mockRepo.On("GetWalletByUserID", mock.Anything, userID).Return(existing, nil)
-
-	_, err := service.CreateWallet(context.Background(), userID)
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, domain.ErrWalletAlreadyExists))
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errType != nil {
+					assert.ErrorIs(t, err, tt.errType)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+			}
+		})
+	}
 }

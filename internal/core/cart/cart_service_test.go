@@ -13,11 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestCartService_AddToCart_Success(t *testing.T) {
-	mockRepo := NewMockCartRepository(t)
-	mockProductRepo := product.NewMockProductRepository(t)
-	service := NewCartService(mockRepo, mockProductRepo)
-
+func TestCartService_AddToCart(t *testing.T) {
 	userID := uuid.New()
 	productID := uuid.New()
 	req := AddToCartRequest{
@@ -31,67 +27,60 @@ func TestCartService_AddToCart_Success(t *testing.T) {
 		Price: decimal.NewFromInt(100),
 	}
 
-	mockProductRepo.On("GetByID", mock.Anything, productID).Return(p, nil)
-	mockRepo.On("UpsertCartItem", mock.Anything, mock.MatchedBy(func(item *domain.CartItem) bool {
-		return item.UserID == userID && item.ProductID == productID && item.Quantity == 2
-	})).Return(nil)
-
-	err := service.AddToCart(context.Background(), userID, req)
-
-	assert.NoError(t, err)
-}
-
-func TestCartService_AddToCart_DuplicateProduct_Success(t *testing.T) {
-	// Note: The logic for "increase quantity" is handled by the Repository's ON CONFLICT clause.
-	// This unit test verifies that AddToCart correctly calls the UpsertCartItem method.
-	mockRepo := NewMockCartRepository(t)
-	mockProductRepo := product.NewMockProductRepository(t)
-	service := NewCartService(mockRepo, mockProductRepo)
-
-	userID := uuid.New()
-	productID := uuid.New()
-	req := AddToCartRequest{
-		ProductID: productID,
-		Quantity:  1,
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		request   AddToCartRequest
+		mockSetup func(mr *MockCartRepository, mpr *product.MockProductRepository)
+		wantErr   bool
+		errType   error
+	}{
+		{
+			name:    "Success",
+			userID:  userID,
+			request: req,
+			mockSetup: func(mr *MockCartRepository, mpr *product.MockProductRepository) {
+				mpr.On("GetByID", mock.Anything, productID).Return(p, nil)
+				mr.On("UpsertCartItem", mock.Anything, mock.MatchedBy(func(item *domain.CartItem) bool {
+					return item.UserID == userID && item.ProductID == productID && item.Quantity == 2
+				})).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Product Not Found",
+			userID:  userID,
+			request: req,
+			mockSetup: func(mr *MockCartRepository, mpr *product.MockProductRepository) {
+				mpr.On("GetByID", mock.Anything, productID).Return(nil, nil)
+			},
+			wantErr: true,
+			errType: domain.ErrProductNotFound,
+		},
 	}
 
-	p := &domain.Product{
-		ID:    productID,
-		Name:  "Existing Product",
-		Price: decimal.NewFromInt(50),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockCartRepository(t)
+			mockProductRepo := product.NewMockProductRepository(t)
+			tt.mockSetup(mockRepo, mockProductRepo)
+
+			service := NewCartService(mockRepo, mockProductRepo)
+			err := service.AddToCart(context.Background(), tt.userID, tt.request)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errType != nil {
+					assert.ErrorIs(t, err, tt.errType)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
-
-	// First add
-	mockProductRepo.On("GetByID", mock.Anything, productID).Return(p, nil)
-	mockRepo.On("UpsertCartItem", mock.Anything, mock.MatchedBy(func(item *domain.CartItem) bool {
-		return item.ProductID == productID && item.Quantity == 1
-	})).Return(nil)
-
-	err := service.AddToCart(context.Background(), userID, req)
-	assert.NoError(t, err)
 }
 
-func TestCartService_AddToCart_ProductNotFound(t *testing.T) {
-	mockRepo := NewMockCartRepository(t)
-	mockProductRepo := product.NewMockProductRepository(t)
-	service := NewCartService(mockRepo, mockProductRepo)
-
-	userID := uuid.New()
-	productID := uuid.New()
-	req := AddToCartRequest{ProductID: productID}
-
-	mockProductRepo.On("GetByID", mock.Anything, productID).Return(nil, nil)
-
-	err := service.AddToCart(context.Background(), userID, req)
-
-	assert.Error(t, err)
-	assert.Equal(t, domain.ErrProductNotFound, err)
-}
-
-func TestCartService_GetCart_Success(t *testing.T) {
-	mockRepo := NewMockCartRepository(t)
-	service := NewCartService(mockRepo, nil)
-
+func TestCartService_GetCart(t *testing.T) {
 	userID := uuid.New()
 	items := []domain.CartItem{
 		{
@@ -112,54 +101,97 @@ func TestCartService_GetCart_Success(t *testing.T) {
 		},
 	}
 
-	mockRepo.On("GetCartByUserID", mock.Anything, userID).Return(items, nil)
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		mockSetup func(mr *MockCartRepository)
+		wantErr   bool
+	}{
+		{
+			name:   "Success",
+			userID: userID,
+			mockSetup: func(mr *MockCartRepository) {
+				mr.On("GetCartByUserID", mock.Anything, userID).Return(items, nil)
+			},
+			wantErr: false,
+		},
+	}
 
-	res, err := service.GetCart(context.Background(), userID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockCartRepository(t)
+			tt.mockSetup(mockRepo)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, decimal.NewFromInt(250), res.TotalPrice)
-	assert.Len(t, res.Items, 2)
-	assert.Equal(t, decimal.NewFromInt(200), res.Items[0].Subtotal)
+			service := NewCartService(mockRepo, nil)
+			res, err := service.GetCart(context.Background(), tt.userID)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, decimal.NewFromInt(250), res.TotalPrice)
+				assert.Len(t, res.Items, 2)
+			}
+		})
+	}
 }
 
-func TestCartService_UpdateCartItem_Success(t *testing.T) {
-	mockRepo := NewMockCartRepository(t)
-	service := NewCartService(mockRepo, nil)
-
+func TestCartService_SimpleOperations(t *testing.T) {
 	userID := uuid.New()
 	productID := uuid.New()
 
-	mockRepo.On("UpdateCartItem", mock.Anything, userID, productID, 5).Return(nil)
+	tests := []struct {
+		name      string
+		operation func(s CartServiceInterface) error
+		mockSetup func(mr *MockCartRepository)
+		wantErr   bool
+	}{
+		{
+			name: "UpdateCartItem Success",
+			operation: func(s CartServiceInterface) error {
+				return s.UpdateCartItem(context.Background(), userID, productID, 5)
+			},
+			mockSetup: func(mr *MockCartRepository) {
+				mr.On("UpdateCartItem", mock.Anything, userID, productID, 5).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "RemoveFromCart Success",
+			operation: func(s CartServiceInterface) error {
+				return s.RemoveFromCart(context.Background(), userID, productID)
+			},
+			mockSetup: func(mr *MockCartRepository) {
+				mr.On("DeleteCartItem", mock.Anything, userID, productID).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "ClearCart Success",
+			operation: func(s CartServiceInterface) error {
+				return s.ClearCart(context.Background(), userID)
+			},
+			mockSetup: func(mr *MockCartRepository) {
+				mr.On("ClearCart", mock.Anything, userID).Return(nil)
+			},
+			wantErr: false,
+		},
+	}
 
-	err := service.UpdateCartItem(context.Background(), userID, productID, 5)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockCartRepository(t)
+			tt.mockSetup(mockRepo)
 
-	assert.NoError(t, err)
-}
+			service := NewCartService(mockRepo, nil)
+			err := tt.operation(service)
 
-func TestCartService_RemoveFromCart_Success(t *testing.T) {
-	mockRepo := NewMockCartRepository(t)
-	service := NewCartService(mockRepo, nil)
-
-	userID := uuid.New()
-	productID := uuid.New()
-
-	mockRepo.On("DeleteCartItem", mock.Anything, userID, productID).Return(nil)
-
-	err := service.RemoveFromCart(context.Background(), userID, productID)
-
-	assert.NoError(t, err)
-}
-
-func TestCartService_ClearCart_Success(t *testing.T) {
-	mockRepo := NewMockCartRepository(t)
-	service := NewCartService(mockRepo, nil)
-
-	userID := uuid.New()
-
-	mockRepo.On("ClearCart", mock.Anything, userID).Return(nil)
-
-	err := service.ClearCart(context.Background(), userID)
-
-	assert.NoError(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

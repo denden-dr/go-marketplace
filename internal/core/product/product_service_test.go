@@ -15,12 +15,9 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestProductService_CreateProduct_Success(t *testing.T) {
-	mockRepo := NewMockProductRepository(t)
-	mockMerchantRepo := merchant.NewMockMerchantRepository(t)
-	service := NewProductService(mockRepo, mockMerchantRepo)
-
+func TestProductService_CreateProduct(t *testing.T) {
 	storeID := uuid.New()
+	userID := uuid.New()
 	req := ProductCreateRequest{
 		StoreID:     storeID,
 		Name:        "Test Product",
@@ -29,85 +26,131 @@ func TestProductService_CreateProduct_Success(t *testing.T) {
 		Stock:       10,
 	}
 
-	userID := uuid.New()
-	m := &domain.Merchant{ID: storeID, UserID: userID}
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		request   ProductCreateRequest
+		mockSetup func(mr *MockProductRepository, mmr *merchant.MockMerchantRepository)
+		wantErr   bool
+		errType   error
+	}{
+		{
+			name:    "Success",
+			userID:  userID,
+			request: req,
+			mockSetup: func(mr *MockProductRepository, mmr *merchant.MockMerchantRepository) {
+				m := &domain.Merchant{ID: storeID, UserID: userID}
+				mmr.On("GetByID", mock.Anything, storeID).Return(m, nil)
+				mr.On("Create", mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Merchant Not Found",
+			userID:  userID,
+			request: req,
+			mockSetup: func(mr *MockProductRepository, mmr *merchant.MockMerchantRepository) {
+				mmr.On("GetByID", mock.Anything, storeID).Return(nil, nil)
+			},
+			wantErr: true,
+			errType: domain.ErrMerchantNotFound,
+		},
+	}
 
-	mockMerchantRepo.On("GetByID", mock.Anything, storeID).Return(m, nil)
-	mockRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockProductRepository(t)
+			mockMerchantRepo := merchant.NewMockMerchantRepository(t)
+			tt.mockSetup(mockRepo, mockMerchantRepo)
 
-	res, err := service.CreateProduct(context.Background(), userID, req)
+			service := NewProductService(mockRepo, mockMerchantRepo)
+			res, err := service.CreateProduct(context.Background(), tt.userID, tt.request)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, req.Name, res.Name)
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errType != nil {
+					assert.ErrorIs(t, err, tt.errType)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, tt.request.Name, res.Name)
+			}
+		})
+	}
 }
 
-func TestProductService_CreateProduct_Fail_MerchantNotFound(t *testing.T) {
-	mockMerchantRepo := merchant.NewMockMerchantRepository(t)
-	service := NewProductService(nil, mockMerchantRepo)
-
-	storeID := uuid.New()
-	mockMerchantRepo.On("GetByID", mock.Anything, storeID).Return(nil, nil)
-
-	userID := uuid.New()
-	_, err := service.CreateProduct(context.Background(), userID, ProductCreateRequest{StoreID: storeID, Name: "Product"})
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, domain.ErrMerchantNotFound))
-}
-
-func TestProductService_UpdateProduct_Success(t *testing.T) {
-	mockRepo := NewMockProductRepository(t)
-	mockMerchantRepo := merchant.NewMockMerchantRepository(t)
-	service := NewProductService(mockRepo, mockMerchantRepo)
-
+func TestProductService_UpdateProduct(t *testing.T) {
 	productID := uuid.New()
 	userID := uuid.New()
-	p := &domain.Product{ID: productID, Name: "Old Name"}
+	storeID := uuid.New()
+	p := &domain.Product{ID: productID, StoreID: storeID, Name: "Old Name"}
 	req := ProductUpdateRequest{
 		Name:  "New Name",
 		Price: decimal.NewFromInt(150),
 	}
 
-	m := &domain.Merchant{ID: p.StoreID, UserID: userID}
-
-	mockRepo.On("GetByID", mock.Anything, productID).Return(p, nil)
-	mockMerchantRepo.On("GetByID", mock.Anything, p.StoreID).Return(m, nil)
-	mockRepo.On("Update", mock.Anything, mock.MatchedBy(func(p *domain.Product) bool {
-		return p.Name == "New Name"
-	})).Return(nil)
-
-	res, err := service.UpdateProduct(context.Background(), userID, productID, req)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, "New Name", res.Name)
-}
-
-func TestProductService_UpdateProduct_Fail_NotFound(t *testing.T) {
-	mockRepo := NewMockProductRepository(t)
-	mockMerchantRepo := merchant.NewMockMerchantRepository(t)
-	service := NewProductService(mockRepo, mockMerchantRepo)
-	productID := uuid.New()
-	mockRepo.On("GetByID", mock.Anything, productID).Return(nil, nil)
-
-	userID := uuid.New()
-	_, err := service.UpdateProduct(context.Background(), userID, productID, ProductUpdateRequest{Name: "New"})
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, domain.ErrProductNotFound))
-}
-
-func TestProductService_SearchProducts_Success(t *testing.T) {
-	mockRepo := NewMockProductRepository(t)
-	service := NewProductService(mockRepo, nil)
-
-	req := ProductSearchRequest{
-		Query: "laptop",
-		Limit: 5,
-		Page:  1,
+	tests := []struct {
+		name      string
+		userID    uuid.UUID
+		productID uuid.UUID
+		request   ProductUpdateRequest
+		mockSetup func(mr *MockProductRepository, mmr *merchant.MockMerchantRepository)
+		wantErr   bool
+		errType   error
+	}{
+		{
+			name:      "Success",
+			userID:    userID,
+			productID: productID,
+			request:   req,
+			mockSetup: func(mr *MockProductRepository, mmr *merchant.MockMerchantRepository) {
+				m := &domain.Merchant{ID: storeID, UserID: userID}
+				mr.On("GetByID", mock.Anything, productID).Return(p, nil)
+				mmr.On("GetByID", mock.Anything, storeID).Return(m, nil)
+				mr.On("Update", mock.Anything, mock.MatchedBy(func(p *domain.Product) bool {
+					return p.Name == "New Name"
+				})).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:      "Product Not Found",
+			userID:    userID,
+			productID: productID,
+			request:   req,
+			mockSetup: func(mr *MockProductRepository, mmr *merchant.MockMerchantRepository) {
+				mr.On("GetByID", mock.Anything, productID).Return(nil, nil)
+			},
+			wantErr: true,
+			errType: domain.ErrProductNotFound,
+		},
 	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockProductRepository(t)
+			mockMerchantRepo := merchant.NewMockMerchantRepository(t)
+			tt.mockSetup(mockRepo, mockMerchantRepo)
+
+			service := NewProductService(mockRepo, mockMerchantRepo)
+			res, err := service.UpdateProduct(context.Background(), tt.userID, tt.productID, tt.request)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errType != nil {
+					assert.ErrorIs(t, err, tt.errType)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, tt.request.Name, res.Name)
+			}
+		})
+	}
+}
+
+func TestProductService_SearchProducts(t *testing.T) {
 	productID := uuid.New()
 	products := []domain.Product{
 		{
@@ -117,25 +160,54 @@ func TestProductService_SearchProducts_Success(t *testing.T) {
 		},
 	}
 
-	mockRepo.On("Search", mock.Anything, "laptop", 5, 0).Return(products, nil)
+	tests := []struct {
+		name      string
+		request   ProductSearchRequest
+		mockSetup func(mr *MockProductRepository)
+		wantErr   bool
+		errMsg    string
+	}{
+		{
+			name: "Success",
+			request: ProductSearchRequest{
+				Query: "laptop",
+				Limit: 5,
+				Page:  1,
+			},
+			mockSetup: func(mr *MockProductRepository) {
+				mr.On("Search", mock.Anything, "laptop", 5, 0).Return(products, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Database Error",
+			request: ProductSearchRequest{Query: "error"},
+			mockSetup: func(mr *MockProductRepository) {
+				mr.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("db error"))
+			},
+			wantErr: true,
+			errMsg:  "db error",
+		},
+	}
 
-	res, err := service.SearchProducts(context.Background(), req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := NewMockProductRepository(t)
+			tt.mockSetup(mockRepo)
 
-	assert.NoError(t, err)
-	assert.Len(t, res, 1)
-	assert.Equal(t, productID, res[0].ID)
-}
+			service := NewProductService(mockRepo, nil)
+			res, err := service.SearchProducts(context.Background(), tt.request)
 
-func TestProductService_SearchProducts_RepositoryError(t *testing.T) {
-	mockRepo := NewMockProductRepository(t)
-	service := NewProductService(mockRepo, nil)
-
-	req := ProductSearchRequest{Query: "error"}
-	mockRepo.On("Search", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("db error"))
-
-	res, err := service.SearchProducts(context.Background(), req)
-
-	assert.Error(t, err)
-	assert.Nil(t, res)
-	assert.Equal(t, "db error", err.Error())
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Equal(t, tt.errMsg, err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, res, 1)
+				assert.Equal(t, productID, res[0].ID)
+			}
+		})
+	}
 }
