@@ -39,15 +39,15 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 		statusCode = fiber.StatusServiceUnavailable
 	}
 
-	supabaseStatus := "configured"
-	if os.Getenv("SUPABASE_JWT_SECRET") == "" {
-		supabaseStatus = "unconfigured"
+	mailersendStatus := "configured"
+	if os.Getenv("MAILERSEND_API_KEY") == "" {
+		mailersendStatus = "unconfigured"
 	}
 
 	return common.NewResponse(c, statusCode, message, fiber.Map{
 		"components": fiber.Map{
-			"database": dbStatus,
-			"supabase": supabaseStatus,
+			"database":   dbStatus,
+			"mailersend": mailersendStatus,
 		},
 	})
 }

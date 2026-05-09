@@ -13,8 +13,9 @@ packages:
   go-marketplace/internal/core/auth:
     interfaces:
       AuthServiceInterface:
-      RefreshTokenRepository:
-      SupabaseAuthClient:
+      SessionRepository:
+      VerificationRepository:
+      MailServiceInterface:
   go-marketplace/internal/core/merchant:
     interfaces:
       MerchantServiceInterface:

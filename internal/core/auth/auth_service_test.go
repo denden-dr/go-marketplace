@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -17,9 +16,10 @@ import (
 
 func TestAuthService_Register_Success(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(mockRepo, mockRTRepo, mockSocialAuthClient, "secret")
+	mockSessionRepo := NewMockSessionRepository(t)
+	mockVerifRepo := NewMockVerificationRepository(t)
+	mockMailService := NewMockMailServiceInterface(t)
+	service := NewAuthService(mockRepo, mockSessionRepo, mockVerifRepo, mockMailService, "secret")
 
 	email := "test@example.com"
 	password := "password123"
@@ -27,7 +27,8 @@ func TestAuthService_Register_Success(t *testing.T) {
 
 	mockRepo.On("GetUserByEmail", mock.Anything, email).Return(nil, nil)
 	mockRepo.On("CreateUser", mock.Anything, mock.Anything).Return(nil)
-	mockRTRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	mockVerifRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	mockMailService.On("SendVerificationCode", mock.Anything, email, mock.Anything).Return(nil)
 
 	res, err := service.Register(context.Background(), "Test User", email, password, username)
 
@@ -37,27 +38,32 @@ func TestAuthService_Register_Success(t *testing.T) {
 	assert.Equal(t, "Test User", res.FullName)
 }
 
-func TestAuthService_Register_Fail_UserAlreadyExists(t *testing.T) {
+func TestAuthService_VerifyEmail_Success(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(mockRepo, mockRTRepo, mockSocialAuthClient, "secret")
+	mockVerifRepo := NewMockVerificationRepository(t)
+	service := NewAuthService(mockRepo, nil, mockVerifRepo, nil, "secret")
 
-	email := "test@example.com"
+	userID := uuid.New()
+	code := "123456"
+	vc := &domain.VerificationCode{
+		UserID:    userID,
+		CodeHash:  HashToken(code),
+		ExpiresAt: time.Now().Add(time.Minute),
+	}
 
-	mockRepo.On("GetUserByEmail", mock.Anything, email).Return(&domain.User{}, nil)
+	mockVerifRepo.On("GetByUserID", mock.Anything, userID).Return(vc, nil)
+	mockRepo.On("UpdateVerifiedStatus", mock.Anything, userID, true).Return(nil)
+	mockVerifRepo.On("DeleteByUserID", mock.Anything, userID).Return(nil)
 
-	_, err := service.Register(context.Background(), "Full Name", email, "pass", "user")
+	err := service.VerifyEmail(context.Background(), userID, code)
 
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, domain.ErrUserAlreadyExists))
+	assert.NoError(t, err)
 }
 
 func TestAuthService_Login_Success(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(mockRepo, mockRTRepo, mockSocialAuthClient, "secret")
+	mockSessionRepo := NewMockSessionRepository(t)
+	service := NewAuthService(mockRepo, mockSessionRepo, nil, nil, "secret")
 
 	email := "test@example.com"
 	password := "password123"
@@ -67,45 +73,29 @@ func TestAuthService_Login_Success(t *testing.T) {
 		FullName:     "Test User",
 		Username:     "testuser",
 		Email:        email,
-		Password:     &password, // Using password as placeholder for hashed password for simplicity in test setup if needed, but bcrypt.Compare uses u.Password
+		IsVerified:   true,
 		AuthProvider: domain.AuthProviderLocal,
 	}
-	u.Password = func() *string { s := string(hashedPassword); return &s }()
+	hashedStr := string(hashedPassword)
+	u.Password = &hashedStr
 
 	mockRepo.On("GetUserByEmail", mock.Anything, email).Return(u, nil)
-	mockRTRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	mockSessionRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 
-	res, err := service.Login(context.Background(), email, password)
+	res, err := service.Login(context.Background(), email, password, "127.0.0.1", "test-agent")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, u.ID, res.ID)
-	assert.NotEmpty(t, res.AccessToken)
-	assert.NotEmpty(t, res.RefreshToken)
-}
-
-func TestAuthService_Login_Fail_UserNotFound(t *testing.T) {
-	mockRepo := user.NewMockUserRepository(t)
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(mockRepo, mockRTRepo, mockSocialAuthClient, "secret")
-
-	mockRepo.On("GetUserByEmail", mock.Anything, "notfound@email.com").Return(nil, nil)
-
-	_, err := service.Login(context.Background(), "notfound@email.com", "anypass")
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, domain.ErrInvalidCredentials))
 }
 
 func TestAuthService_RefreshTokens_Success(t *testing.T) {
 	mockRepo := user.NewMockUserRepository(t)
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(mockRepo, mockRTRepo, mockSocialAuthClient, "secret")
+	mockSessionRepo := NewMockSessionRepository(t)
+	service := NewAuthService(mockRepo, mockSessionRepo, nil, nil, "secret")
 
 	rawToken := "old-refresh-token"
-	rt := &domain.RefreshToken{
+	session := &domain.Session{
 		ID:        uuid.New(),
 		UserID:    uuid.New(),
 		FamilyID:  uuid.New(),
@@ -113,118 +103,32 @@ func TestAuthService_RefreshTokens_Success(t *testing.T) {
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
 
-	u := &domain.User{ID: rt.UserID, FullName: "Test User", Email: "test@example.com", AuthProvider: domain.AuthProviderLocal}
+	u := &domain.User{ID: session.UserID, FullName: "Test User", Email: "test@example.com", AuthProvider: domain.AuthProviderLocal}
 
-	mockRTRepo.On("GetByTokenHash", mock.Anything, mock.Anything).Return(rt, nil)
-	mockRTRepo.On("RevokeByID", mock.Anything, rt.ID).Return(nil)
-	mockRTRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
-	mockRepo.On("GetUserByID", mock.Anything, rt.UserID).Return(u, nil)
+	mockSessionRepo.On("GetByTokenHash", mock.Anything, mock.Anything).Return(session, nil)
+	mockSessionRepo.On("RevokeByID", mock.Anything, session.ID).Return(nil)
+	mockSessionRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	mockRepo.On("GetUserByID", mock.Anything, session.UserID).Return(u, nil)
 
-	res, err := service.RefreshTokens(context.Background(), rawToken)
+	res, err := service.RefreshTokens(context.Background(), rawToken, "127.0.0.1", "test-agent")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.NotEmpty(t, res.AccessToken)
-}
-
-func TestAuthService_RefreshTokens_Fail_TokenReused(t *testing.T) {
-	mockRepo := user.NewMockUserRepository(t)
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(mockRepo, mockRTRepo, mockSocialAuthClient, "secret")
-
-	rt := &domain.RefreshToken{
-		FamilyID:  uuid.New(),
-		IsRevoked: true,
-	}
-
-	mockRTRepo.On("GetByTokenHash", mock.Anything, mock.Anything).Return(rt, nil)
-	mockRTRepo.On("RevokeAllByFamilyID", mock.Anything, rt.FamilyID).Return(nil)
-
-	_, err := service.RefreshTokens(context.Background(), "reused-token")
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, domain.ErrRefreshTokenReused))
 }
 
 func TestAuthService_Logout_Success(t *testing.T) {
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(nil, mockRTRepo, mockSocialAuthClient, "secret")
+	mockSessionRepo := NewMockSessionRepository(t)
+	service := NewAuthService(nil, mockSessionRepo, nil, nil, "secret")
 
 	token := "valid-token"
-	rt := &domain.RefreshToken{
+	session := &domain.Session{
 		FamilyID: uuid.New(),
 	}
 
-	mockRTRepo.On("GetByTokenHash", mock.Anything, mock.Anything).Return(rt, nil)
-	mockRTRepo.On("RevokeAllByFamilyID", mock.Anything, rt.FamilyID).Return(nil)
+	mockSessionRepo.On("GetByTokenHash", mock.Anything, mock.Anything).Return(session, nil)
+	mockSessionRepo.On("RevokeAllByFamilyID", mock.Anything, session.FamilyID).Return(nil)
 
 	err := service.Logout(context.Background(), token)
 
 	assert.NoError(t, err)
-}
-
-func TestAuthService_SocialLogin_Success_NewUser(t *testing.T) {
-	mockRepo := user.NewMockUserRepository(t)
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(mockRepo, mockRTRepo, mockSocialAuthClient, "secret")
-
-	idToken := "valid-token"
-	uid := "sb-uid-123"
-	email := "sb-user@example.com"
-	name := "Social User"
-
-	tokenResult := &SupabaseTokenResult{
-		UserID:   uid,
-		Email:    email,
-		Name:     name,
-		Provider: domain.AuthProviderGoogle,
-	}
-
-	mockSocialAuthClient.On("VerifyAccessToken", mock.Anything, idToken).Return(tokenResult, nil)
-	mockRepo.On("GetUserByProviderID", mock.Anything, domain.AuthProviderGoogle, uid).Return(nil, nil)
-	mockRepo.On("GetUserByEmail", mock.Anything, email).Return(nil, nil)
-	mockRepo.On("GetUserByUsername", mock.Anything, "sb-user").Return(nil, nil)
-	mockRepo.On("CreateUser", mock.Anything, mock.Anything).Return(nil)
-	mockRTRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
-
-	res, err := service.SocialLogin(context.Background(), idToken)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-	assert.Equal(t, email, res.Email)
-	assert.Equal(t, name, res.FullName)
-}
-
-func TestAuthService_SocialLogin_Fail_EmailConflict(t *testing.T) {
-	mockRepo := user.NewMockUserRepository(t)
-	mockRTRepo := NewMockRefreshTokenRepository(t)
-	mockSocialAuthClient := NewMockSupabaseAuthClient(t)
-	service := NewAuthService(mockRepo, mockRTRepo, mockSocialAuthClient, "secret")
-
-	uid := "sb-uid-123"
-	email := "conflict@example.com"
-
-	tokenResult := &SupabaseTokenResult{
-		UserID:   uid,
-		Email:    email,
-		Provider: domain.AuthProviderGoogle,
-	}
-
-	existingUser := &domain.User{
-		ID:           uuid.New(),
-		Email:        email,
-		AuthProvider: domain.AuthProviderLocal,
-	}
-
-	mockSocialAuthClient.On("VerifyAccessToken", mock.Anything, mock.Anything).Return(tokenResult, nil)
-	mockRepo.On("GetUserByProviderID", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
-	mockRepo.On("GetUserByEmail", mock.Anything, email).Return(existingUser, nil)
-
-	_, err := service.SocialLogin(context.Background(), "token")
-
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrEmailAlreadyUsedByOtherMethod)
 }

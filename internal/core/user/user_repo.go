@@ -19,14 +19,14 @@ func NewUserRepository(db *sqlx.DB) UserRepository {
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user *domain.User) error {
-	query := `INSERT INTO users (id, full_name, username, email, password, auth_provider, provider_id, created_at) 
-	          VALUES (:id, :full_name, :username, :email, :password, :auth_provider, :provider_id, :created_at)`
+	query := `INSERT INTO users (id, full_name, username, email, password, auth_provider, provider_id, is_verified, created_at) 
+	          VALUES (:id, :full_name, :username, :email, :password, :auth_provider, :provider_id, :is_verified, :created_at)`
 	_, err := r.db.NamedExecContext(ctx, query, user)
 	return err
 }
 
 func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, created_at FROM users WHERE email = $1`
+	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, is_verified, created_at FROM users WHERE email = $1`
 	var user domain.User
 	err := r.db.GetContext(ctx, &user, query, email)
 	if err != nil {
@@ -39,7 +39,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 }
 
 func (r *userRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
-	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, created_at FROM users WHERE id = $1`
+	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, is_verified, created_at FROM users WHERE id = $1`
 	var user domain.User
 	err := r.db.GetContext(ctx, &user, query, id)
 	if err != nil {
@@ -52,7 +52,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*domain
 }
 
 func (r *userRepository) GetUserByProviderID(ctx context.Context, provider string, providerID string) (*domain.User, error) {
-	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, created_at 
+	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, is_verified, created_at 
 	          FROM users WHERE auth_provider = $1 AND provider_id = $2`
 	var user domain.User
 	err := r.db.GetContext(ctx, &user, query, provider, providerID)
@@ -66,7 +66,7 @@ func (r *userRepository) GetUserByProviderID(ctx context.Context, provider strin
 }
 
 func (r *userRepository) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {
-	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, created_at FROM users WHERE username = $1`
+	query := `SELECT id, full_name, username, email, password, auth_provider, provider_id, is_verified, created_at FROM users WHERE username = $1`
 	var user domain.User
 	err := r.db.GetContext(ctx, &user, query, username)
 	if err != nil {
@@ -76,6 +76,12 @@ func (r *userRepository) GetUserByUsername(ctx context.Context, username string)
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) UpdateVerifiedStatus(ctx context.Context, id uuid.UUID, status bool) error {
+	query := `UPDATE users SET is_verified = $1 WHERE id = $2`
+	_, err := r.db.ExecContext(ctx, query, status, id)
+	return err
 }
 
 func (r *userRepository) CreateAddress(ctx context.Context, addr *domain.UserAddress) error {

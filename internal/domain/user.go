@@ -14,6 +14,7 @@ type User struct {
 	Password     *string   `json:"-" db:"password"`
 	AuthProvider string    `json:"auth_provider" db:"auth_provider"`
 	ProviderID   *string   `json:"provider_id" db:"provider_id"`
+	IsVerified   bool      `json:"is_verified" db:"is_verified"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 

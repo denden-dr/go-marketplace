@@ -12,34 +12,52 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func ptr(s string) *string {
+	return &s
+}
+
 type AuthServiceInterface interface {
 	Register(ctx context.Context, fullName, email, password, username string) (*AuthResponse, error)
-	Login(ctx context.Context, email, password string) (*AuthResponse, error)
-	SocialLogin(ctx context.Context, accessToken string) (*AuthResponse, error)
-	RefreshTokens(ctx context.Context, rawToken string) (*AuthResponse, error)
+	VerifyEmail(ctx context.Context, userID uuid.UUID, code string) error
+	Login(ctx context.Context, email, password, ipAddress, userAgent string) (*AuthResponse, error)
+	RefreshTokens(ctx context.Context, rawToken, ipAddress, userAgent string) (*AuthResponse, error)
 	Logout(ctx context.Context, rawToken string) error
 }
 
-type RefreshTokenRepository interface {
-	Create(ctx context.Context, rt *domain.RefreshToken) error
-	GetByTokenHash(ctx context.Context, hash string) (*domain.RefreshToken, error)
+type SessionRepository interface {
+	Create(ctx context.Context, session *domain.Session) error
+	GetByTokenHash(ctx context.Context, hash string) (*domain.Session, error)
 	RevokeByID(ctx context.Context, id uuid.UUID) error
 	RevokeAllByFamilyID(ctx context.Context, familyID uuid.UUID) error
-	DeleteExpiredTokens(ctx context.Context) error
+	DeleteExpiredSessions(ctx context.Context) error
+}
+
+type VerificationRepository interface {
+	Create(ctx context.Context, vc *domain.VerificationCode) error
+	GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.VerificationCode, error)
+	DeleteByUserID(ctx context.Context, userID uuid.UUID) error
 }
 
 type AuthService struct {
 	userRepo         user.UserRepository
-	refreshTokenRepo RefreshTokenRepository
-	socialAuthClient SupabaseAuthClient
+	sessionRepo      SessionRepository
+	verificationRepo VerificationRepository
+	mailService      MailService
 	jwtSecret        string
 }
 
-func NewAuthService(userRepo user.UserRepository, refreshTokenRepo RefreshTokenRepository, socialAuthClient SupabaseAuthClient, jwtSecret string) *AuthService {
+func NewAuthService(
+	userRepo user.UserRepository,
+	sessionRepo SessionRepository,
+	verificationRepo VerificationRepository,
+	mailService MailService,
+	jwtSecret string,
+) *AuthService {
 	return &AuthService{
 		userRepo:         userRepo,
-		refreshTokenRepo: refreshTokenRepo,
-		socialAuthClient: socialAuthClient,
+		sessionRepo:      sessionRepo,
+		verificationRepo: verificationRepo,
+		mailService:      mailService,
 		jwtSecret:        jwtSecret,
 	}
 }
@@ -66,7 +84,7 @@ func (s *AuthService) Register(ctx context.Context, fullName, email, password, u
 		Email:        email,
 		Password:     &hashedPasswordStr,
 		AuthProvider: domain.AuthProviderLocal,
-		ProviderID:   nil,
+		IsVerified:   false,
 		CreatedAt:    time.Now(),
 	}
 
@@ -74,10 +92,64 @@ func (s *AuthService) Register(ctx context.Context, fullName, email, password, u
 		return nil, err
 	}
 
-	return s.generateAuthResponse(ctx, user)
+	// Generate and send verification code
+	code, err := GenerateVerificationCode() // 6 digit
+	if err != nil {
+		return nil, err
+	}
+
+	vc := &domain.VerificationCode{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		CodeHash:  HashToken(code),
+		ExpiresAt: time.Now().Add(time.Minute * 15),
+		CreatedAt: time.Now(),
+	}
+
+	if err := s.verificationRepo.Create(ctx, vc); err != nil {
+		return nil, err
+	}
+
+	if err := s.mailService.SendVerificationCode(ctx, user.Email, code); err != nil {
+		// Log error but don't fail registration? Or fail?
+		// For now, let's return error to inform user.
+		return nil, fmt.Errorf("failed to send verification email: %w", err)
+	}
+
+	return &AuthResponse{
+		ID:        user.ID,
+		FullName:  user.FullName,
+		Username:  user.Username,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+	}, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthResponse, error) {
+func (s *AuthService) VerifyEmail(ctx context.Context, userID uuid.UUID, code string) error {
+	vc, err := s.verificationRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if vc == nil {
+		return domain.ErrInvalidVerificationCode
+	}
+
+	if time.Now().After(vc.ExpiresAt) {
+		return domain.ErrVerificationCodeExpired
+	}
+
+	if HashToken(code) != vc.CodeHash {
+		return domain.ErrInvalidVerificationCode
+	}
+
+	if err := s.userRepo.UpdateVerifiedStatus(ctx, userID, true); err != nil {
+		return err
+	}
+
+	return s.verificationRepo.DeleteByUserID(ctx, userID)
+}
+
+func (s *AuthService) Login(ctx context.Context, email, password, ipAddress, userAgent string) (*AuthResponse, error) {
 	user, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -86,8 +158,8 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	if user.AuthProvider != domain.AuthProviderLocal {
-		return nil, domain.ErrAuthProviderMismatch
+	if !user.IsVerified {
+		return nil, domain.ErrEmailNotVerified
 	}
 
 	if user.Password == nil {
@@ -98,82 +170,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*AuthR
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	return s.generateAuthResponse(ctx, user)
+	return s.generateAuthResponse(ctx, user, ipAddress, userAgent)
 }
 
-func (s *AuthService) SocialLogin(ctx context.Context, accessToken string) (*AuthResponse, error) {
-	if s.socialAuthClient == nil {
-		return nil, domain.ErrSocialLoginNotAvailable
-	}
-
-	// 1. Verify token
-	tokenResult, err := s.socialAuthClient.VerifyAccessToken(ctx, accessToken)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. Lookup user by ProviderID
-	user, err := s.userRepo.GetUserByProviderID(ctx, tokenResult.Provider, tokenResult.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 3. If user exists, generate tokens
-	if user != nil {
-		return s.generateAuthResponse(ctx, user)
-	}
-
-	// 4. New User - Check if email is taken
-	existingUser, err := s.userRepo.GetUserByEmail(ctx, tokenResult.Email)
-	if err != nil {
-		return nil, err
-	}
-	if existingUser != nil {
-		return nil, domain.ErrEmailAlreadyUsedByOtherMethod
-	}
-
-	// 5. Create new user
-	// Generate unique username from email prefix
-	baseUsername := tokenResult.Email
-	for i, char := range tokenResult.Email {
-		if char == '@' {
-			baseUsername = tokenResult.Email[:i]
-			break
-		}
-	}
-
-	username := baseUsername
-	for {
-		u, err := s.userRepo.GetUserByUsername(ctx, username)
-		if err != nil {
-			return nil, err
-		}
-		if u == nil {
-			break
-		}
-		// Collision! Append random suffix
-		username = fmt.Sprintf("%s_%s", baseUsername, uuid.New().String()[:4])
-	}
-
-	newUser := &domain.User{
-		ID:           uuid.New(),
-		FullName:     tokenResult.Name,
-		Username:     username,
-		Email:        tokenResult.Email,
-		Password:     nil,
-		AuthProvider: tokenResult.Provider,
-		ProviderID:   &tokenResult.UserID,
-		CreatedAt:    time.Now(),
-	}
-
-	if err := s.userRepo.CreateUser(ctx, newUser); err != nil {
-		return nil, err
-	}
-
-	return s.generateAuthResponse(ctx, newUser)
-}
-
-func (s *AuthService) generateAuthResponse(ctx context.Context, u *domain.User) (*AuthResponse, error) {
+func (s *AuthService) generateAuthResponse(ctx context.Context, u *domain.User, ipAddress, userAgent string) (*AuthResponse, error) {
 	accessToken, err := GenerateAccessToken(u.ID, s.jwtSecret)
 	if err != nil {
 		return nil, err
@@ -186,17 +186,19 @@ func (s *AuthService) generateAuthResponse(ctx context.Context, u *domain.User) 
 
 	familyID := uuid.New()
 	tokenHash := HashToken(refreshToken)
-	rt := &domain.RefreshToken{
+	session := &domain.Session{
 		ID:        uuid.New(),
 		UserID:    u.ID,
 		TokenHash: tokenHash,
 		FamilyID:  familyID,
 		IsRevoked: false,
+		IPAddress: ptr(ipAddress),
+		UserAgent: ptr(userAgent),
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
 		CreatedAt: time.Now(),
 	}
 
-	if err := s.refreshTokenRepo.Create(ctx, rt); err != nil {
+	if err := s.sessionRepo.Create(ctx, session); err != nil {
 		return nil, err
 	}
 
@@ -211,37 +213,37 @@ func (s *AuthService) generateAuthResponse(ctx context.Context, u *domain.User) 
 	}, nil
 }
 
-func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*AuthResponse, error) {
+func (s *AuthService) RefreshTokens(ctx context.Context, rawToken, ipAddress, userAgent string) (*AuthResponse, error) {
 	tokenHash := HashToken(rawToken)
-	rt, err := s.refreshTokenRepo.GetByTokenHash(ctx, tokenHash)
+	session, err := s.sessionRepo.GetByTokenHash(ctx, tokenHash)
 	if err != nil {
 		return nil, err
 	}
 
-	if rt == nil {
+	if session == nil {
 		return nil, domain.ErrInvalidRefreshToken
 	}
 
 	// Reuse detection
-	if rt.IsRevoked {
+	if session.IsRevoked {
 		// Someone is trying to reuse a revoked token - potential attack!
 		// Revoke the entire family
-		_ = s.refreshTokenRepo.RevokeAllByFamilyID(ctx, rt.FamilyID)
+		_ = s.sessionRepo.RevokeAllByFamilyID(ctx, session.FamilyID)
 		return nil, domain.ErrRefreshTokenReused
 	}
 
 	// Expiration check
-	if time.Now().After(rt.ExpiresAt) {
+	if time.Now().After(session.ExpiresAt) {
 		return nil, domain.ErrRefreshTokenExpired
 	}
 
 	// Revoke the old token
-	if err := s.refreshTokenRepo.RevokeByID(ctx, rt.ID); err != nil {
+	if err := s.sessionRepo.RevokeByID(ctx, session.ID); err != nil {
 		return nil, err
 	}
 
 	// Generate new tokens
-	accessToken, err := GenerateAccessToken(rt.UserID, s.jwtSecret)
+	accessToken, err := GenerateAccessToken(session.UserID, s.jwtSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -253,21 +255,23 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*Auth
 
 	// Store new refresh token with SAME familyID
 	newTokenHash := HashToken(newRefreshToken)
-	newRt := &domain.RefreshToken{
+	newSession := &domain.Session{
 		ID:        uuid.New(),
-		UserID:    rt.UserID,
+		UserID:    session.UserID,
 		TokenHash: newTokenHash,
-		FamilyID:  rt.FamilyID,
+		FamilyID:  session.FamilyID,
 		IsRevoked: false,
+		IPAddress: ptr(ipAddress),
+		UserAgent: ptr(userAgent),
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
 		CreatedAt: time.Now(),
 	}
 
-	if err := s.refreshTokenRepo.Create(ctx, newRt); err != nil {
+	if err := s.sessionRepo.Create(ctx, newSession); err != nil {
 		return nil, err
 	}
 
-	user, err := s.userRepo.GetUserByID(ctx, rt.UserID)
+	user, err := s.userRepo.GetUserByID(ctx, session.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +280,7 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*Auth
 	}
 
 	return &AuthResponse{
-		ID:           rt.UserID,
+		ID:           session.UserID,
 		FullName:     user.FullName,
 		Username:     user.Username,
 		Email:        user.Email,
@@ -288,14 +292,14 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken string) (*Auth
 
 func (s *AuthService) Logout(ctx context.Context, rawToken string) error {
 	tokenHash := HashToken(rawToken)
-	rt, err := s.refreshTokenRepo.GetByTokenHash(ctx, tokenHash)
+	session, err := s.sessionRepo.GetByTokenHash(ctx, tokenHash)
 	if err != nil {
 		return err
 	}
-	if rt == nil {
+	if session == nil {
 		return domain.ErrInvalidRefreshToken
 	}
 
 	// Revoke the entire family for safety on logout
-	return s.refreshTokenRepo.RevokeAllByFamilyID(ctx, rt.FamilyID)
+	return s.sessionRepo.RevokeAllByFamilyID(ctx, session.FamilyID)
 }

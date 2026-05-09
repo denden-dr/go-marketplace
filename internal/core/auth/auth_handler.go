@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"time"
 )
 
 type AuthHandler struct {
@@ -72,34 +73,33 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
 	}
 
-	res, err := h.authService.Login(c.Context(), req.Email, req.Password)
+	res, err := h.authService.Login(c.Context(), req.Email, req.Password, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
-		if errors.Is(err, domain.ErrAuthProviderMismatch) {
-			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
+		if errors.Is(err, domain.ErrEmailNotVerified) {
+			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
 		}
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Login successful", res)
+	// In a real app, these would come from the service response
+	// But since I updated AuthResponse to NOT have them, I should probably 
+	// get them from the service response which I DIDNT update yet in the handler logic.
+	// Wait, I updated AuthService.Login to return *AuthResponse.
+	// But AuthService.Login returns a struct that I just changed to NOT have tokens.
+	// That's a problem. The Service SHOULD return the tokens, but the Handler should 
+	// decide HOW to return them (JSON vs Cookie).
+	
+	// I'll update AuthResponse in DTO to still have them but with `json:"-"`.
+	// No, I'll keep them in a separate internal struct or just keep them in AuthResponse but with `json:"-"`.
+	
+	return h.handleAuthSuccess(c, res, "Login successful")
 }
 
-// RefreshTokens handles token refreshing
-// @Summary Refresh access tokens
-// @Description Rotates refresh tokens and provides a new access token.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body RefreshRequest true "Refresh Token"
-// @Success 200 {object} common.ResponseWrapper{data=AuthResponse}
-// @Failure 400 {object} common.ResponseWrapper
-// @Failure 401 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
-// @Router /auth/refresh [post]
-func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
-	var req RefreshRequest
+func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
+	var req VerifyRequest
 	if err := c.BodyParser(&req); err != nil {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
 	}
@@ -108,90 +108,75 @@ func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
 		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
 	}
 
-	res, err := h.authService.RefreshTokens(c.Context(), req.RefreshToken)
+	err := h.authService.VerifyEmail(c.Context(), req.UserID, req.Code)
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidVerificationCode) || errors.Is(err, domain.ErrVerificationCodeExpired) {
+			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
+		}
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+	}
+
+	return common.NewResponse(c, http.StatusOK, "Email verified successfully", nil)
+}
+
+func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
+	refreshToken := c.Cookies("refresh_token")
+	if refreshToken == "" {
+		return common.NewResponse(c, http.StatusUnauthorized, "Refresh token missing", nil)
+	}
+
+	res, err := h.authService.RefreshTokens(c.Context(), refreshToken, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidRefreshToken) || errors.Is(err, domain.ErrRefreshTokenExpired) || errors.Is(err, domain.ErrRefreshTokenReused) {
+			h.clearTokensCookies(c)
 			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		}
 		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Token refreshed successfully", res)
+	return h.handleAuthSuccess(c, res, "Token refreshed successfully")
 }
 
-// Logout handles user logout
-// @Summary Logout user
-// @Description Invalidates the current refresh token.
-// @Tags auth
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param request body LogoutRequest true "Refresh Token to invalidate"
-// @Success 200 {object} common.ResponseWrapper
-// @Failure 400 {object} common.ResponseWrapper
-// @Failure 401 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
-// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
-	var req LogoutRequest
-	if err := c.BodyParser(&req); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+	refreshToken := c.Cookies("refresh_token")
+	if refreshToken != "" {
+		_ = h.authService.Logout(c.Context(), refreshToken)
 	}
 
-	if err := req.Validate(); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
-	}
-
-	err := h.authService.Logout(c.Context(), req.RefreshToken)
-	if err != nil {
-		if errors.Is(err, domain.ErrInvalidRefreshToken) {
-			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
-		}
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
-	}
-
+	h.clearTokensCookies(c)
 	return common.NewResponse(c, http.StatusOK, "Logout successful", nil)
 }
 
-// SocialLogin handles social sign-in via Supabase
-// @Summary Social login
-// @Description Authenticates a user using a Supabase access token and returns access and refresh tokens.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body SocialLoginRequest true "Supabase Access Token"
-// @Success 200 {object} common.ResponseWrapper{data=AuthResponse}
-// @Failure 400 {object} common.ResponseWrapper
-// @Failure 401 {object} common.ResponseWrapper
-// @Failure 409 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
-// @Router /auth/social [post]
-func (h *AuthHandler) SocialLogin(c *fiber.Ctx) error {
-	var req SocialLoginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
-	}
+func (h *AuthHandler) handleAuthSuccess(c *fiber.Ctx, res *AuthResponse, message string) error {
+	// Access tokens and refresh tokens are in the response from service 
+	// but hidden from JSON. We need to access them here.
+	// Since I updated AuthResponse to NOT have them, I need to fix that first.
+	// I'll add them back with `json:"-"`.
+	
+	h.setTokensCookies(c, res.AccessToken, res.RefreshToken)
 
-	if err := req.Validate(); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
-	}
+	return common.NewResponse(c, http.StatusOK, message, res)
+}
 
-	res, err := h.authService.SocialLogin(c.Context(), req.AccessToken)
-	if err != nil {
-		if errors.Is(err, domain.ErrInvalidSocialToken) || errors.Is(err, domain.ErrEmailNotVerified) {
-			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
-		}
-		if errors.Is(err, domain.ErrEmailAlreadyUsedByOtherMethod) || errors.Is(err, domain.ErrAuthProviderMismatch) {
-			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
-		}
-		if errors.Is(err, domain.ErrEmailPasswordSignInNotAllowed) {
-			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
-		}
-		if errors.Is(err, domain.ErrSocialLoginNotAvailable) {
-			return common.NewResponse(c, http.StatusServiceUnavailable, err.Error(), nil)
-		}
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
-	}
+func (h *AuthHandler) setTokensCookies(c *fiber.Ctx, accessToken, refreshToken string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Expires:  time.Now().Add(time.Minute * 15),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "Strict",
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Expires:  time.Now().Add(time.Hour * 24 * 7),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "Strict",
+	})
+}
 
-	return common.NewResponse(c, http.StatusOK, "Social login successful", res)
+func (h *AuthHandler) clearTokensCookies(c *fiber.Ctx) {
+	c.ClearCookie("access_token", "refresh_token")
 }

@@ -34,33 +34,41 @@ func (r RegisterRequest) Validate() error {
 }
 
 type AuthResponse struct {
-	ID           uuid.UUID `json:"id"`
-	FullName     string    `json:"full_name"`
-	Username     string    `json:"username"`
+	ID        uuid.UUID `json:"id"`
+	FullName  string    `json:"full_name"`
+	Username  string    `json:"username"`
 	Email        string    `json:"email"`
 	CreatedAt    time.Time `json:"created_at"`
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token"`
+	AccessToken  string    `json:"-"`
+	RefreshToken string    `json:"-"`
 }
 
-type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token"`
-}
+type RefreshRequest struct{}
 
 func (r RefreshRequest) Validate() error {
-	if r.RefreshToken == "" {
-		return errors.New("refresh token is required")
-	}
 	return nil
 }
 
-type LogoutRequest struct {
-	RefreshToken string `json:"refresh_token"`
-}
+type LogoutRequest struct{}
 
 func (r LogoutRequest) Validate() error {
-	if r.RefreshToken == "" {
-		return errors.New("refresh token is required")
+	return nil
+}
+
+type VerifyRequest struct {
+	UserID uuid.UUID `json:"user_id"`
+	Code   string    `json:"code"`
+}
+
+func (r VerifyRequest) Validate() error {
+	if r.UserID == uuid.Nil {
+		return errors.New("user_id is required")
+	}
+	if r.Code == "" {
+		return errors.New("code is required")
+	}
+	if len(r.Code) != 6 {
+		return errors.New("code must be 6 digits")
 	}
 	return nil
 }
@@ -80,16 +88,3 @@ func (r LoginRequest) Validate() error {
 	return nil
 }
 
-type SocialLoginRequest struct {
-	AccessToken string `json:"access_token"`
-}
-
-func (r SocialLoginRequest) Validate() error {
-	if r.AccessToken == "" {
-		return errors.New("access token is required")
-	}
-	if len(r.AccessToken) > 5120 {
-		return errors.New("access token is too long")
-	}
-	return nil
-}

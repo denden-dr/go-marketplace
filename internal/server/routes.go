@@ -32,7 +32,6 @@ func SetupRoutes(
 	healthHandler *health.HealthHandler,
 	jwtSecret string,
 	appEnv string,
-	socialLoginEnabled bool,
 ) {
 	// Swagger UI
 	if appEnv == "development" {
@@ -57,11 +56,7 @@ func SetupRoutes(
 
 	authRoutes.Post("/register", authHandler.Register)
 	authRoutes.Post("/login", authHandler.Login)
-
-	if socialLoginEnabled {
-		authRoutes.Post("/social", authHandler.SocialLogin)
-	}
-
+	authRoutes.Post("/verify-email", authHandler.VerifyEmail)
 	authRoutes.Post("/refresh", authHandler.RefreshTokens)
 
 	// Public products
