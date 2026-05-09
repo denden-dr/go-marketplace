@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"go-marketplace/internal/config"
 	"go-marketplace/internal/database"
 
 	"github.com/jmoiron/sqlx"
@@ -14,7 +15,8 @@ type IntegrationSuite struct {
 }
 
 func (s *IntegrationSuite) SetupSuite() {
-	db, err := database.ConnectDB()
+	cfg := config.Load()
+	db, err := database.ConnectDB(cfg.DB)
 	s.Require().NoError(err)
 	s.DB = db
 }

@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"go-marketplace/internal/config"
 	"go-marketplace/internal/database"
 
 	"github.com/joho/godotenv"
@@ -15,8 +16,10 @@ func main() {
 		log.Println("No .env file found, using default values or environment variables")
 	}
 
+	cfg := config.Load()
+
 	// Initialize Database
-	db, err := database.ConnectDB()
+	db, err := database.ConnectDB(cfg.DB)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
