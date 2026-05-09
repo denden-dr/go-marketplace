@@ -85,16 +85,16 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	// In a real app, these would come from the service response
-	// But since I updated AuthResponse to NOT have them, I should probably 
+	// But since I updated AuthResponse to NOT have them, I should probably
 	// get them from the service response which I DIDNT update yet in the handler logic.
 	// Wait, I updated AuthService.Login to return *AuthResponse.
 	// But AuthService.Login returns a struct that I just changed to NOT have tokens.
-	// That's a problem. The Service SHOULD return the tokens, but the Handler should 
+	// That's a problem. The Service SHOULD return the tokens, but the Handler should
 	// decide HOW to return them (JSON vs Cookie).
-	
+
 	// I'll update AuthResponse in DTO to still have them but with `json:"-"`.
 	// No, I'll keep them in a separate internal struct or just keep them in AuthResponse but with `json:"-"`.
-	
+
 	return h.handleAuthSuccess(c, res, "Login successful")
 }
 
@@ -148,11 +148,11 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) handleAuthSuccess(c *fiber.Ctx, res *AuthResponse, message string) error {
-	// Access tokens and refresh tokens are in the response from service 
+	// Access tokens and refresh tokens are in the response from service
 	// but hidden from JSON. We need to access them here.
 	// Since I updated AuthResponse to NOT have them, I need to fix that first.
 	// I'll add them back with `json:"-"`.
-	
+
 	h.setTokensCookies(c, res.AccessToken, res.RefreshToken)
 
 	return common.NewResponse(c, http.StatusOK, message, res)

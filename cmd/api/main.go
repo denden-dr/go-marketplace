@@ -16,6 +16,7 @@ import (
 	"go-marketplace/internal/core/wallet"
 	"go-marketplace/internal/database"
 
+	"go-marketplace/internal/config"
 	"go-marketplace/internal/server"
 
 	"github.com/gofiber/fiber/v2"
@@ -48,19 +49,18 @@ func main() {
 		log.Println("No .env file found, using default values")
 	}
 
+	cfg := config.Load()
+
 	// Initialize Database
-	db, err := database.ConnectDB()
+	db, err := database.ConnectDB(cfg.DB)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
+	if cfg.JWTSecret == "" {
 		log.Fatalf("JWT_SECRET environment variable is not set")
 	}
-
-	appEnv := os.Getenv("APP_ENV")
 
 	mailersendAPIKey := os.Getenv("MAILERSEND_API_KEY")
 	mailersendFromEmail := os.Getenv("MAILERSEND_FROM_EMAIL")
@@ -96,7 +96,7 @@ func main() {
 		}
 	}()
 
-	authService := auth.NewAuthService(userRepo, sessionRepo, verificationRepo, mailService, jwtSecret)
+	authService := auth.NewAuthService(userRepo, sessionRepo, verificationRepo, mailService, cfg.JWTSecret)
 	userService := user.NewUserService(userRepo)
 	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := product.NewProductService(productRepo, merchantRepo)
@@ -128,7 +128,7 @@ func main() {
 		authHandler,
 		userHandler,
 		merchantHandler, productHandler, walletHandler,
-		cartHandler, orderHandler, healthHandler, jwtSecret, appEnv)
+		cartHandler, orderHandler, healthHandler, cfg.JWTSecret, cfg.AppEnv)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)
