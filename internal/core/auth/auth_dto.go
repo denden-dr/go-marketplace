@@ -34,9 +34,9 @@ func (r RegisterRequest) Validate() error {
 }
 
 type AuthResponse struct {
-	ID        uuid.UUID `json:"id"`
-	FullName  string    `json:"full_name"`
-	Username  string    `json:"username"`
+	ID           uuid.UUID `json:"id"`
+	FullName     string    `json:"full_name"`
+	Username     string    `json:"username"`
 	Email        string    `json:"email"`
 	CreatedAt    time.Time `json:"created_at"`
 	AccessToken  string    `json:"-"`
@@ -87,4 +87,3 @@ func (r LoginRequest) Validate() error {
 	}
 	return nil
 }
-
