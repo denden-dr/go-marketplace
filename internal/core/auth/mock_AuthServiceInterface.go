@@ -5,6 +5,7 @@ package auth
 import (
 	context "context"
 
+	uuid "github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -21,9 +22,9 @@ func (_m *MockAuthServiceInterface) EXPECT() *MockAuthServiceInterface_Expecter 
 	return &MockAuthServiceInterface_Expecter{mock: &_m.Mock}
 }
 
-// Login provides a mock function with given fields: ctx, email, password
-func (_m *MockAuthServiceInterface) Login(ctx context.Context, email string, password string) (*AuthResponse, error) {
-	ret := _m.Called(ctx, email, password)
+// Login provides a mock function with given fields: ctx, email, password, ipAddress, userAgent
+func (_m *MockAuthServiceInterface) Login(ctx context.Context, email string, password string, ipAddress string, userAgent string) (*AuthResponse, error) {
+	ret := _m.Called(ctx, email, password, ipAddress, userAgent)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Login")
@@ -31,19 +32,19 @@ func (_m *MockAuthServiceInterface) Login(ctx context.Context, email string, pas
 
 	var r0 *AuthResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*AuthResponse, error)); ok {
-		return rf(ctx, email, password)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string) (*AuthResponse, error)); ok {
+		return rf(ctx, email, password, ipAddress, userAgent)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *AuthResponse); ok {
-		r0 = rf(ctx, email, password)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string) *AuthResponse); ok {
+		r0 = rf(ctx, email, password, ipAddress, userAgent)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*AuthResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, email, password)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
+		r1 = rf(ctx, email, password, ipAddress, userAgent)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -60,13 +61,15 @@ type MockAuthServiceInterface_Login_Call struct {
 //   - ctx context.Context
 //   - email string
 //   - password string
-func (_e *MockAuthServiceInterface_Expecter) Login(ctx interface{}, email interface{}, password interface{}) *MockAuthServiceInterface_Login_Call {
-	return &MockAuthServiceInterface_Login_Call{Call: _e.mock.On("Login", ctx, email, password)}
+//   - ipAddress string
+//   - userAgent string
+func (_e *MockAuthServiceInterface_Expecter) Login(ctx interface{}, email interface{}, password interface{}, ipAddress interface{}, userAgent interface{}) *MockAuthServiceInterface_Login_Call {
+	return &MockAuthServiceInterface_Login_Call{Call: _e.mock.On("Login", ctx, email, password, ipAddress, userAgent)}
 }
 
-func (_c *MockAuthServiceInterface_Login_Call) Run(run func(ctx context.Context, email string, password string)) *MockAuthServiceInterface_Login_Call {
+func (_c *MockAuthServiceInterface_Login_Call) Run(run func(ctx context.Context, email string, password string, ipAddress string, userAgent string)) *MockAuthServiceInterface_Login_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), args[4].(string))
 	})
 	return _c
 }
@@ -76,7 +79,7 @@ func (_c *MockAuthServiceInterface_Login_Call) Return(_a0 *AuthResponse, _a1 err
 	return _c
 }
 
-func (_c *MockAuthServiceInterface_Login_Call) RunAndReturn(run func(context.Context, string, string) (*AuthResponse, error)) *MockAuthServiceInterface_Login_Call {
+func (_c *MockAuthServiceInterface_Login_Call) RunAndReturn(run func(context.Context, string, string, string, string) (*AuthResponse, error)) *MockAuthServiceInterface_Login_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -128,9 +131,9 @@ func (_c *MockAuthServiceInterface_Logout_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
-// RefreshTokens provides a mock function with given fields: ctx, rawToken
-func (_m *MockAuthServiceInterface) RefreshTokens(ctx context.Context, rawToken string) (*AuthResponse, error) {
-	ret := _m.Called(ctx, rawToken)
+// RefreshTokens provides a mock function with given fields: ctx, rawToken, ipAddress, userAgent
+func (_m *MockAuthServiceInterface) RefreshTokens(ctx context.Context, rawToken string, ipAddress string, userAgent string) (*AuthResponse, error) {
+	ret := _m.Called(ctx, rawToken, ipAddress, userAgent)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RefreshTokens")
@@ -138,19 +141,19 @@ func (_m *MockAuthServiceInterface) RefreshTokens(ctx context.Context, rawToken 
 
 	var r0 *AuthResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*AuthResponse, error)); ok {
-		return rf(ctx, rawToken)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) (*AuthResponse, error)); ok {
+		return rf(ctx, rawToken, ipAddress, userAgent)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *AuthResponse); ok {
-		r0 = rf(ctx, rawToken)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) *AuthResponse); ok {
+		r0 = rf(ctx, rawToken, ipAddress, userAgent)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*AuthResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, rawToken)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = rf(ctx, rawToken, ipAddress, userAgent)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -166,13 +169,15 @@ type MockAuthServiceInterface_RefreshTokens_Call struct {
 // RefreshTokens is a helper method to define mock.On call
 //   - ctx context.Context
 //   - rawToken string
-func (_e *MockAuthServiceInterface_Expecter) RefreshTokens(ctx interface{}, rawToken interface{}) *MockAuthServiceInterface_RefreshTokens_Call {
-	return &MockAuthServiceInterface_RefreshTokens_Call{Call: _e.mock.On("RefreshTokens", ctx, rawToken)}
+//   - ipAddress string
+//   - userAgent string
+func (_e *MockAuthServiceInterface_Expecter) RefreshTokens(ctx interface{}, rawToken interface{}, ipAddress interface{}, userAgent interface{}) *MockAuthServiceInterface_RefreshTokens_Call {
+	return &MockAuthServiceInterface_RefreshTokens_Call{Call: _e.mock.On("RefreshTokens", ctx, rawToken, ipAddress, userAgent)}
 }
 
-func (_c *MockAuthServiceInterface_RefreshTokens_Call) Run(run func(ctx context.Context, rawToken string)) *MockAuthServiceInterface_RefreshTokens_Call {
+func (_c *MockAuthServiceInterface_RefreshTokens_Call) Run(run func(ctx context.Context, rawToken string, ipAddress string, userAgent string)) *MockAuthServiceInterface_RefreshTokens_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string))
 	})
 	return _c
 }
@@ -182,7 +187,7 @@ func (_c *MockAuthServiceInterface_RefreshTokens_Call) Return(_a0 *AuthResponse,
 	return _c
 }
 
-func (_c *MockAuthServiceInterface_RefreshTokens_Call) RunAndReturn(run func(context.Context, string) (*AuthResponse, error)) *MockAuthServiceInterface_RefreshTokens_Call {
+func (_c *MockAuthServiceInterface_RefreshTokens_Call) RunAndReturn(run func(context.Context, string, string, string) (*AuthResponse, error)) *MockAuthServiceInterface_RefreshTokens_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -249,61 +254,50 @@ func (_c *MockAuthServiceInterface_Register_Call) RunAndReturn(run func(context.
 	return _c
 }
 
-// SocialLogin provides a mock function with given fields: ctx, accessToken
-func (_m *MockAuthServiceInterface) SocialLogin(ctx context.Context, accessToken string) (*AuthResponse, error) {
-	ret := _m.Called(ctx, accessToken)
+// VerifyEmail provides a mock function with given fields: ctx, userID, code
+func (_m *MockAuthServiceInterface) VerifyEmail(ctx context.Context, userID uuid.UUID, code string) error {
+	ret := _m.Called(ctx, userID, code)
 
 	if len(ret) == 0 {
-		panic("no return value specified for SocialLogin")
+		panic("no return value specified for VerifyEmail")
 	}
 
-	var r0 *AuthResponse
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*AuthResponse, error)); ok {
-		return rf(ctx, accessToken)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *AuthResponse); ok {
-		r0 = rf(ctx, accessToken)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = rf(ctx, userID, code)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*AuthResponse)
-		}
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, accessToken)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
-// MockAuthServiceInterface_SocialLogin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SocialLogin'
-type MockAuthServiceInterface_SocialLogin_Call struct {
+// MockAuthServiceInterface_VerifyEmail_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VerifyEmail'
+type MockAuthServiceInterface_VerifyEmail_Call struct {
 	*mock.Call
 }
 
-// SocialLogin is a helper method to define mock.On call
+// VerifyEmail is a helper method to define mock.On call
 //   - ctx context.Context
-//   - accessToken string
-func (_e *MockAuthServiceInterface_Expecter) SocialLogin(ctx interface{}, accessToken interface{}) *MockAuthServiceInterface_SocialLogin_Call {
-	return &MockAuthServiceInterface_SocialLogin_Call{Call: _e.mock.On("SocialLogin", ctx, accessToken)}
+//   - userID uuid.UUID
+//   - code string
+func (_e *MockAuthServiceInterface_Expecter) VerifyEmail(ctx interface{}, userID interface{}, code interface{}) *MockAuthServiceInterface_VerifyEmail_Call {
+	return &MockAuthServiceInterface_VerifyEmail_Call{Call: _e.mock.On("VerifyEmail", ctx, userID, code)}
 }
 
-func (_c *MockAuthServiceInterface_SocialLogin_Call) Run(run func(ctx context.Context, accessToken string)) *MockAuthServiceInterface_SocialLogin_Call {
+func (_c *MockAuthServiceInterface_VerifyEmail_Call) Run(run func(ctx context.Context, userID uuid.UUID, code string)) *MockAuthServiceInterface_VerifyEmail_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
 	})
 	return _c
 }
 
-func (_c *MockAuthServiceInterface_SocialLogin_Call) Return(_a0 *AuthResponse, _a1 error) *MockAuthServiceInterface_SocialLogin_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *MockAuthServiceInterface_VerifyEmail_Call) Return(_a0 error) *MockAuthServiceInterface_VerifyEmail_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockAuthServiceInterface_SocialLogin_Call) RunAndReturn(run func(context.Context, string) (*AuthResponse, error)) *MockAuthServiceInterface_SocialLogin_Call {
+func (_c *MockAuthServiceInterface_VerifyEmail_Call) RunAndReturn(run func(context.Context, uuid.UUID, string) error) *MockAuthServiceInterface_VerifyEmail_Call {
 	_c.Call.Return(run)
 	return _c
 }
