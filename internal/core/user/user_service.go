@@ -25,6 +25,7 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	GetUserByProviderID(ctx context.Context, provider string, providerID string) (*domain.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
+	UpdateVerifiedStatus(ctx context.Context, id uuid.UUID, status bool) error
 
 	// Addresses
 	CreateAddress(ctx context.Context, addr *domain.UserAddress) error
