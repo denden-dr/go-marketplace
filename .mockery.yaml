@@ -36,6 +36,10 @@ packages:
     interfaces:
       OrderServiceInterface:
       OrderRepository:
+  go-marketplace/internal/core/payment:
+    interfaces:
+      PaymentServiceInterface:
+      PaymentRepository:
   go-marketplace/internal/domain:
     interfaces:
       Pool:
