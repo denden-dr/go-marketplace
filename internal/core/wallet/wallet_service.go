@@ -107,14 +107,9 @@ func (s *WalletService) Withdraw(ctx context.Context, userID uuid.UUID, req With
 		return domain.ErrWalletNotFound
 	}
 
-	// Double check status before attempting (Repo will also check)
-	if wallet.Status != domain.WalletStatusActive {
-		return domain.ErrWalletNotActive
-	}
-
-	// Fast-fail if balance is clearly insufficient (Repo will also check atomically)
-	if wallet.Balance.LessThan(req.Amount) {
-		return domain.ErrInsufficientBalance
+	walletEntity := NewWallet(wallet)
+	if err := walletEntity.CanWithdraw(req.Amount); err != nil {
+		return err
 	}
 
 	txData := domain.WalletTransaction{
@@ -143,8 +138,8 @@ func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*Wa
 		return nil, domain.ErrWalletAlreadyExists
 	}
 
-	// Generate wallet number: WAL- + first 8 characters of UUID
-	walletNumber := "WAL-" + uuid.New().String()[:8]
+	// Generate wallet number
+	walletNumber := GenerateWalletNumber()
 
 	wallet := &domain.Wallet{
 		ID:           uuid.New(),

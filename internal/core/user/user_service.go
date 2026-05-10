@@ -127,52 +127,54 @@ func (s *UserService) ListAddresses(ctx context.Context, userID uuid.UUID) ([]Ad
 }
 
 func (s *UserService) UpdateAddress(ctx context.Context, userID, addressID uuid.UUID, req *AddressRequest) (*AddressResponse, error) {
-	addr, err := s.userRepo.GetAddressByID(ctx, addressID)
+	m, err := s.userRepo.GetAddressByID(ctx, addressID)
 	if err != nil {
 		return nil, err
 	}
-	if addr == nil || addr.UserID != userID {
-		return nil, domain.ErrForbidden // Or some generic error
+	if m == nil {
+		return nil, domain.ErrForbidden // Or AddressNotFound
 	}
 
-	if req.IsDefault && !addr.IsDefault {
+	addr := NewAddress(m)
+	if !addr.IsOwnedBy(userID) {
+		return nil, domain.ErrForbidden
+	}
+
+	if req.IsDefault && !m.IsDefault {
 		_ = s.userRepo.UnsetDefaultAddresses(ctx, userID)
 	}
 
-	addr.Tag = req.Tag
-	addr.RecipientName = req.RecipientName
-	addr.PhoneNumber = req.PhoneNumber
-	addr.StreetAddress = req.StreetAddress
-	addr.City = req.City
-	addr.Province = req.Province
-	addr.PostalCode = req.PostalCode
-	addr.IsDefault = req.IsDefault
-	addr.UpdatedAt = time.Now()
+	addr.Update(req)
 
-	if err := s.userRepo.UpdateAddress(ctx, addr); err != nil {
+	if err := s.userRepo.UpdateAddress(ctx, m); err != nil {
 		return nil, err
 	}
 
 	return &AddressResponse{
-		ID:            addr.ID,
-		Tag:           addr.Tag,
-		RecipientName: addr.RecipientName,
-		PhoneNumber:   addr.PhoneNumber,
-		StreetAddress: addr.StreetAddress,
-		City:          addr.City,
-		Province:      addr.Province,
-		PostalCode:    addr.PostalCode,
-		IsDefault:     addr.IsDefault,
-		CreatedAt:     addr.CreatedAt,
+		ID:            m.ID,
+		Tag:           m.Tag,
+		RecipientName: m.RecipientName,
+		PhoneNumber:   m.PhoneNumber,
+		StreetAddress: m.StreetAddress,
+		City:          m.City,
+		Province:      m.Province,
+		PostalCode:    m.PostalCode,
+		IsDefault:     m.IsDefault,
+		CreatedAt:     m.CreatedAt,
 	}, nil
 }
 
 func (s *UserService) DeleteAddress(ctx context.Context, userID, addressID uuid.UUID) error {
-	addr, err := s.userRepo.GetAddressByID(ctx, addressID)
+	m, err := s.userRepo.GetAddressByID(ctx, addressID)
 	if err != nil {
 		return err
 	}
-	if addr == nil || addr.UserID != userID {
+	if m == nil {
+		return domain.ErrForbidden
+	}
+
+	addr := NewAddress(m)
+	if !addr.IsOwnedBy(userID) {
 		return domain.ErrForbidden
 	}
 

@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/shopspring/decimal"
 )
 
 type CartServiceInterface interface {
@@ -76,29 +75,29 @@ func (s *CartService) ClearCart(ctx context.Context, userID uuid.UUID) error {
 }
 
 func (s *CartService) GetCart(ctx context.Context, userID uuid.UUID) (*CartResponse, error) {
-	items, err := s.repo.GetCartByUserID(ctx, userID)
+	models, err := s.repo.GetCartByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	var res CartResponse
-	res.Items = make([]CartItemResponse, 0)
-	total := decimal.NewFromInt(0)
+	cart := NewCart(models)
 
-	for _, item := range items {
-		subtotal := item.Product.Price.Mul(decimal.NewFromInt(int64(item.Quantity)))
-		total = total.Add(subtotal)
+	res := CartResponse{
+		Items:      make([]CartItemResponse, 0, len(cart.Items())),
+		TotalPrice: cart.TotalPrice(),
+	}
 
+	for _, item := range cart.Items() {
+		m := item.model
 		res.Items = append(res.Items, CartItemResponse{
-			ID:        item.ID,
-			ProductID: item.ProductID,
-			Name:      item.Product.Name,
-			Price:     item.Product.Price,
-			Quantity:  item.Quantity,
-			Subtotal:  subtotal,
+			ID:        m.ID,
+			ProductID: m.ProductID,
+			Name:      m.Product.Name,
+			Price:     m.Product.Price,
+			Quantity:  m.Quantity,
+			Subtotal:  item.Subtotal(),
 		})
 	}
 
-	res.TotalPrice = total
 	return &res, nil
 }

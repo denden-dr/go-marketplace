@@ -134,11 +134,13 @@ func (s *AuthService) VerifyEmail(ctx context.Context, userID uuid.UUID, code st
 		return domain.ErrInvalidVerificationCode
 	}
 
-	if time.Now().After(vc.ExpiresAt) {
+	entity := NewVerificationCode(vc)
+
+	if entity.IsExpired() {
 		return domain.ErrVerificationCodeExpired
 	}
 
-	if HashToken(code) != vc.CodeHash {
+	if !entity.IsValid(code) {
 		return domain.ErrInvalidVerificationCode
 	}
 
@@ -224,17 +226,15 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken, ipAddress, us
 		return nil, domain.ErrInvalidRefreshToken
 	}
 
-	// Reuse detection
-	if session.IsRevoked {
-		// Someone is trying to reuse a revoked token - potential attack!
-		// Revoke the entire family
-		_ = s.sessionRepo.RevokeAllByFamilyID(ctx, session.FamilyID)
-		return nil, domain.ErrRefreshTokenReused
-	}
+	entity := NewSession(session)
 
-	// Expiration check
-	if time.Now().After(session.ExpiresAt) {
-		return nil, domain.ErrRefreshTokenExpired
+	// Reuse and expiration detection
+	if err := entity.CanRefresh(); err != nil {
+		if err == domain.ErrRefreshTokenReused {
+			// Revoke the entire family for security
+			_ = s.sessionRepo.RevokeAllByFamilyID(ctx, session.FamilyID)
+		}
+		return nil, err
 	}
 
 	// Revoke the old token
