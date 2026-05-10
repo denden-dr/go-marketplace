@@ -265,12 +265,12 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 		return domain.ErrOrderNotFound
 	}
 
-	if o.UserID != userID {
+	order := NewOrder(o)
+	if !order.IsAuthorized(userID) {
 		return fmt.Errorf("unauthorized")
 	}
 
-	// Business Rule: Permitted ONLY if status is Processing or Packaging AND time_elapsed < 1 hour
-	if (o.Status != domain.OrderStatusProcessing && o.Status != domain.OrderStatusPackaging) || time.Since(o.CreatedAt) > time.Hour {
+	if !order.CanCancel() {
 		return domain.ErrOrderNotCancellable
 	}
 
@@ -332,12 +332,12 @@ func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid
 	if o == nil {
 		return domain.ErrOrderNotFound
 	}
-	if o.UserID != userID {
+	order := NewOrder(o)
+	if !order.IsAuthorized(userID) {
 		return fmt.Errorf("unauthorized")
 	}
 
-	// Business Rule: Permitted ONLY if status is Packaging AND time_elapsed > 1 hour
-	if o.Status != domain.OrderStatusPackaging || time.Since(o.CreatedAt) <= time.Hour {
+	if !order.CanAppeal() {
 		return domain.ErrOrderNotCancellable
 	}
 
@@ -373,30 +373,13 @@ func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, ord
 	if o == nil {
 		return domain.ErrOrderNotFound
 	}
-	if o.MerchantID != merchantID {
+	order := NewOrder(o)
+	if !order.IsMerchantAuthorized(merchantID) {
 		return fmt.Errorf("unauthorized")
 	}
 
-	// Merchant status restrictions
-	switch status {
-	case domain.OrderStatusPackaging:
-		if o.Status != domain.OrderStatusProcessing {
-			return domain.ErrInvalidStatusTransition
-		}
-	case domain.OrderStatusShipping:
-		// Rule: NOT Permitted if time_elapsed < 1 hour since creation/processing
-		if time.Since(o.CreatedAt) < time.Hour {
-			return domain.ErrMerchantShipmentTooEarly
-		}
-		if o.Status != domain.OrderStatusPackaging {
-			return domain.ErrInvalidStatusTransition
-		}
-	case domain.OrderStatusDelivered:
-		if o.Status != domain.OrderStatusShipping {
-			return domain.ErrInvalidStatusTransition
-		}
-	default:
-		return domain.ErrInvalidStatusTransition
+	if err := order.ValidateStatusTransition(status); err != nil {
+		return err
 	}
 
 	return s.orderRepo.UpdateOrderStatus(ctx, orderID, status)
@@ -410,12 +393,12 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 	if o == nil {
 		return domain.ErrOrderNotFound
 	}
-	if o.MerchantID != merchantID {
+	order := NewOrder(o)
+	if !order.IsMerchantAuthorized(merchantID) {
 		return fmt.Errorf("unauthorized")
 	}
 
-	// Merchant Cancellation: Permitted anytime before Shipping
-	if o.Status == domain.OrderStatusShipping || o.Status == domain.OrderStatusDelivered || o.Status == domain.OrderStatusCancelled {
+	if !order.CanMerchantCancel() {
 		return domain.ErrOrderNotCancellable
 	}
 
