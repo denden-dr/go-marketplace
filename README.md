@@ -1,22 +1,20 @@
 # Go Marketplace
 
-A robust e-commerce backend built with Go, featuring a clean, feature-based architecture.
+A high-performance e-commerce backend built with Go, featuring a **Rich Domain Model** and feature-based architecture.
 
 ## 🚀 Overview
 
-**Go Marketplace** is a comprehensive e-commerce API service designed for scalability and maintainability. It provides a full set of features for users, merchants, products, and order management, all powered by High-performance technologies like Go and Fiber.
+**Go Marketplace** is a robust e-commerce API designed for scalability and maintainability. It follows clean architecture principles, encapsulating business logic within domain entities to ensure a decoupled and testable codebase.
 
 ### Key Features
-- **Authentication**: JWT-based auth with refresh token family support for secure sessions.
-- **User Management**: Profile management and secure password handling.
-- **Merchant System**: Register as a merchant to sell products and manage shop settings.
-- **Product Catalog**: Advanced product management including categories and stock tracking.
-- **Shopping Cart**: Real-time cart management with price calculations.
-- **Order Processing**: Complete checkout flow, order status tracking, and history.
-- **Wallet System**: Internal wallet for users to manage balances and pay for orders.
-- **Health Monitoring**: Real-time monitoring of application, database, and Supabase connectivity.
-- **Product Search**: Robust semantic and full-text search powered by PostgreSQL `pg_trgm`, `tsvector`, and `pgvector`.
-- **DB Migrations**: Automated database versioning and migrations.
+- **Custom Authentication**: Local email/password registration with 2FA/Verification codes via MailerSend.
+- **Rich Domain Model**: Business logic and state transitions encapsulated in domain entities.
+- **Wallet & Escrow System**: Secure internal wallet with a transaction-safe escrow mechanism for order processing.
+- **Merchant System**: Multi-vendor support with shop management and product catalogs.
+- **Advanced Search**: Semantic and full-text search powered by PostgreSQL `pgvector` and `tsvector`.
+- **Cart & Checkout**: Real-time cart management and atomic order processing.
+- **Health Monitoring**: Real-time component health checks (Database, MailerSend, etc.).
+- **Automated Migrations**: Database versioning and schema management with `golang-migrate`.
 
 ---
 
@@ -25,11 +23,11 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 - **Language**: [Go](https://go.dev/) (v1.25.8+)
 - **Web Framework**: [Fiber v2](https://gofiber.io/)
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
-- **Database Tooling**: [sqlx](https://github.com/jmoiron/sqlx) (abstraction), [pgx](https://github.com/jackc/pgx) (stdlib driver), [golang-migrate](https://github.com/golang-migrate/migrate)
-- **Search Engine**: [PostgreSQL pgvector](https://github.com/pgvector/pgvector)
-- **JSON Web Tokens**: [golang-jwt](https://github.com/golang-jwt/jwt)
-- **Unit Testing**: [testify](https://github.com/stretchr/testify), [sqlmock](https://github.com/DATA-DOG/go-sqlmock), [mockery](https://github.com/vektra/mockery)
-- **Utilities**: [godotenv](https://github.com/joho/godotenv), [shopspring/decimal](https://github.com/shopspring/decimal)
+- **Data Access**: [sqlx](https://github.com/jmoiron/sqlx) & [pgx](https://github.com/jackc/pgx)
+- **Search**: [pgvector](https://github.com/pgvector/pgvector)
+- **Authentication**: JWT (RS256/HS256) & [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt)
+- **Email**: [MailerSend SDK](https://github.com/mailersend/mailersend-go)
+- **Testing**: [testify](https://github.com/stretchr/testify), [sqlmock](https://github.com/DATA-DOG/go-sqlmock), [mockery](https://github.com/vektra/mockery)
 
 ---
 
@@ -37,31 +35,30 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
 
 ### Prerequisites
 
-- [Go](https://go.dev/doc/install) installed.
-- [PostgreSQL](https://www.postgresql.org/download/) running.
-- `golang-migrate` installed (for database migrations).
+- [Go](https://go.dev/doc/install) (v1.25.8+)
+- [PostgreSQL](https://www.postgresql.org/download/) with [pgvector](https://github.com/pgvector/pgvector) installed.
+- [Docker](https://www.docker.com/) (for integration tests).
 
 ### Installation & Setup
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/go-marketplace.git
+   git clone https://github.com/denden-dr/go-marketplace.git
    cd go-marketplace
    ```
 
 2. **Configure Environment Variables**:
-   Create a `.env` file in the root directory and configure it based on your setup:
+   Create a `.env` file based on `.env.example`:
    ```env
-   PORT=your_app_port
-   DB_HOST=your_db_host
-   DB_PORT=your_db_port
-   DB_USER=your_db_user
-   DB_PASS=your_db_password
-   DB_NAME=your_dbname
-   JWT_SECRET=your_jwt_secret_key_here
-   APP_ENV=development
-   FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
-   FIREBASE_PROJECT_ID=fb-go-commerce-auth
+   PORT=3000
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=postgres
+   DB_PASS=postgres
+   DB_NAME=marketplace
+   JWT_SECRET=your_super_secret_key
+   MAILERSEND_API_KEY=mlsn.xxxxxx
+   MAILERSEND_FROM_EMAIL=no-reply@yourdomain.com
    ```
 
 3. **Install Dependencies**:
@@ -79,119 +76,80 @@ A robust e-commerce backend built with Go, featuring a clean, feature-based arch
    make run
    ```
 
-### 🔐 Supabase Auth
- 
- The application uses **Supabase Auth** for social login (Google, Facebook, Apple, Twitter). 
- 
- 1.  **Client-Side Flow**: Supabase handles the OAuth flow on the frontend and issues a JWT access token.
- 2.  **Backend Verification**: The backend verifies the JWT using the `SUPABASE_JWT_SECRET` (HS256).
- 3.  **Endpoint**: Use `POST /api/auth/social` with the `access_token` from Supabase.
-
----
-
----
-
-## 🛡️ Security
-
-### Rate Limiting
-To prevent brute-force attacks and abuse, the following rate limits are applied to authentication endpoints (`/api/auth/*`):
-- **Limit**: 10 requests per minute per IP address.
-- **Scope**: Includes `/login`, `/register`, `/social`, and `/refresh`.
-- **Response**: Exceeding the limit results in a `429 Too Many Requests` error.
-
-### Input Validation
-The API enforces strict validation on all inputs. For example, Social access tokens are capped at 5KB to prevent oversized payload attacks.
-
----
-
-## 📖 Makefile Commands
-
-The project includes a `Makefile` for common development tasks:
-
-| Command | Description |
-| :--- | :--- |
-| `make build` | Compile the application into a binary. |
-| `make run` | Run the application directly. |
-| `make test` | Run all unit tests. |
-| `make mock` | Generate mocks using mockery. |
-| `make migrate-up` | Apply all pending database migrations. |
-| `make migrate-down` | Rollback the last database migration. |
-| `make fmt` | Format the Go source code. |
-| `make tidy` | Tidy up Go modules. |
-| `make swagger` | Generate Swagger API documentation. |
-| `make clean` | Remove the compiled binary. |
-
 ---
 
 ## 🏗 Architecture
 
-The project follows a **Feature-Based Architecture**, where each domain (e.g., `auth`, `order`, `product`) is encapsulated in its own package under `internal/`. 
+The project follows a **Feature-Based Architecture** with a **Rich Domain Model**. Each feature in `internal/core/` is isolated and self-contained.
 
+### Core Layers
+1. **Handler**: Fiber HTTP layer. Parses requests, validates DTOs, and calls the Service.
+2. **Service**: Business orchestrator. Coordinates between repositories and domain entities.
+3. **Domain Entity**: The heart of the application. Contains business rules, state validation, and transitions.
+4. **Repository**: Data access layer. Handles SQL queries using `sqlx`.
+
+### Directory Structure
 ```text
 internal/
-├── auth/        # Authentication & Refresh Tokens
-├── cart/        # Shopping Cart logic
-├── database/    # Migrations & Connection setup
-├── domain/      # Core business entities
-├── merchant/    # Merchant & Shop management
-├── order/       # Ordering & Checkout flow
-├── product/     # Product catalog
-├── user/        # User accounts & profiles
-├── wallet/      # Digital balance & transactions
-├── health/      # Application health checks (DB, Supabase)
-└── server/      # Router & Fiber initialization
+├── common/         # Shared utilities (Response wrappers, etc.)
+├── core/           # Feature domains
+│   └── [feature]/  # e.g., auth, wallet, order
+│       ├── domain.go      # Business logic & Entities
+│       ├── *_handler.go   # HTTP handlers
+│       ├── *_service.go   # Service orchestrator
+│       └── *_repo.go      # Data access
+├── database/       # DB connection & migrations
+├── domain/         # Shared structs & global errors
+├── middleware/     # Fiber middlewares (Auth, Logger, etc.)
+└── server/         # Router & Server setup
 ```
-
-This structure ensures that features are loosely coupled and easy to test or refactor independently.
 
 ---
 
 ## 🧪 Testing
 
-To run the full test suite with verbose output:
+The project emphasizes a strong testing culture with high coverage of both unit and integration tests.
+
+- **Unit Tests**: Test domain logic and service orchestration using mocks.
+- **Integration Tests**: Test repository layer and database constraints using real PostgreSQL instances in Docker.
+
+**Run all tests**:
 ```bash
 make test
 ```
+
+**Run integration tests (requires Docker)**:
+```bash
+make test-docker
+```
+
+---
+
+## 🛡️ Security & Performance
+
+- **Refresh Token Rotation**: Implements a "Token Family" pattern to detect and revoke reused refresh tokens.
+- **Rate Limiting**: Applied to sensitive endpoints (Auth, Wallet) to prevent abuse.
+- **Semantic Search**: Utilizes `pgvector` for efficient similarity searches, enabling features like "Recommended Products".
+
+---
+
+## 📖 Makefile Commands
+
+| Command | Description |
+| :--- | :--- |
+| `make build` | Build the application binary. |
+| `make run` | Run the application locally. |
+| `make test` | Run all unit tests. |
+| `make test-docker` | Run integration tests using Docker. |
+| `make migrate-up` | Apply database migrations. |
+| `make swagger` | Generate Swagger API documentation. |
+| `make mock` | Regenerate mocks for testing. |
 
 ---
 
 ## 🏥 Health Monitoring
 
-The application provides a public health check endpoint to monitor the status of the service and its dependencies (Database and Supabase).
-
+Monitor the status of your service and its dependencies:
 - **Endpoint**: `GET /api/health`
-- **Response Format**: JSON
-- **Success Response**: `200 OK`
-- **Error Response**: `503 Service Unavailable` (if any component is down)
-
-**Example Request**:
-```bash
-curl http://localhost:3000/api/health
-```
-
-**Example Response**:
-```json
-{
-  "message": "application is healthy",
-  "status": 200,
-  "data": {
-    "components": {
-      "database": "up",
-      "supabase": "configured"
-    }
-  }
-}
-```
-
----
-
-## 🔍 Vector Search Integration
-
-The project integrates with **pgvector** for advanced semantic search capabilities.
-
-### Purpose
-- **Semantic Search**: Leverages vector embeddings to provide more relevant search results beyond keyword matching.
-- **Efficiency**: Integrated directly into PostgreSQL, reducing infrastructure complexity.
-
-### Next Steps
-The application will use `pgvector-go` to manage embeddings and perform similarity searches.
+- **Success**: `200 OK`
+- **Failure**: `503 Service Unavailable`
