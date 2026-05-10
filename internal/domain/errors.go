@@ -40,4 +40,9 @@ var (
 	ErrProvinceRequired         = errors.New("province is required")
 	ErrPostalCodeRequired       = errors.New("postal code is required")
 	ErrInvalidAddressTag        = errors.New("invalid address tag")
+
+	ErrPaymentNotFound            = errors.New("payment not found")
+	ErrInvalidPaymentStatus       = errors.New("invalid payment status")
+	ErrDuplicatePayment           = errors.New("payment already processed")
+	ErrInsufficientPendingBalance = errors.New("insufficient pending balance")
 )
