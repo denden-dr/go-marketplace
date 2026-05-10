@@ -81,41 +81,38 @@ func (s *ProductService) CreateProduct(ctx context.Context, userID uuid.UUID, re
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, userID uuid.UUID, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error) {
-	product, err := s.repo.GetByID(ctx, id)
+	m, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if product == nil {
+	if m == nil {
 		return nil, domain.ErrProductNotFound
 	}
 
 	// Verify the user owns the merchant that owns the product
-	m, err := s.merchantRepo.GetByID(ctx, product.StoreID)
+	merch, err := s.merchantRepo.GetByID(ctx, m.StoreID)
 	if err != nil {
 		return nil, err
 	}
-	if m == nil || m.UserID != userID {
+	if merch == nil || merch.UserID != userID {
 		return nil, domain.ErrForbidden
 	}
 
-	product.Name = req.Name
-	product.Description = req.Description
-	product.Price = req.Price
-	product.Stock = req.Stock
-	product.IsOnSale = req.IsOnSale
+	product := NewProduct(m)
+	product.Update(req)
 
-	if err := s.repo.Update(ctx, product); err != nil {
+	if err := s.repo.Update(ctx, m); err != nil {
 		return nil, err
 	}
 
 	return &ProductResponse{
-		ID:          product.ID,
-		Name:        product.Name,
-		Description: product.Description,
-		Price:       product.Price,
-		Stock:       product.Stock,
-		IsOnSale:    product.IsOnSale,
-		CreatedAt:   product.CreatedAt,
+		ID:          m.ID,
+		Name:        m.Name,
+		Description: m.Description,
+		Price:       m.Price,
+		Stock:       m.Stock,
+		IsOnSale:    m.IsOnSale,
+		CreatedAt:   m.CreatedAt,
 	}, nil
 }
 
