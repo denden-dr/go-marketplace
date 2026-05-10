@@ -31,11 +31,11 @@ func TestProduct_HasStock(t *testing.T) {
 
 func TestProduct_UpdateStock(t *testing.T) {
 	tests := []struct {
-		name     string
-		initial  int
-		change   int
+		name      string
+		initial   int
+		change    int
 		wantStock int
-		wantErr  error
+		wantErr   error
 	}{
 		{"add stock", 10, 5, 15, nil},
 		{"deduct sufficient", 10, -5, 5, nil},

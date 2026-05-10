@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"go-marketplace/internal/core/cart"
+	"go-marketplace/internal/core/merchant"
+	"go-marketplace/internal/core/payment"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/core/wallet"
@@ -33,7 +35,6 @@ func TestOrderService_CreateUserCheckout(t *testing.T) {
 	userID := uuid.New()
 	merchantID := uuid.New()
 	productID := uuid.New()
-	walletID := uuid.New()
 
 	cartItems := []domain.CartItem{
 		{
@@ -50,8 +51,6 @@ func TestOrderService_CreateUserCheckout(t *testing.T) {
 		},
 	}
 
-	w := &domain.Wallet{ID: walletID, UserID: userID, Balance: decimal.NewFromInt(200), Status: domain.WalletStatusActive}
-
 	addr := &domain.UserAddress{
 		ID:            uuid.New(),
 		UserID:        userID,
@@ -63,23 +62,23 @@ func TestOrderService_CreateUserCheckout(t *testing.T) {
 	tests := []struct {
 		name      string
 		req       CheckoutRequest
-		mockSetup func(mr *MockOrderRepository, mc *cart.MockCartRepository, mp *product.MockProductRepository, mw *wallet.MockWalletRepository, mu *user.MockUserRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock)
+		mockSetup func(mr *MockOrderRepository, mc *cart.MockCartRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, mu *user.MockUserRepository, mm *merchant.MockMerchantRepository, mps *payment.MockPaymentServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock)
 		wantErr   bool
 		errType   error
 	}{
 		{
 			name: "Success - Default Address",
-			req:  CheckoutRequest{PaymentMethod: "wallet"},
-			mockSetup: func(mr *MockOrderRepository, mc *cart.MockCartRepository, mp *product.MockProductRepository, mw *wallet.MockWalletRepository, mu *user.MockUserRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
+			req:  CheckoutRequest{PaymentMethod: domain.PaymentMethodWallet},
+			mockSetup: func(mr *MockOrderRepository, mc *cart.MockCartRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, mu *user.MockUserRepository, mm *merchant.MockMerchantRepository, mps *payment.MockPaymentServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
 				mr.On("Begin", mock.Anything).Return(tx, nil)
 				mc.On("GetCartByUserID", mock.Anything, userID).Return(cartItems, nil)
 				mu.On("GetAddressesByUserID", mock.Anything, userID).Return([]domain.UserAddress{*addr}, nil)
 
 				mp.On("GetByIDForUpdateTX", mock.Anything, tx, productID).Return(cartItems[0].Product, nil)
-				mw.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
-				mw.On("DeductBalanceTX", mock.Anything, tx, walletID, decimal.NewFromInt(100), mock.Anything).Return(nil)
+				mm.On("GetByID", mock.Anything, merchantID).Return(&domain.Merchant{ID: merchantID, UserID: uuid.New()}, nil)
 
-				mr.On("CreateOrderPaymentTX", mock.Anything, tx, mock.Anything).Return(nil)
+				mps.On("CreatePaymentTX", mock.Anything, tx, mock.Anything).Return(&payment.PaymentResponse{PaymentID: uuid.New(), Status: domain.PaymentStatusSuccess}, nil)
+
 				mr.On("CreateOrderTX", mock.Anything, tx, mock.MatchedBy(func(o *domain.Order) bool {
 					return o.ShippingRecipientName == "John Doe"
 				})).Return(nil)
@@ -94,7 +93,7 @@ func TestOrderService_CreateUserCheckout(t *testing.T) {
 		{
 			name: "Success - Custom Address",
 			req: CheckoutRequest{
-				PaymentMethod:         "wallet",
+				PaymentMethod:         domain.PaymentMethodWallet,
 				ShippingRecipientName: "Jane Custom",
 				ShippingPhoneNumber:   "0811111111",
 				ShippingStreetAddress: "789 Custom Rd",
@@ -102,15 +101,15 @@ func TestOrderService_CreateUserCheckout(t *testing.T) {
 				ShippingProvince:      "Custom Province",
 				ShippingPostalCode:    "99999",
 			},
-			mockSetup: func(mr *MockOrderRepository, mc *cart.MockCartRepository, mp *product.MockProductRepository, mw *wallet.MockWalletRepository, mu *user.MockUserRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
+			mockSetup: func(mr *MockOrderRepository, mc *cart.MockCartRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, mu *user.MockUserRepository, mm *merchant.MockMerchantRepository, mps *payment.MockPaymentServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
 				mr.On("Begin", mock.Anything).Return(tx, nil)
 				mc.On("GetCartByUserID", mock.Anything, userID).Return(cartItems, nil)
 
 				mp.On("GetByIDForUpdateTX", mock.Anything, tx, productID).Return(cartItems[0].Product, nil)
-				mw.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
-				mw.On("DeductBalanceTX", mock.Anything, tx, walletID, decimal.NewFromInt(100), mock.Anything).Return(nil)
+				mm.On("GetByID", mock.Anything, merchantID).Return(&domain.Merchant{ID: merchantID, UserID: uuid.New()}, nil)
 
-				mr.On("CreateOrderPaymentTX", mock.Anything, tx, mock.Anything).Return(nil)
+				mps.On("CreatePaymentTX", mock.Anything, tx, mock.Anything).Return(&payment.PaymentResponse{PaymentID: uuid.New(), Status: domain.PaymentStatusSuccess}, nil)
+
 				mr.On("CreateOrderTX", mock.Anything, tx, mock.MatchedBy(func(o *domain.Order) bool {
 					return o.ShippingRecipientName == "Jane Custom"
 				})).Return(nil)
@@ -129,13 +128,15 @@ func TestOrderService_CreateUserCheckout(t *testing.T) {
 			mo := NewMockOrderRepository(t)
 			mc := cart.NewMockCartRepository(t)
 			mp := product.NewMockProductRepository(t)
-			mw := wallet.NewMockWalletRepository(t)
 			mu := user.NewMockUserRepository(t)
+			mm := merchant.NewMockMerchantRepository(t)
+			mps := payment.NewMockPaymentServiceInterface(t)
+			mws := wallet.NewMockWalletServiceInterface(t)
 
 			tx, sqlMock := getSqlxTx(t)
-			tt.mockSetup(mo, mc, mp, mw, mu, tx, sqlMock)
+			tt.mockSetup(mo, mc, mp, mws, mu, mm, mps, tx, sqlMock)
 
-			service := NewOrderService(mo, mc, mp, mw, mu)
+			service := NewOrderService(mo, mc, mp, mws, mu, mm, mps)
 			res, err := service.CreateUserCheckout(context.Background(), userID, tt.req)
 
 			if tt.wantErr {
@@ -159,13 +160,13 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		mockSetup func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock)
+		mockSetup func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock)
 		wantErr   bool
 		errType   error
 	}{
 		{
 			name: "Success",
-			mockSetup: func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
+			mockSetup: func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
 				order := &domain.Order{
 					ID:          orderID,
 					UserID:      userID,
@@ -173,15 +174,13 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 					TotalAmount: decimal.NewFromInt(100),
 					CreatedAt:   time.Now().Add(-10 * time.Minute),
 				}
-				w := &domain.Wallet{ID: uuid.New(), UserID: userID}
 				items := []domain.OrderItem{{ProductID: productID, Quantity: 2}}
 				p := &domain.Product{ID: productID, Stock: 5}
 
 				mr.On("GetOrderByID", mock.Anything, orderID).Return(order, nil)
 				mr.On("Begin", mock.Anything).Return(tx, nil)
 				mr.On("UpdateOrderStatusTX", mock.Anything, tx, orderID, domain.OrderStatusCancelled).Return(nil)
-				mw.On("GetWalletByUserID", mock.Anything, userID).Return(w, nil)
-				mw.On("AddBalanceTX", mock.Anything, tx, w.ID, order.TotalAmount, mock.Anything).Return(nil)
+				mw.On("AddBalanceTX", mock.Anything, tx, userID, order.TotalAmount, mock.Anything).Return(nil)
 				mr.On("GetOrderItems", mock.Anything, orderID).Return(items, nil)
 				mp.On("GetByIDForUpdateTX", mock.Anything, tx, productID).Return(p, nil)
 				mp.On("UpdateStockTX", mock.Anything, tx, productID, 7).Return(nil)
@@ -192,7 +191,7 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 		},
 		{
 			name: "Fail - After One Hour",
-			mockSetup: func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
+			mockSetup: func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
 				order := &domain.Order{
 					ID:        orderID,
 					UserID:    userID,
@@ -210,19 +209,14 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mo := NewMockOrderRepository(t)
 			mp := product.NewMockProductRepository(t)
-			mw := wallet.NewMockWalletRepository(t)
+			mm := merchant.NewMockMerchantRepository(t)
+			mps := payment.NewMockPaymentServiceInterface(t)
+			mws := wallet.NewMockWalletServiceInterface(t)
 
-			db, sqlMock, _ := sqlmock.New()
-			sqlxDB := sqlx.NewDb(db, "sqlmock")
-			var tx *sqlx.Tx
-			if tt.name == "Success" {
-				sqlMock.ExpectBegin()
-				tx, _ = sqlxDB.BeginTxx(context.Background(), nil)
-			}
+			tx, sqlMock := getSqlxTx(t)
+			tt.mockSetup(mo, mp, mws, tx, sqlMock)
 
-			tt.mockSetup(mo, mp, mw, tx, sqlMock)
-
-			service := NewOrderService(mo, nil, mp, mw, nil)
+			service := NewOrderService(mo, nil, mp, mws, nil, mm, mps)
 			err := service.CancelUserOrder(context.Background(), userID, orderID)
 
 			if tt.wantErr {
@@ -280,10 +274,13 @@ func TestOrderService_MerchantUpdateStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mm := merchant.NewMockMerchantRepository(t)
+			mps := payment.NewMockPaymentServiceInterface(t)
+			mws := wallet.NewMockWalletServiceInterface(t)
+
 			mo := NewMockOrderRepository(t)
 			tt.mockSetup(mo)
-
-			service := NewOrderService(mo, nil, nil, nil, nil)
+			service := NewOrderService(mo, nil, nil, mws, nil, mm, mps)
 			err := service.MerchantUpdateStatus(context.Background(), merchantID, orderID, tt.newStatus)
 
 			if tt.wantErr {
@@ -326,11 +323,14 @@ func TestOrderService_AppealUserOrder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mm := merchant.NewMockMerchantRepository(t)
+			mps := payment.NewMockPaymentServiceInterface(t)
+			mws := wallet.NewMockWalletServiceInterface(t)
+
 			mo := NewMockOrderRepository(t)
 			tx, sqlMock := getSqlxTx(t)
 			tt.mockSetup(mo, tx, sqlMock)
-
-			service := NewOrderService(mo, nil, nil, nil, nil)
+			service := NewOrderService(mo, nil, nil, mws, nil, mm, mps)
 			err := service.AppealUserOrder(context.Background(), userID, orderID, "Packaging took too long")
 
 			if tt.wantErr {

@@ -11,7 +11,7 @@ import (
 func TestVerificationCode_IsValid(t *testing.T) {
 	code := "123456"
 	hash := HashToken(code)
-	
+
 	vc := NewVerificationCode(&domain.VerificationCode{
 		CodeHash: hash,
 	})

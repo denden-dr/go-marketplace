@@ -31,7 +31,7 @@ func TestUserAddress_IsOwnedBy(t *testing.T) {
 	otherUserID := uuid.New()
 
 	tests := []struct {
-		name   string
+		name    string
 		ownerID uuid.UUID
 		checkID uuid.UUID
 		want    bool

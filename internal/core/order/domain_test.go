@@ -52,7 +52,7 @@ func TestOrder_CanAppeal(t *testing.T) {
 
 func TestOrder_ValidateStatusTransition(t *testing.T) {
 	now := time.Now()
-	
+
 	tests := []struct {
 		name      string
 		current   domain.OrderStatus
@@ -83,12 +83,12 @@ func TestOrder_ValidateStatusTransition(t *testing.T) {
 func TestOrder_Authorization(t *testing.T) {
 	userID := uuid.New()
 	merchantID := uuid.New()
-	
+
 	o := NewOrder(&domain.Order{UserID: userID, MerchantID: merchantID})
-	
+
 	assert.True(t, o.IsAuthorized(userID))
 	assert.False(t, o.IsAuthorized(uuid.New()))
-	
+
 	assert.True(t, o.IsMerchantAuthorized(merchantID))
 	assert.False(t, o.IsMerchantAuthorized(uuid.New()))
 }
