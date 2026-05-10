@@ -8,7 +8,7 @@ This document provides a technical overview of the **Go Marketplace** project to
 
 ## 🏗 Architecture & Patterns
 
-The project follows a **Feature-Based Architecture** with a **Rich Domain Model**. Each domain (e.g., `auth`, `order`, `product`, `wallet`) is encapsulated in its own package under `internal/core/`.
+The project follows a **Feature-Based Architecture** with a **Rich Domain Model**. Each domain (e.g., `auth`, `order`, `product`, `wallet`, `payment`) is encapsulated in its own package under `internal/core/`.
 
 ### Core Layers (per feature)
 
@@ -53,7 +53,8 @@ The project follows a **Feature-Based Architecture** with a **Rich Domain Model*
 ## 🔑 Key Features & Logic
 
 *   **Authentication**: Supports local email/password and social login (Supabase). Uses a refresh token family pattern for secure session rotation.
-*   **Wallet & Escrow System**: Internal digital wallet with transaction history and an escrow mechanism for secure order processing.
+*   **Wallet & Escrow System**: Internal digital wallet with transaction history and an escrow mechanism. Funds are held in `pending_balance` upon order and released to merchants upon delivery.
+*   **Payment System**: Unified interface for internal wallet payments and external providers (e.g., Midtrans) via webhooks.
 *   **Merchant System**: Users can register shops and manage products.
 *   **Product Search**: Leverages PostgreSQL full-text search and pgvector for advanced semantic queries.
 
@@ -79,7 +80,7 @@ The project follows a **Feature-Based Architecture** with a **Rich Domain Model*
 ├── internal/
 │   ├── common/         # Shared utilities
 │   ├── core/           # Feature-based domains
-│   │   └── [feature]/  # e.g., auth, wallet, order
+│   │   └── [feature]/  # e.g., auth, wallet, order, payment
 │   │       ├── domain.go      # Rich domain entity
 │   │       ├── *_handler.go   # HTTP handler
 │   │       ├── *_service.go   # Business orchestrator

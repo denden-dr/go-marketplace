@@ -9,7 +9,8 @@ A high-performance e-commerce backend built with Go, featuring a **Rich Domain M
 ### Key Features
 - **Custom Authentication**: Local email/password registration with 2FA/Verification codes via MailerSend.
 - **Rich Domain Model**: Business logic and state transitions encapsulated in domain entities.
-- **Wallet & Escrow System**: Secure internal wallet with a transaction-safe escrow mechanism for order processing.
+- **Wallet & Escrow System**: Secure internal wallet with a transaction-safe escrow mechanism. Funds are held in `pending_balance` until order delivery confirmation.
+- **Unified Payment Interface**: Integrated support for internal wallet payments and external provider webhooks (Midtrans).
 - **Merchant System**: Multi-vendor support with shop management and product catalogs.
 - **Advanced Search**: Semantic and full-text search powered by PostgreSQL `pgvector` and `tsvector`.
 - **Cart & Checkout**: Real-time cart management and atomic order processing.
@@ -93,7 +94,7 @@ The project follows a **Feature-Based Architecture** with a **Rich Domain Model*
 internal/
 ├── common/         # Shared utilities (Response wrappers, etc.)
 ├── core/           # Feature domains
-│   └── [feature]/  # e.g., auth, wallet, order
+│   └── [feature]/  # e.g., auth, wallet, order, payment
 │       ├── domain.go      # Business logic & Entities
 │       ├── *_handler.go   # HTTP handlers
 │       ├── *_service.go   # Service orchestrator
