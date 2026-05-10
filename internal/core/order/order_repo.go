@@ -97,3 +97,13 @@ func (r *orderRepository) GetOrderItems(ctx context.Context, orderID uuid.UUID) 
 func (r *orderRepository) Begin(ctx context.Context) (*sqlx.Tx, error) {
 	return r.db.BeginTxx(ctx, nil)
 }
+
+func (r *orderRepository) GetOrdersByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.Order, error) {
+	query := `SELECT id, payment_id, merchant_id, user_id, status, total_amount, 
+	          shipping_recipient_name, shipping_phone_number, shipping_street_address, 
+	          shipping_city, shipping_province, shipping_postal_code, is_appealed, created_at, updated_at 
+	          FROM orders WHERE payment_id = $1`
+	var orders []domain.Order
+	err := r.db.SelectContext(ctx, &orders, query, paymentID)
+	return orders, err
+}

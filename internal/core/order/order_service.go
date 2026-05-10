@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"go-marketplace/internal/core/cart"
+	"go-marketplace/internal/core/merchant"
+	"go-marketplace/internal/core/payment"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/core/wallet"
@@ -23,6 +25,7 @@ type OrderServiceInterface interface {
 	MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error
 	MerchantCancelOrder(ctx context.Context, merchantID, orderID uuid.UUID) error
 	GetOrder(ctx context.Context, id uuid.UUID) (*OrderResponse, error)
+	HandlePaymentStatusChange(ctx context.Context, paymentID uuid.UUID, status domain.PaymentStatus) error
 }
 
 type OrderRepository interface {
@@ -36,6 +39,7 @@ type OrderRepository interface {
 	CreateAppeal(ctx context.Context, appeal *domain.CancellationAppeal) error
 	UpdateOrderAppealTX(ctx context.Context, tx *sqlx.Tx, orderID uuid.UUID, isAppealed bool) error
 	GetOrderItems(ctx context.Context, orderID uuid.UUID) ([]domain.OrderItem, error)
+	GetOrdersByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.Order, error)
 }
 
 type OrderPaymentResponse struct {
@@ -45,20 +49,32 @@ type OrderPaymentResponse struct {
 }
 
 type OrderService struct {
-	orderRepo   OrderRepository
-	cartRepo    cart.CartRepository
-	productRepo product.ProductRepository
-	walletRepo  wallet.WalletRepository
-	userRepo    user.UserRepository
+	orderRepo      OrderRepository
+	cartRepo       cart.CartRepository
+	productRepo    product.ProductRepository
+	walletService  wallet.WalletServiceInterface
+	userRepo       user.UserRepository
+	merchantRepo   merchant.MerchantRepository
+	paymentService payment.PaymentServiceInterface
 }
 
-func NewOrderService(orderRepo OrderRepository, cartRepo cart.CartRepository, productRepo product.ProductRepository, walletRepo wallet.WalletRepository, userRepo user.UserRepository) *OrderService {
+func NewOrderService(
+	orderRepo OrderRepository,
+	cartRepo cart.CartRepository,
+	productRepo product.ProductRepository,
+	walletService wallet.WalletServiceInterface,
+	userRepo user.UserRepository,
+	merchantRepo merchant.MerchantRepository,
+	paymentService payment.PaymentServiceInterface,
+) *OrderService {
 	return &OrderService{
-		orderRepo:   orderRepo,
-		cartRepo:    cartRepo,
-		productRepo: productRepo,
-		walletRepo:  walletRepo,
-		userRepo:    userRepo,
+		orderRepo:      orderRepo,
+		cartRepo:       cartRepo,
+		productRepo:    productRepo,
+		walletService:  walletService,
+		userRepo:       userRepo,
+		merchantRepo:   merchantRepo,
+		paymentService: paymentService,
 	}
 }
 
@@ -100,28 +116,40 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		merchantItems[p.StoreID] = append(merchantItems[p.StoreID], ci)
 	}
 
-	// 3. Deduct Wallet (Mock External Payment handled by just successful deduction for now)
-	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	// 3. Prepare Payment Distributions (for escrow)
+	distributions := []payment.PaymentDistribution{}
+	for merchantID, items := range merchantItems {
+		m, err := s.merchantRepo.GetByID(ctx, merchantID)
+		if err != nil {
+			return nil, err
+		}
+		if m == nil {
+			return nil, domain.ErrMerchantNotFound
+		}
+
+		merchantTotal := decimal.Zero
+		for _, item := range items {
+			merchantTotal = merchantTotal.Add(item.Product.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
+		}
+
+		distributions = append(distributions, payment.PaymentDistribution{
+			RecipientID: m.UserID,
+			Amount:      merchantTotal,
+		})
+	}
+
+	// 4. Call Payment Service
+	paymentReq := payment.CreatePaymentRequest{
+		UserID:        userID,
+		Amount:        totalAmount,
+		Type:          domain.PaymentTypeOrder,
+		Method:        req.PaymentMethod,
+		ReferenceID:   uuid.New(), // Placeholder OrderID group or just a random ID for the payment session
+		Distributions: distributions,
+	}
+
+	payRes, err := s.paymentService.CreatePaymentTX(ctx, tx, paymentReq)
 	if err != nil {
-		return nil, err
-	}
-	if w == nil {
-		return nil, domain.ErrWalletNotFound
-	}
-
-	walletTxData := domain.WalletTransaction{
-		ID:          uuid.New(),
-		WalletID:    w.ID,
-		Amount:      totalAmount,
-		Direction:   domain.TransactionDirectionOut,
-		Type:        domain.TransactionTypePayment,
-		Status:      domain.TransactionStatusSuccess,
-		ReferenceID: "PAY-" + uuid.New().String()[:8],
-		Description: "Order Payment",
-		CreatedAt:   time.Now(),
-	}
-
-	if err := s.walletRepo.DeductBalanceTX(ctx, tx, w.ID, totalAmount, walletTxData); err != nil {
 		return nil, err
 	}
 
@@ -175,21 +203,13 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		}
 	}
 
-	// 5. Create OrderPayment
-	payment := &domain.OrderPayment{
-		ID:            uuid.New(),
-		UserID:        userID,
-		Amount:        totalAmount,
-		PaymentMethod: req.PaymentMethod,
-		Status:        "success",
-		CreatedAt:     time.Now(),
-	}
-	if err := s.orderRepo.CreateOrderPaymentTX(ctx, tx, payment); err != nil {
-		return nil, err
+	// 6. Create Orders and Items
+	orderIDs := []uuid.UUID{}
+	orderStatus := domain.OrderStatusPending
+	if payRes.Status == domain.PaymentStatusSuccess {
+		orderStatus = domain.OrderStatusProcessing
 	}
 
-	// 5. Create Orders and Items
-	orderIDs := []uuid.UUID{}
 	for merchantID, items := range merchantItems {
 		orderID := uuid.New()
 		orderAmount := decimal.Zero
@@ -199,10 +219,10 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 
 		order := &domain.Order{
 			ID:                    orderID,
-			PaymentID:             payment.ID,
+			PaymentID:             payRes.PaymentID,
 			MerchantID:            merchantID,
 			UserID:                userID,
-			Status:                domain.OrderStatusProcessing, // Direct to Processing since payment is success
+			Status:                orderStatus,
 			TotalAmount:           orderAmount,
 			ShippingRecipientName: addrRecipientName,
 			ShippingPhoneNumber:   addrPhone,
@@ -250,7 +270,7 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 	}
 
 	return &OrderPaymentResponse{
-		PaymentID: payment.ID,
+		PaymentID: payRes.PaymentID,
 		Amount:    totalAmount,
 		Orders:    orderIDs,
 	}, nil
@@ -287,13 +307,8 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 	}
 
 	// Refund to Wallet
-	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
-	if err != nil {
-		return err
-	}
 	refundTxData := domain.WalletTransaction{
 		ID:          uuid.New(),
-		WalletID:    w.ID,
 		Amount:      o.TotalAmount,
 		Direction:   domain.TransactionDirectionIn,
 		Type:        domain.TransactionTypeRefund,
@@ -302,7 +317,7 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 		Description: fmt.Sprintf("Refund for Order %s", orderID),
 		CreatedAt:   time.Now(),
 	}
-	if err := s.walletRepo.AddBalanceTX(ctx, tx, w.ID, o.TotalAmount, refundTxData); err != nil {
+	if err := s.walletService.AddBalanceTX(ctx, tx, userID, o.TotalAmount, refundTxData); err != nil {
 		return err
 	}
 
@@ -382,6 +397,40 @@ func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, ord
 		return err
 	}
 
+	// If status is Delivered, settle the pending balance to merchant
+	if status == domain.OrderStatusDelivered {
+		tx, err := s.orderRepo.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, orderID, status); err != nil {
+			return err
+		}
+
+		m, err := s.merchantRepo.GetByID(ctx, o.MerchantID)
+		if err != nil {
+			return err
+		}
+
+		settleTxData := domain.WalletTransaction{
+			ID:          uuid.New(),
+			Amount:      o.TotalAmount,
+			Direction:   domain.TransactionDirectionIn,
+			Type:        domain.TransactionTypePayment,
+			Status:      domain.TransactionStatusSuccess,
+			ReferenceID: orderID.String(),
+			Description: fmt.Sprintf("Settlement for Order %s", orderID),
+			CreatedAt:   time.Now(),
+		}
+		if err := s.walletService.SettlePendingBalanceTX(ctx, tx, m.UserID, o.TotalAmount, settleTxData); err != nil {
+			return err
+		}
+
+		return tx.Commit()
+	}
+
 	return s.orderRepo.UpdateOrderStatus(ctx, orderID, status)
 }
 
@@ -413,13 +462,8 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 	}
 
 	// Refund to Wallet
-	w, err := s.walletRepo.GetWalletByUserID(ctx, o.UserID)
-	if err != nil {
-		return err
-	}
 	refundTxData := domain.WalletTransaction{
 		ID:          uuid.New(),
-		WalletID:    w.ID,
 		Amount:      o.TotalAmount,
 		Direction:   domain.TransactionDirectionIn,
 		Type:        domain.TransactionTypeRefund,
@@ -428,7 +472,7 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 		Description: fmt.Sprintf("Merchant Refund for Order %s", orderID),
 		CreatedAt:   time.Now(),
 	}
-	if err := s.walletRepo.AddBalanceTX(ctx, tx, w.ID, o.TotalAmount, refundTxData); err != nil {
+	if err := s.walletService.AddBalanceTX(ctx, tx, o.UserID, o.TotalAmount, refundTxData); err != nil {
 		return err
 	}
 
@@ -491,4 +535,44 @@ func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderRespon
 		CreatedAt:             o.CreatedAt,
 		UpdatedAt:             o.UpdatedAt,
 	}, nil
+}
+
+func (s *OrderService) HandlePaymentStatusChange(ctx context.Context, paymentID uuid.UUID, status domain.PaymentStatus) error {
+	if status == domain.PaymentStatusFailed || status == domain.PaymentStatusExpired {
+		tx, err := s.orderRepo.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		orders, err := s.orderRepo.GetOrdersByPaymentID(ctx, paymentID)
+		if err != nil {
+			return err
+		}
+
+		for _, o := range orders {
+			// Update Order Status
+			if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, o.ID, domain.OrderStatusCancelled); err != nil {
+				return err
+			}
+
+			// Return Stock
+			items, err := s.orderRepo.GetOrderItems(ctx, o.ID)
+			if err != nil {
+				return err
+			}
+			for _, item := range items {
+				p, err := s.productRepo.GetByIDForUpdateTX(ctx, tx, item.ProductID)
+				if err != nil {
+					return err
+				}
+				if err := s.productRepo.UpdateStockTX(ctx, tx, item.ProductID, p.Stock+item.Quantity); err != nil {
+					return err
+				}
+			}
+		}
+
+		return tx.Commit()
+	}
+	return nil
 }

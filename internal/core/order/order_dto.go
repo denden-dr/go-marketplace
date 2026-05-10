@@ -11,22 +11,22 @@ import (
 )
 
 type CheckoutRequest struct {
-	PaymentMethod         string     `json:"payment_method"`
-	AddressID             *uuid.UUID `json:"address_id,omitempty"`
-	ShippingRecipientName string     `json:"shipping_recipient_name,omitempty"`
-	ShippingPhoneNumber   string     `json:"shipping_phone_number,omitempty"`
-	ShippingStreetAddress string     `json:"shipping_street_address,omitempty"`
-	ShippingCity          string     `json:"shipping_city,omitempty"`
-	ShippingProvince      string     `json:"shipping_province,omitempty"`
-	ShippingPostalCode    string     `json:"shipping_postal_code,omitempty"`
+	PaymentMethod         domain.PaymentMethod `json:"payment_method"`
+	AddressID             *uuid.UUID           `json:"address_id,omitempty"`
+	ShippingRecipientName string               `json:"shipping_recipient_name,omitempty"`
+	ShippingPhoneNumber   string               `json:"shipping_phone_number,omitempty"`
+	ShippingStreetAddress string               `json:"shipping_street_address,omitempty"`
+	ShippingCity          string               `json:"shipping_city,omitempty"`
+	ShippingProvince      string               `json:"shipping_province,omitempty"`
+	ShippingPostalCode    string               `json:"shipping_postal_code,omitempty"`
 }
 
 func (r CheckoutRequest) Validate() error {
 	if r.PaymentMethod == "" {
 		return errors.New("payment method is required")
 	}
-	if r.PaymentMethod != "wallet" {
-		return errors.New("only 'wallet' payment method is supported")
+	if r.PaymentMethod != domain.PaymentMethodWallet && r.PaymentMethod != domain.PaymentMethodMidtrans {
+		return errors.New("invalid payment method")
 	}
 	return nil
 }
