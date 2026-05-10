@@ -18,12 +18,6 @@ func NewOrderRepository(db *sqlx.DB) OrderRepository {
 	return &orderRepository{db: db}
 }
 
-func (r *orderRepository) CreateOrderPaymentTX(ctx context.Context, tx *sqlx.Tx, p *domain.OrderPayment) error {
-	query := `INSERT INTO order_payments (id, user_id, amount, payment_method, status, created_at) 
-	          VALUES (:id, :user_id, :amount, :payment_method, :status, :created_at)`
-	_, err := tx.NamedExecContext(ctx, query, p)
-	return err
-}
 
 func (r *orderRepository) CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error {
 	query := `INSERT INTO orders (id, payment_id, merchant_id, user_id, status, total_amount, 

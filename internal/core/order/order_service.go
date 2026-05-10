@@ -30,7 +30,6 @@ type OrderServiceInterface interface {
 
 type OrderRepository interface {
 	Begin(ctx context.Context) (*sqlx.Tx, error)
-	CreateOrderPaymentTX(ctx context.Context, tx *sqlx.Tx, p *domain.OrderPayment) error
 	CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error
 	CreateOrderItemTX(ctx context.Context, tx *sqlx.Tx, item *domain.OrderItem) error
 	GetOrderByID(ctx context.Context, id uuid.UUID) (*domain.Order, error)

@@ -39,7 +39,6 @@ func (s *IntegrationSuite) TruncateTables() {
 		"orders",
 		"payment_distributions",
 		"payments",
-		"order_payments",
 		"wallets_transaction",
 		"wallets",
 		"products",

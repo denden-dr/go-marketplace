@@ -179,54 +179,6 @@ func (_c *MockOrderRepository_CreateOrderItemTX_Call) RunAndReturn(run func(cont
 	return _c
 }
 
-// CreateOrderPaymentTX provides a mock function with given fields: ctx, tx, p
-func (_m *MockOrderRepository) CreateOrderPaymentTX(ctx context.Context, tx *sqlx.Tx, p *domain.OrderPayment) error {
-	ret := _m.Called(ctx, tx, p)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CreateOrderPaymentTX")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, *domain.OrderPayment) error); ok {
-		r0 = rf(ctx, tx, p)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockOrderRepository_CreateOrderPaymentTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateOrderPaymentTX'
-type MockOrderRepository_CreateOrderPaymentTX_Call struct {
-	*mock.Call
-}
-
-// CreateOrderPaymentTX is a helper method to define mock.On call
-//   - ctx context.Context
-//   - tx *sqlx.Tx
-//   - p *domain.OrderPayment
-func (_e *MockOrderRepository_Expecter) CreateOrderPaymentTX(ctx interface{}, tx interface{}, p interface{}) *MockOrderRepository_CreateOrderPaymentTX_Call {
-	return &MockOrderRepository_CreateOrderPaymentTX_Call{Call: _e.mock.On("CreateOrderPaymentTX", ctx, tx, p)}
-}
-
-func (_c *MockOrderRepository_CreateOrderPaymentTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, p *domain.OrderPayment)) *MockOrderRepository_CreateOrderPaymentTX_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(*domain.OrderPayment))
-	})
-	return _c
-}
-
-func (_c *MockOrderRepository_CreateOrderPaymentTX_Call) Return(_a0 error) *MockOrderRepository_CreateOrderPaymentTX_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockOrderRepository_CreateOrderPaymentTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, *domain.OrderPayment) error) *MockOrderRepository_CreateOrderPaymentTX_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // CreateOrderTX provides a mock function with given fields: ctx, tx, o
 func (_m *MockOrderRepository) CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error {
 	ret := _m.Called(ctx, tx, o)
