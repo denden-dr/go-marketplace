@@ -19,6 +19,9 @@ func (r TopupRequest) Validate() error {
 	if r.Method == "" {
 		return errors.New("payment method is required")
 	}
+	if r.Method == domain.PaymentMethodWallet {
+		return errors.New("cannot top-up using wallet balance")
+	}
 	return nil
 }
 

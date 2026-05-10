@@ -20,6 +20,8 @@ type WalletServiceInterface interface {
 	DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	AddPendingBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	SettlePendingBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	FreezeBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 }
 
 type WalletRepository interface {
@@ -226,4 +228,28 @@ func (s *WalletService) SettlePendingBalanceTX(ctx context.Context, tx *sqlx.Tx,
 	}
 	txData.WalletID = w.ID
 	return s.walletRepo.SettlePendingBalanceTX(ctx, tx, w.ID, amount, txData)
+}
+
+func (s *WalletService) FreezeBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if w == nil {
+		return domain.ErrWalletNotFound
+	}
+	txData.WalletID = w.ID
+	return s.walletRepo.FreezeBalanceTX(ctx, tx, w.ID, amount, txData)
+}
+
+func (s *WalletService) RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if w == nil {
+		return domain.ErrWalletNotFound
+	}
+	txData.WalletID = w.ID
+	return s.walletRepo.RefundFromPendingTX(ctx, tx, w.ID, amount, txData)
 }

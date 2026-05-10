@@ -13,7 +13,10 @@ type PaymentRepository interface {
 	CreateTX(ctx context.Context, tx *sqlx.Tx, p *domain.Payment) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Payment, error)
 	GetByExternalID(ctx context.Context, externalID string) (*domain.Payment, error)
+	GetByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Payment, error)
+	GetByExternalIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, externalID string) (*domain.Payment, error)
 	UpdateStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.PaymentStatus, externalID *string) error
+	UpdateSnapTokenTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, snapToken string) error
 	CreateDistributionTX(ctx context.Context, tx *sqlx.Tx, d *domain.PaymentDistribution) error
 	GetDistributionsByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.PaymentDistribution, error)
 }
@@ -61,9 +64,43 @@ func (r *paymentRepository) GetByExternalID(ctx context.Context, externalID stri
 	return &p, nil
 }
 
+func (r *paymentRepository) GetByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Payment, error) {
+	query := `SELECT id, user_id, external_id, amount, payment_type, payment_method, status, reference_id, snap_token, created_at, updated_at 
+	          FROM payments WHERE id = $1 FOR UPDATE`
+	var p domain.Payment
+	err := tx.GetContext(ctx, &p, query, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (r *paymentRepository) GetByExternalIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, externalID string) (*domain.Payment, error) {
+	query := `SELECT id, user_id, external_id, amount, payment_type, payment_method, status, reference_id, snap_token, created_at, updated_at 
+	          FROM payments WHERE external_id = $1 FOR UPDATE`
+	var p domain.Payment
+	err := tx.GetContext(ctx, &p, query, externalID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &p, nil
+}
+
 func (r *paymentRepository) UpdateStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.PaymentStatus, externalID *string) error {
 	query := `UPDATE payments SET status = $1, external_id = COALESCE($2, external_id), updated_at = NOW() WHERE id = $3`
 	_, err := tx.ExecContext(ctx, query, status, externalID, id)
+	return err
+}
+
+func (r *paymentRepository) UpdateSnapTokenTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, snapToken string) error {
+	query := `UPDATE payments SET snap_token = $1, updated_at = NOW() WHERE id = $2`
+	_, err := tx.ExecContext(ctx, query, snapToken, id)
 	return err
 }
 

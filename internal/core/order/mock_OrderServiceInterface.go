@@ -8,6 +8,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	sqlx "github.com/jmoiron/sqlx"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -240,17 +242,17 @@ func (_c *MockOrderServiceInterface_GetOrder_Call) RunAndReturn(run func(context
 	return _c
 }
 
-// HandlePaymentStatusChange provides a mock function with given fields: ctx, paymentID, status
-func (_m *MockOrderServiceInterface) HandlePaymentStatusChange(ctx context.Context, paymentID uuid.UUID, status domain.PaymentStatus) error {
-	ret := _m.Called(ctx, paymentID, status)
+// HandlePaymentStatusChangeTX provides a mock function with given fields: ctx, tx, paymentID, status
+func (_m *MockOrderServiceInterface) HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error {
+	ret := _m.Called(ctx, tx, paymentID, status)
 
 	if len(ret) == 0 {
-		panic("no return value specified for HandlePaymentStatusChange")
+		panic("no return value specified for HandlePaymentStatusChangeTX")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, domain.PaymentStatus) error); ok {
-		r0 = rf(ctx, paymentID, status)
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID, domain.PaymentStatus) error); ok {
+		r0 = rf(ctx, tx, paymentID, status)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -258,32 +260,33 @@ func (_m *MockOrderServiceInterface) HandlePaymentStatusChange(ctx context.Conte
 	return r0
 }
 
-// MockOrderServiceInterface_HandlePaymentStatusChange_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HandlePaymentStatusChange'
-type MockOrderServiceInterface_HandlePaymentStatusChange_Call struct {
+// MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HandlePaymentStatusChangeTX'
+type MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call struct {
 	*mock.Call
 }
 
-// HandlePaymentStatusChange is a helper method to define mock.On call
+// HandlePaymentStatusChangeTX is a helper method to define mock.On call
 //   - ctx context.Context
+//   - tx *sqlx.Tx
 //   - paymentID uuid.UUID
 //   - status domain.PaymentStatus
-func (_e *MockOrderServiceInterface_Expecter) HandlePaymentStatusChange(ctx interface{}, paymentID interface{}, status interface{}) *MockOrderServiceInterface_HandlePaymentStatusChange_Call {
-	return &MockOrderServiceInterface_HandlePaymentStatusChange_Call{Call: _e.mock.On("HandlePaymentStatusChange", ctx, paymentID, status)}
+func (_e *MockOrderServiceInterface_Expecter) HandlePaymentStatusChangeTX(ctx interface{}, tx interface{}, paymentID interface{}, status interface{}) *MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call {
+	return &MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call{Call: _e.mock.On("HandlePaymentStatusChangeTX", ctx, tx, paymentID, status)}
 }
 
-func (_c *MockOrderServiceInterface_HandlePaymentStatusChange_Call) Run(run func(ctx context.Context, paymentID uuid.UUID, status domain.PaymentStatus)) *MockOrderServiceInterface_HandlePaymentStatusChange_Call {
+func (_c *MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus)) *MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(domain.PaymentStatus))
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID), args[3].(domain.PaymentStatus))
 	})
 	return _c
 }
 
-func (_c *MockOrderServiceInterface_HandlePaymentStatusChange_Call) Return(_a0 error) *MockOrderServiceInterface_HandlePaymentStatusChange_Call {
+func (_c *MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call) Return(_a0 error) *MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockOrderServiceInterface_HandlePaymentStatusChange_Call) RunAndReturn(run func(context.Context, uuid.UUID, domain.PaymentStatus) error) *MockOrderServiceInterface_HandlePaymentStatusChange_Call {
+func (_c *MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID, domain.PaymentStatus) error) *MockOrderServiceInterface_HandlePaymentStatusChangeTX_Call {
 	_c.Call.Return(run)
 	return _c
 }

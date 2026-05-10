@@ -160,13 +160,13 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		mockSetup func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock)
+		mockSetup func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, mm *merchant.MockMerchantRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock)
 		wantErr   bool
 		errType   error
 	}{
 		{
 			name: "Success",
-			mockSetup: func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
+			mockSetup: func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, mm *merchant.MockMerchantRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
 				order := &domain.Order{
 					ID:          orderID,
 					UserID:      userID,
@@ -180,7 +180,11 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 				mr.On("GetOrderByID", mock.Anything, orderID).Return(order, nil)
 				mr.On("Begin", mock.Anything).Return(tx, nil)
 				mr.On("UpdateOrderStatusTX", mock.Anything, tx, orderID, domain.OrderStatusCancelled).Return(nil)
+
+				mm.On("GetByID", mock.Anything, order.MerchantID).Return(&domain.Merchant{ID: order.MerchantID, UserID: uuid.New()}, nil)
+				mw.On("RefundFromPendingTX", mock.Anything, tx, mock.Anything, order.TotalAmount, mock.Anything).Return(nil)
 				mw.On("AddBalanceTX", mock.Anything, tx, userID, order.TotalAmount, mock.Anything).Return(nil)
+
 				mr.On("GetOrderItems", mock.Anything, orderID).Return(items, nil)
 				mp.On("GetByIDForUpdateTX", mock.Anything, tx, productID).Return(p, nil)
 				mp.On("UpdateStockTX", mock.Anything, tx, productID, 7).Return(nil)
@@ -191,7 +195,7 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 		},
 		{
 			name: "Fail - After One Hour",
-			mockSetup: func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
+			mockSetup: func(mr *MockOrderRepository, mp *product.MockProductRepository, mw *wallet.MockWalletServiceInterface, mm *merchant.MockMerchantRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
 				order := &domain.Order{
 					ID:        orderID,
 					UserID:    userID,
@@ -214,7 +218,7 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 			mws := wallet.NewMockWalletServiceInterface(t)
 
 			tx, sqlMock := getSqlxTx(t)
-			tt.mockSetup(mo, mp, mws, tx, sqlMock)
+			tt.mockSetup(mo, mp, mws, mm, tx, sqlMock)
 
 			service := NewOrderService(mo, nil, mp, mws, nil, mm, mps)
 			err := service.CancelUserOrder(context.Background(), userID, orderID)

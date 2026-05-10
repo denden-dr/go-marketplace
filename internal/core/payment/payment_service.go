@@ -43,7 +43,7 @@ type PaymentProvider interface {
 }
 
 type OrderManager interface {
-	HandlePaymentStatusChange(ctx context.Context, paymentID uuid.UUID, status domain.PaymentStatus) error
+	HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error
 }
 
 type PaymentService struct {
@@ -138,20 +138,45 @@ func (s *PaymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 		}
 
 		payment.Status = domain.PaymentStatusSuccess
-	} else {
-		// Handle External Provider (Midtrans)
-		snapToken, err := s.provider.CreateTransaction(ctx, payment)
-		if err != nil {
+
+		if err := s.paymentRepo.CreateTX(ctx, tx, payment); err != nil {
 			return nil, err
 		}
-		payment.SnapToken = &snapToken
+
+		// Persist distributions
+		for _, dist := range req.Distributions {
+			d := &domain.PaymentDistribution{
+				ID:          uuid.New(),
+				PaymentID:   payment.ID,
+				RecipientID: dist.RecipientID,
+				Amount:      dist.Amount,
+				CreatedAt:   time.Now(),
+			}
+			if err := s.paymentRepo.CreateDistributionTX(ctx, tx, d); err != nil {
+				return nil, err
+			}
+		}
+
+		return &PaymentResponse{
+			PaymentID: payment.ID,
+			Status:    payment.Status,
+			SnapToken: payment.SnapToken,
+		}, nil
 	}
 
-	if err := s.paymentRepo.CreateTX(ctx, tx, payment); err != nil {
+	// Handle External Provider (Midtrans) - Step A: Commit record as Pending
+	// We use a separate transaction to ensure it's committed before the API call
+	// even if the caller (like OrderService) is still holding a transaction.
+	paymentTx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer paymentTx.Rollback()
+
+	if err := s.paymentRepo.CreateTX(ctx, paymentTx, payment); err != nil {
 		return nil, err
 	}
 
-	// Persist distributions for later processing (webhooks)
 	for _, dist := range req.Distributions {
 		d := &domain.PaymentDistribution{
 			ID:          uuid.New(),
@@ -160,11 +185,37 @@ func (s *PaymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 			Amount:      dist.Amount,
 			CreatedAt:   time.Now(),
 		}
-		if err := s.paymentRepo.CreateDistributionTX(ctx, tx, d); err != nil {
+		if err := s.paymentRepo.CreateDistributionTX(ctx, paymentTx, d); err != nil {
 			return nil, err
 		}
 	}
 
+	if err := paymentTx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// Step B: Call External Provider (No DB transaction held)
+	snapToken, err := s.provider.CreateTransaction(ctx, payment)
+	if err != nil {
+		return nil, err
+	}
+
+	// Step C: Update record with SnapToken in a new transaction
+	updateTx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer updateTx.Rollback()
+
+	if err := s.paymentRepo.UpdateSnapTokenTX(ctx, updateTx, payment.ID, snapToken); err != nil {
+		return nil, err
+	}
+
+	if err := updateTx.Commit(); err != nil {
+		return nil, err
+	}
+
+	payment.SnapToken = &snapToken
 	return &PaymentResponse{
 		PaymentID: payment.ID,
 		Status:    payment.Status,
@@ -182,9 +233,9 @@ func (s *PaymentService) ProcessWebhook(ctx context.Context, externalID string, 
 	var p *domain.Payment
 	var repoErr error
 	if id, err := uuid.Parse(externalID); err == nil {
-		p, repoErr = s.paymentRepo.GetByID(ctx, id)
+		p, repoErr = s.paymentRepo.GetByIDForUpdateTX(ctx, tx, id)
 	} else {
-		p, repoErr = s.paymentRepo.GetByExternalID(ctx, externalID)
+		p, repoErr = s.paymentRepo.GetByExternalIDForUpdateTX(ctx, tx, externalID)
 	}
 
 	if repoErr != nil {
@@ -243,7 +294,7 @@ func (s *PaymentService) ProcessWebhook(ctx context.Context, externalID string, 
 
 	if status == domain.PaymentStatusFailed || status == domain.PaymentStatusExpired {
 		if p.Type == domain.PaymentTypeOrder {
-			if err := s.orderManager.HandlePaymentStatusChange(ctx, p.ID, status); err != nil {
+			if err := s.orderManager.HandlePaymentStatusChangeTX(ctx, tx, p.ID, status); err != nil {
 				// Log error but continue? Or fail?
 				// Usually we want to ensure stock is recovered.
 				return err

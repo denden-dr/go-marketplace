@@ -25,7 +25,7 @@ type OrderServiceInterface interface {
 	MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error
 	MerchantCancelOrder(ctx context.Context, merchantID, orderID uuid.UUID) error
 	GetOrder(ctx context.Context, id uuid.UUID) (*OrderResponse, error)
-	HandlePaymentStatusChange(ctx context.Context, paymentID uuid.UUID, status domain.PaymentStatus) error
+	HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error
 }
 
 type OrderRepository interface {
@@ -305,8 +305,31 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 		return err
 	}
 
-	// Refund to Wallet
-	refundTxData := domain.WalletTransaction{
+	// 1. Deduct from Merchant Pending Balance (Escrow)
+	m, err := s.merchantRepo.GetByID(ctx, o.MerchantID)
+	if err != nil {
+		return err
+	}
+	if m == nil {
+		return domain.ErrMerchantNotFound
+	}
+
+	refundMerchantTxData := domain.WalletTransaction{
+		ID:          uuid.New(),
+		Amount:      o.TotalAmount,
+		Direction:   domain.TransactionDirectionOut,
+		Type:        domain.TransactionTypeRefund,
+		Status:      domain.TransactionStatusSuccess,
+		ReferenceID: "REF-ESC-" + uuid.New().String()[:8],
+		Description: fmt.Sprintf("Escrow Refund (Cancellation) for Order %s", orderID),
+		CreatedAt:   time.Now(),
+	}
+	if err := s.walletService.RefundFromPendingTX(ctx, tx, m.UserID, o.TotalAmount, refundMerchantTxData); err != nil {
+		return err
+	}
+
+	// 2. Refund to User Wallet
+	refundUserTxData := domain.WalletTransaction{
 		ID:          uuid.New(),
 		Amount:      o.TotalAmount,
 		Direction:   domain.TransactionDirectionIn,
@@ -316,7 +339,7 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 		Description: fmt.Sprintf("Refund for Order %s", orderID),
 		CreatedAt:   time.Now(),
 	}
-	if err := s.walletService.AddBalanceTX(ctx, tx, userID, o.TotalAmount, refundTxData); err != nil {
+	if err := s.walletService.AddBalanceTX(ctx, tx, userID, o.TotalAmount, refundUserTxData); err != nil {
 		return err
 	}
 
@@ -460,8 +483,31 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 		return err
 	}
 
-	// Refund to Wallet
-	refundTxData := domain.WalletTransaction{
+	// 1. Deduct from Merchant Pending Balance (Escrow)
+	m, err := s.merchantRepo.GetByID(ctx, o.MerchantID)
+	if err != nil {
+		return err
+	}
+	if m == nil {
+		return domain.ErrMerchantNotFound
+	}
+
+	refundMerchantTxData := domain.WalletTransaction{
+		ID:          uuid.New(),
+		Amount:      o.TotalAmount,
+		Direction:   domain.TransactionDirectionOut,
+		Type:        domain.TransactionTypeRefund,
+		Status:      domain.TransactionStatusSuccess,
+		ReferenceID: "REF-ESC-M-" + uuid.New().String()[:8],
+		Description: fmt.Sprintf("Merchant Escrow Refund for Order %s", orderID),
+		CreatedAt:   time.Now(),
+	}
+	if err := s.walletService.RefundFromPendingTX(ctx, tx, m.UserID, o.TotalAmount, refundMerchantTxData); err != nil {
+		return err
+	}
+
+	// 2. Refund to User Wallet
+	refundUserTxData := domain.WalletTransaction{
 		ID:          uuid.New(),
 		Amount:      o.TotalAmount,
 		Direction:   domain.TransactionDirectionIn,
@@ -471,7 +517,7 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 		Description: fmt.Sprintf("Merchant Refund for Order %s", orderID),
 		CreatedAt:   time.Now(),
 	}
-	if err := s.walletService.AddBalanceTX(ctx, tx, o.UserID, o.TotalAmount, refundTxData); err != nil {
+	if err := s.walletService.AddBalanceTX(ctx, tx, o.UserID, o.TotalAmount, refundUserTxData); err != nil {
 		return err
 	}
 
@@ -536,14 +582,8 @@ func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderRespon
 	}, nil
 }
 
-func (s *OrderService) HandlePaymentStatusChange(ctx context.Context, paymentID uuid.UUID, status domain.PaymentStatus) error {
+func (s *OrderService) HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error {
 	if status == domain.PaymentStatusFailed || status == domain.PaymentStatusExpired {
-		tx, err := s.orderRepo.Begin(ctx)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-
 		orders, err := s.orderRepo.GetOrdersByPaymentID(ctx, paymentID)
 		if err != nil {
 			return err
@@ -570,8 +610,6 @@ func (s *OrderService) HandlePaymentStatusChange(ctx context.Context, paymentID 
 				}
 			}
 		}
-
-		return tx.Commit()
 	}
 	return nil
 }

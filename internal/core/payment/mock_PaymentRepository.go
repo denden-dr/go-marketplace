@@ -181,6 +181,66 @@ func (_c *MockPaymentRepository_GetByExternalID_Call) RunAndReturn(run func(cont
 	return _c
 }
 
+// GetByExternalIDForUpdateTX provides a mock function with given fields: ctx, tx, externalID
+func (_m *MockPaymentRepository) GetByExternalIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, externalID string) (*domain.Payment, error) {
+	ret := _m.Called(ctx, tx, externalID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByExternalIDForUpdateTX")
+	}
+
+	var r0 *domain.Payment
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, string) (*domain.Payment, error)); ok {
+		return rf(ctx, tx, externalID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, string) *domain.Payment); ok {
+		r0 = rf(ctx, tx, externalID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Payment)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *sqlx.Tx, string) error); ok {
+		r1 = rf(ctx, tx, externalID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockPaymentRepository_GetByExternalIDForUpdateTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByExternalIDForUpdateTX'
+type MockPaymentRepository_GetByExternalIDForUpdateTX_Call struct {
+	*mock.Call
+}
+
+// GetByExternalIDForUpdateTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - externalID string
+func (_e *MockPaymentRepository_Expecter) GetByExternalIDForUpdateTX(ctx interface{}, tx interface{}, externalID interface{}) *MockPaymentRepository_GetByExternalIDForUpdateTX_Call {
+	return &MockPaymentRepository_GetByExternalIDForUpdateTX_Call{Call: _e.mock.On("GetByExternalIDForUpdateTX", ctx, tx, externalID)}
+}
+
+func (_c *MockPaymentRepository_GetByExternalIDForUpdateTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, externalID string)) *MockPaymentRepository_GetByExternalIDForUpdateTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockPaymentRepository_GetByExternalIDForUpdateTX_Call) Return(_a0 *domain.Payment, _a1 error) *MockPaymentRepository_GetByExternalIDForUpdateTX_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockPaymentRepository_GetByExternalIDForUpdateTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, string) (*domain.Payment, error)) *MockPaymentRepository_GetByExternalIDForUpdateTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetByID provides a mock function with given fields: ctx, id
 func (_m *MockPaymentRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Payment, error) {
 	ret := _m.Called(ctx, id)
@@ -240,6 +300,66 @@ func (_c *MockPaymentRepository_GetByID_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
+// GetByIDForUpdateTX provides a mock function with given fields: ctx, tx, id
+func (_m *MockPaymentRepository) GetByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Payment, error) {
+	ret := _m.Called(ctx, tx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByIDForUpdateTX")
+	}
+
+	var r0 *domain.Payment
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) (*domain.Payment, error)); ok {
+		return rf(ctx, tx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) *domain.Payment); ok {
+		r0 = rf(ctx, tx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Payment)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *sqlx.Tx, uuid.UUID) error); ok {
+		r1 = rf(ctx, tx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockPaymentRepository_GetByIDForUpdateTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByIDForUpdateTX'
+type MockPaymentRepository_GetByIDForUpdateTX_Call struct {
+	*mock.Call
+}
+
+// GetByIDForUpdateTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - id uuid.UUID
+func (_e *MockPaymentRepository_Expecter) GetByIDForUpdateTX(ctx interface{}, tx interface{}, id interface{}) *MockPaymentRepository_GetByIDForUpdateTX_Call {
+	return &MockPaymentRepository_GetByIDForUpdateTX_Call{Call: _e.mock.On("GetByIDForUpdateTX", ctx, tx, id)}
+}
+
+func (_c *MockPaymentRepository_GetByIDForUpdateTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, id uuid.UUID)) *MockPaymentRepository_GetByIDForUpdateTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockPaymentRepository_GetByIDForUpdateTX_Call) Return(_a0 *domain.Payment, _a1 error) *MockPaymentRepository_GetByIDForUpdateTX_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockPaymentRepository_GetByIDForUpdateTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID) (*domain.Payment, error)) *MockPaymentRepository_GetByIDForUpdateTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetDistributionsByPaymentID provides a mock function with given fields: ctx, paymentID
 func (_m *MockPaymentRepository) GetDistributionsByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.PaymentDistribution, error) {
 	ret := _m.Called(ctx, paymentID)
@@ -295,6 +415,55 @@ func (_c *MockPaymentRepository_GetDistributionsByPaymentID_Call) Return(_a0 []d
 }
 
 func (_c *MockPaymentRepository_GetDistributionsByPaymentID_Call) RunAndReturn(run func(context.Context, uuid.UUID) ([]domain.PaymentDistribution, error)) *MockPaymentRepository_GetDistributionsByPaymentID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateSnapTokenTX provides a mock function with given fields: ctx, tx, id, snapToken
+func (_m *MockPaymentRepository) UpdateSnapTokenTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, snapToken string) error {
+	ret := _m.Called(ctx, tx, id, snapToken)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateSnapTokenTX")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID, string) error); ok {
+		r0 = rf(ctx, tx, id, snapToken)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockPaymentRepository_UpdateSnapTokenTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateSnapTokenTX'
+type MockPaymentRepository_UpdateSnapTokenTX_Call struct {
+	*mock.Call
+}
+
+// UpdateSnapTokenTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - id uuid.UUID
+//   - snapToken string
+func (_e *MockPaymentRepository_Expecter) UpdateSnapTokenTX(ctx interface{}, tx interface{}, id interface{}, snapToken interface{}) *MockPaymentRepository_UpdateSnapTokenTX_Call {
+	return &MockPaymentRepository_UpdateSnapTokenTX_Call{Call: _e.mock.On("UpdateSnapTokenTX", ctx, tx, id, snapToken)}
+}
+
+func (_c *MockPaymentRepository_UpdateSnapTokenTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, snapToken string)) *MockPaymentRepository_UpdateSnapTokenTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID), args[3].(string))
+	})
+	return _c
+}
+
+func (_c *MockPaymentRepository_UpdateSnapTokenTX_Call) Return(_a0 error) *MockPaymentRepository_UpdateSnapTokenTX_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockPaymentRepository_UpdateSnapTokenTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID, string) error) *MockPaymentRepository_UpdateSnapTokenTX_Call {
 	_c.Call.Return(run)
 	return _c
 }
