@@ -42,7 +42,8 @@ func (s *IntegrationSuite) TruncateTables() {
 		"wallets",
 		"products",
 		"merchants",
-		"refresh_tokens",
+		"sessions",
+		"verification_codes",
 		"user_addresses",
 		"users",
 	}

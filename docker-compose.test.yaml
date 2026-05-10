@@ -24,7 +24,7 @@ services:
       test-db:
         condition: service_healthy
     command: >
-      sh -c "migrate -path internal/database/migrations -database \"postgres://testuser:testpassword@test-db:5432/marketplacetest?sslmode=disable\" up && go run -tags seed cmd/seed/main.go && go test -v -tags=integration ./test/integration/..."
+      sh -c "migrate -path internal/database/migrations -database \"postgres://testuser:testpassword@test-db:5432/marketplacetest?sslmode=disable\" drop -f || true && migrate -path internal/database/migrations -database \"postgres://testuser:testpassword@test-db:5432/marketplacetest?sslmode=disable\" up && go run -tags seed cmd/seed/main.go && go test -v -tags=integration ./test/integration/..."
     environment:
       DB_HOST: test-db
       DB_PORT: 5432

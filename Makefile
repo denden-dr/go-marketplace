@@ -36,8 +36,10 @@ docker-shell: ## Interactive shell in the API container
 
 test-docker: ## Run tests in Docker containers
 	@echo "Running tests in Docker..."
-	$(DOCKER_COMPOSE) -f docker-compose.test.yaml up --build --abort-on-container-exit --exit-code-from test-runner
-	$(DOCKER_COMPOSE) -f docker-compose.test.yaml down -v
+	$(DOCKER_COMPOSE) -f docker-compose.test.yaml up --build --abort-on-container-exit --exit-code-from test-runner; \
+	RET=$$?; \
+	$(DOCKER_COMPOSE) -f docker-compose.test.yaml down -v; \
+	exit $$RET
 
 
 

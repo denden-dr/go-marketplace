@@ -1,3 +1,5 @@
+SET search_path TO public;
+
 -- Rename refresh_tokens to sessions and add metadata
 ALTER TABLE refresh_tokens RENAME TO sessions;
 ALTER TABLE sessions ADD COLUMN ip_address VARCHAR(45);
