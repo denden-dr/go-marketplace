@@ -286,6 +286,66 @@ func (_c *MockOrderRepository_GetOrderByID_Call) RunAndReturn(run func(context.C
 	return _c
 }
 
+// GetOrderByIDForUpdateTX provides a mock function with given fields: ctx, tx, id
+func (_m *MockOrderRepository) GetOrderByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Order, error) {
+	ret := _m.Called(ctx, tx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetOrderByIDForUpdateTX")
+	}
+
+	var r0 *domain.Order
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) (*domain.Order, error)); ok {
+		return rf(ctx, tx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) *domain.Order); ok {
+		r0 = rf(ctx, tx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.Order)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *sqlx.Tx, uuid.UUID) error); ok {
+		r1 = rf(ctx, tx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockOrderRepository_GetOrderByIDForUpdateTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetOrderByIDForUpdateTX'
+type MockOrderRepository_GetOrderByIDForUpdateTX_Call struct {
+	*mock.Call
+}
+
+// GetOrderByIDForUpdateTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - id uuid.UUID
+func (_e *MockOrderRepository_Expecter) GetOrderByIDForUpdateTX(ctx interface{}, tx interface{}, id interface{}) *MockOrderRepository_GetOrderByIDForUpdateTX_Call {
+	return &MockOrderRepository_GetOrderByIDForUpdateTX_Call{Call: _e.mock.On("GetOrderByIDForUpdateTX", ctx, tx, id)}
+}
+
+func (_c *MockOrderRepository_GetOrderByIDForUpdateTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, id uuid.UUID)) *MockOrderRepository_GetOrderByIDForUpdateTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockOrderRepository_GetOrderByIDForUpdateTX_Call) Return(_a0 *domain.Order, _a1 error) *MockOrderRepository_GetOrderByIDForUpdateTX_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockOrderRepository_GetOrderByIDForUpdateTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID) (*domain.Order, error)) *MockOrderRepository_GetOrderByIDForUpdateTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetOrderItems provides a mock function with given fields: ctx, orderID
 func (_m *MockOrderRepository) GetOrderItems(ctx context.Context, orderID uuid.UUID) ([]domain.OrderItem, error) {
 	ret := _m.Called(ctx, orderID)

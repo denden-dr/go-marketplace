@@ -33,6 +33,7 @@ type OrderRepository interface {
 	CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error
 	CreateOrderItemTX(ctx context.Context, tx *sqlx.Tx, item *domain.OrderItem) error
 	GetOrderByID(ctx context.Context, id uuid.UUID) (*domain.Order, error)
+	GetOrderByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Order, error)
 	UpdateOrderStatus(ctx context.Context, id uuid.UUID, status domain.OrderStatus) error
 	UpdateOrderStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.OrderStatus) error
 	CreateAppeal(ctx context.Context, appeal *domain.CancellationAppeal) error
@@ -276,7 +277,14 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 }
 
 func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid.UUID) error {
-	o, err := s.orderRepo.GetOrderByID(ctx, orderID)
+	tx, err := s.orderRepo.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Lock and fetch current state
+	o, err := s.orderRepo.GetOrderByIDForUpdateTX(ctx, tx, orderID)
 	if err != nil {
 		return err
 	}
@@ -292,13 +300,6 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 	if !order.CanCancel() {
 		return domain.ErrOrderNotCancellable
 	}
-
-	// Start Refund Transaction
-	tx, err := s.orderRepo.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 
 	// Update Order Status
 	if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, orderID, domain.OrderStatusCancelled); err != nil {
@@ -362,13 +363,21 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 }
 
 func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid.UUID, reason string) error {
-	o, err := s.orderRepo.GetOrderByID(ctx, orderID)
+	tx, err := s.orderRepo.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Lock and fetch current state
+	o, err := s.orderRepo.GetOrderByIDForUpdateTX(ctx, tx, orderID)
 	if err != nil {
 		return err
 	}
 	if o == nil {
 		return domain.ErrOrderNotFound
 	}
+
 	order := NewOrder(o)
 	if !order.IsAuthorized(userID) {
 		return fmt.Errorf("unauthorized")
@@ -377,12 +386,6 @@ func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid
 	if !order.CanAppeal() {
 		return domain.ErrOrderNotCancellable
 	}
-
-	tx, err := s.orderRepo.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 
 	appeal := &domain.CancellationAppeal{
 		ID:        uuid.New(),
@@ -403,13 +406,21 @@ func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid
 }
 
 func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error {
-	o, err := s.orderRepo.GetOrderByID(ctx, orderID)
+	tx, err := s.orderRepo.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Lock and fetch current state
+	o, err := s.orderRepo.GetOrderByIDForUpdateTX(ctx, tx, orderID)
 	if err != nil {
 		return err
 	}
 	if o == nil {
 		return domain.ErrOrderNotFound
 	}
+
 	order := NewOrder(o)
 	if !order.IsMerchantAuthorized(merchantID) {
 		return fmt.Errorf("unauthorized")
@@ -419,18 +430,13 @@ func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, ord
 		return err
 	}
 
+	// Update Status
+	if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, orderID, status); err != nil {
+		return err
+	}
+
 	// If status is Delivered, settle the pending balance to merchant
 	if status == domain.OrderStatusDelivered {
-		tx, err := s.orderRepo.Begin(ctx)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-
-		if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, orderID, status); err != nil {
-			return err
-		}
-
 		m, err := s.merchantRepo.GetByID(ctx, o.MerchantID)
 		if err != nil {
 			return err
@@ -449,21 +455,27 @@ func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, ord
 		if err := s.walletService.SettlePendingBalanceTX(ctx, tx, m.UserID, o.TotalAmount, settleTxData); err != nil {
 			return err
 		}
-
-		return tx.Commit()
 	}
 
-	return s.orderRepo.UpdateOrderStatus(ctx, orderID, status)
+	return tx.Commit()
 }
 
 func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orderID uuid.UUID) error {
-	o, err := s.orderRepo.GetOrderByID(ctx, orderID)
+	tx, err := s.orderRepo.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Lock and fetch current state
+	o, err := s.orderRepo.GetOrderByIDForUpdateTX(ctx, tx, orderID)
 	if err != nil {
 		return err
 	}
 	if o == nil {
 		return domain.ErrOrderNotFound
 	}
+
 	order := NewOrder(o)
 	if !order.IsMerchantAuthorized(merchantID) {
 		return fmt.Errorf("unauthorized")
@@ -472,12 +484,6 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 	if !order.CanMerchantCancel() {
 		return domain.ErrOrderNotCancellable
 	}
-
-	tx, err := s.orderRepo.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 
 	if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, orderID, domain.OrderStatusCancelled); err != nil {
 		return err

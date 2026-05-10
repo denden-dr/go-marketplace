@@ -177,8 +177,8 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 				items := []domain.OrderItem{{ProductID: productID, Quantity: 2}}
 				p := &domain.Product{ID: productID, Stock: 5}
 
-				mr.On("GetOrderByID", mock.Anything, orderID).Return(order, nil)
 				mr.On("Begin", mock.Anything).Return(tx, nil)
+				mr.On("GetOrderByIDForUpdateTX", mock.Anything, tx, orderID).Return(order, nil)
 				mr.On("UpdateOrderStatusTX", mock.Anything, tx, orderID, domain.OrderStatusCancelled).Return(nil)
 
 				mm.On("GetByID", mock.Anything, order.MerchantID).Return(&domain.Merchant{ID: order.MerchantID, UserID: uuid.New()}, nil)
@@ -202,7 +202,8 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 					Status:    domain.OrderStatusProcessing,
 					CreatedAt: time.Now().Add(-2 * time.Hour),
 				}
-				mr.On("GetOrderByID", mock.Anything, orderID).Return(order, nil)
+				mr.On("Begin", mock.Anything).Return(tx, nil)
+				mr.On("GetOrderByIDForUpdateTX", mock.Anything, tx, orderID).Return(order, nil)
 			},
 			wantErr: true,
 			errType: domain.ErrOrderNotCancellable,
@@ -241,35 +242,38 @@ func TestOrderService_MerchantUpdateStatus(t *testing.T) {
 	tests := []struct {
 		name      string
 		newStatus domain.OrderStatus
-		mockSetup func(mr *MockOrderRepository)
+		mockSetup func(mr *MockOrderRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock)
 		wantErr   bool
 		errType   error
 	}{
 		{
 			name:      "Success",
 			newStatus: domain.OrderStatusPackaging,
-			mockSetup: func(mr *MockOrderRepository) {
+			mockSetup: func(mr *MockOrderRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
 				order := &domain.Order{
 					ID:         orderID,
 					MerchantID: merchantID,
 					Status:     domain.OrderStatusProcessing,
 				}
-				mr.On("GetOrderByID", mock.Anything, orderID).Return(order, nil)
-				mr.On("UpdateOrderStatus", mock.Anything, orderID, domain.OrderStatusPackaging).Return(nil)
+				mr.On("Begin", mock.Anything).Return(tx, nil)
+				mr.On("GetOrderByIDForUpdateTX", mock.Anything, tx, orderID).Return(order, nil)
+				mr.On("UpdateOrderStatusTX", mock.Anything, tx, orderID, domain.OrderStatusPackaging).Return(nil)
+				sqlMock.ExpectCommit()
 			},
 			wantErr: false,
 		},
 		{
 			name:      "Fail - Too Early Shipment",
 			newStatus: domain.OrderStatusShipping,
-			mockSetup: func(mr *MockOrderRepository) {
+			mockSetup: func(mr *MockOrderRepository, tx *sqlx.Tx, sqlMock sqlmock.Sqlmock) {
 				order := &domain.Order{
 					ID:         orderID,
 					MerchantID: merchantID,
 					Status:     domain.OrderStatusPackaging,
 					CreatedAt:  time.Now().Add(-10 * time.Minute),
 				}
-				mr.On("GetOrderByID", mock.Anything, orderID).Return(order, nil)
+				mr.On("Begin", mock.Anything).Return(tx, nil)
+				mr.On("GetOrderByIDForUpdateTX", mock.Anything, tx, orderID).Return(order, nil)
 			},
 			wantErr: true,
 			errType: domain.ErrMerchantShipmentTooEarly,
@@ -283,7 +287,8 @@ func TestOrderService_MerchantUpdateStatus(t *testing.T) {
 			mws := wallet.NewMockWalletServiceInterface(t)
 
 			mo := NewMockOrderRepository(t)
-			tt.mockSetup(mo)
+			tx, sqlMock := getSqlxTx(t)
+			tt.mockSetup(mo, tx, sqlMock)
 			service := NewOrderService(mo, nil, nil, mws, nil, mm, mps)
 			err := service.MerchantUpdateStatus(context.Background(), merchantID, orderID, tt.newStatus)
 
@@ -292,6 +297,7 @@ func TestOrderService_MerchantUpdateStatus(t *testing.T) {
 				assert.ErrorIs(t, err, tt.errType)
 			} else {
 				assert.NoError(t, err)
+				assert.NoError(t, sqlMock.ExpectationsWereMet())
 			}
 		})
 	}
@@ -315,8 +321,8 @@ func TestOrderService_AppealUserOrder(t *testing.T) {
 					Status:    domain.OrderStatusPackaging,
 					CreatedAt: time.Now().Add(-2 * time.Hour),
 				}
-				mr.On("GetOrderByID", mock.Anything, orderID).Return(order, nil)
 				mr.On("Begin", mock.Anything).Return(tx, nil)
+				mr.On("GetOrderByIDForUpdateTX", mock.Anything, tx, orderID).Return(order, nil)
 				mr.On("CreateAppeal", mock.Anything, mock.Anything).Return(nil)
 				mr.On("UpdateOrderAppealTX", mock.Anything, tx, orderID, true).Return(nil)
 				sqlMock.ExpectCommit()

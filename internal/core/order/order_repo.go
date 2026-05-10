@@ -53,6 +53,22 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, id uuid.UUID) (*doma
 	return &o, nil
 }
 
+func (r *orderRepository) GetOrderByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Order, error) {
+	query := `SELECT id, payment_id, merchant_id, user_id, status, total_amount, 
+	          shipping_recipient_name, shipping_phone_number, shipping_street_address, 
+	          shipping_city, shipping_province, shipping_postal_code, is_appealed, created_at, updated_at 
+	          FROM orders WHERE id = $1 FOR UPDATE`
+	var o domain.Order
+	err := tx.GetContext(ctx, &o, query, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &o, nil
+}
+
 func (r *orderRepository) UpdateOrderStatus(ctx context.Context, id uuid.UUID, status domain.OrderStatus) error {
 	query := `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2`
 	_, err := r.db.ExecContext(ctx, query, status, id)
