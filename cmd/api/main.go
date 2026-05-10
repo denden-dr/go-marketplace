@@ -11,6 +11,7 @@ import (
 	"go-marketplace/internal/core/health"
 	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/core/order"
+	"go-marketplace/internal/core/payment"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/core/wallet"
@@ -77,6 +78,7 @@ func main() {
 	verificationRepo := auth.NewVerificationRepository(db)
 	cartRepo := cart.NewCartRepository(db)
 	orderRepo := order.NewOrderRepository(db)
+	paymentRepo := payment.NewPaymentRepository(db)
 
 	mailService := auth.NewMailService(mailersendAPIKey, mailersendFromEmail)
 
@@ -102,7 +104,13 @@ func main() {
 	productService := product.NewProductService(productRepo, merchantRepo)
 	walletService := wallet.NewWalletService(walletRepo)
 	cartService := cart.NewCartService(cartRepo, productRepo)
-	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletRepo, userRepo)
+
+	// Payment Service setup with circular dependency handling
+	mockPaymentProvider := payment.NewMockProvider()
+	paymentService := payment.NewPaymentService(paymentRepo, walletService, mockPaymentProvider, nil, db)
+
+	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletService, userRepo, merchantRepo, paymentService)
+	paymentService.SetOrderManager(orderService)
 
 	authHandler := auth.NewAuthHandler(authService)
 	userHandler := user.NewUserHandler(userService)
@@ -111,6 +119,7 @@ func main() {
 	walletHandler := wallet.NewWalletHandler(walletService)
 	cartHandler := cart.NewCartHandler(cartService)
 	orderHandler := order.NewOrderHandler(orderService, merchantRepo)
+	paymentHandler := payment.NewPaymentHandler(paymentService)
 	healthHandler := health.NewHealthHandler(db)
 
 	// Get port from environment or use default
@@ -128,7 +137,7 @@ func main() {
 		authHandler,
 		userHandler,
 		merchantHandler, productHandler, walletHandler,
-		cartHandler, orderHandler, healthHandler, cfg.JWTSecret, cfg.AppEnv)
+		cartHandler, orderHandler, paymentHandler, healthHandler, cfg.JWTSecret, cfg.AppEnv)
 
 	// Start server
 	log.Printf("Server starting on port %s", port)

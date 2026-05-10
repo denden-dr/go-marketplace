@@ -25,14 +25,24 @@ INSERT INTO public.products (id, store_id, name, description, price, stock, heig
 ON CONFLICT (id) DO NOTHING;
 
 -- 4. Wallets
-INSERT INTO public.wallets (id, user_id, wallet_number, balance, currency, status) VALUES
-('00000000-0000-0000-0000-000000000301', '00000000-0000-0000-0000-000000000001', 'WAL-VERIFIED-001', 5000.00, 'IDR', 'active'),
-('00000000-0000-0000-0000-000000000302', '00000000-0000-0000-0000-000000000002', 'WAL-UNVERIFIED-002', 100.00, 'IDR', 'active'),
-('00000000-0000-0000-0000-000000000303', '00000000-0000-0000-0000-000000000003', 'WAL-MERCHANT-003', 10000.00, 'IDR', 'active')
+INSERT INTO public.wallets (id, user_id, wallet_number, balance, pending_balance, currency, status) VALUES
+('00000000-0000-0000-0000-000000000301', '00000000-0000-0000-0000-000000000001', 'WAL-VERIFIED-001', 5000.00, 0.00, 'IDR', 'active'),
+('00000000-0000-0000-0000-000000000302', '00000000-0000-0000-0000-000000000002', 'WAL-UNVERIFIED-002', 100.00, 0.00, 'IDR', 'active'),
+('00000000-0000-0000-0000-000000000303', '00000000-0000-0000-0000-000000000003', 'WAL-MERCHANT-003', 10000.00, 500.00, 'IDR', 'active')
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. User Addresses
 INSERT INTO public.user_addresses (id, user_id, tag, recipient_name, phone_number, street_address, city, province, postal_code, is_default) VALUES
 ('00000000-0000-0000-0000-000000000401', '00000000-0000-0000-0000-000000000001', 'Home', 'Verified User', '081234567890', '123 Verified St', 'Jakarta', 'DKI Jakarta', '12345', true),
 ('00000000-0000-0000-0000-000000000402', '00000000-0000-0000-0000-000000000003', 'Work', 'Merchant User', '089876543210', '456 Merchant Ave', 'Bandung', 'West Java', '40123', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 6. Payments (Escrow Example)
+INSERT INTO public.payments (id, user_id, amount, payment_type, payment_method, status, reference_id) VALUES
+('00000000-0000-0000-0000-000000000501', '00000000-0000-0000-0000-000000000001', 500.00, 'order', 'wallet', 'success', '00000000-0000-0000-0000-000000000601')
+ON CONFLICT (id) DO NOTHING;
+
+-- 7. Payment Distributions (Funds waiting in escrow for merchant)
+INSERT INTO public.payment_distributions (id, payment_id, recipient_id, amount) VALUES
+('00000000-0000-0000-0000-000000000701', '00000000-0000-0000-0000-000000000501', '00000000-0000-0000-0000-000000000003', 500.00)
 ON CONFLICT (id) DO NOTHING;
