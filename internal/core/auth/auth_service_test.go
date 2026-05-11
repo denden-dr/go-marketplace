@@ -21,7 +21,7 @@ func TestAuthService_Register(t *testing.T) {
 		email     string
 		password  string
 		username  string
-		mockSetup func(mr *user.MockUserRepository, msr *MockSessionRepository, mvr *MockVerificationRepository, mms *MockMailServiceInterface)
+		mockSetup func(mr *user.MockUserRepository, msr *MockSessionRepository, mvr *MockVerificationRepository, mms *MockMailService)
 		wantErr   bool
 		errType   error
 	}{
@@ -31,7 +31,7 @@ func TestAuthService_Register(t *testing.T) {
 			email:    "test@example.com",
 			password: "password123",
 			username: "testuser",
-			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mvr *MockVerificationRepository, mms *MockMailServiceInterface) {
+			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mvr *MockVerificationRepository, mms *MockMailService) {
 				mr.On("GetUserByEmail", mock.Anything, "test@example.com").Return(nil, nil)
 				mr.On("CreateUser", mock.Anything, mock.Anything).Return(nil)
 				mvr.On("Create", mock.Anything, mock.Anything).Return(nil)
@@ -45,7 +45,7 @@ func TestAuthService_Register(t *testing.T) {
 			email:    "exists@example.com",
 			password: "password123",
 			username: "testuser",
-			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mvr *MockVerificationRepository, mms *MockMailServiceInterface) {
+			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mvr *MockVerificationRepository, mms *MockMailService) {
 				mr.On("GetUserByEmail", mock.Anything, "exists@example.com").Return(&domain.User{}, nil)
 			},
 			wantErr: true,
@@ -58,7 +58,7 @@ func TestAuthService_Register(t *testing.T) {
 			mockRepo := user.NewMockUserRepository(t)
 			mockSessionRepo := NewMockSessionRepository(t)
 			mockVerifRepo := NewMockVerificationRepository(t)
-			mockMailService := NewMockMailServiceInterface(t)
+			mockMailService := NewMockMailService(t)
 
 			tt.mockSetup(mockRepo, mockSessionRepo, mockVerifRepo, mockMailService)
 

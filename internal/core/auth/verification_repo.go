@@ -10,6 +10,12 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type VerificationRepository interface {
+	Create(ctx context.Context, vc *domain.VerificationCode) error
+	GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.VerificationCode, error)
+	DeleteByUserID(ctx context.Context, userID uuid.UUID) error
+}
+
 type verificationRepository struct {
 	db *sqlx.DB
 }

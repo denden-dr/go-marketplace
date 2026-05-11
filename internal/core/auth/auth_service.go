@@ -16,7 +16,7 @@ func ptr(s string) *string {
 	return &s
 }
 
-type AuthServiceInterface interface {
+type AuthService interface {
 	Register(ctx context.Context, fullName, email, password, username string) (*AuthResponse, error)
 	VerifyEmail(ctx context.Context, userID uuid.UUID, code string) error
 	Login(ctx context.Context, email, password, ipAddress, userAgent string) (*AuthResponse, error)
@@ -24,21 +24,7 @@ type AuthServiceInterface interface {
 	Logout(ctx context.Context, rawToken string) error
 }
 
-type SessionRepository interface {
-	Create(ctx context.Context, session *domain.Session) error
-	GetByTokenHash(ctx context.Context, hash string) (*domain.Session, error)
-	RevokeByID(ctx context.Context, id uuid.UUID) error
-	RevokeAllByFamilyID(ctx context.Context, familyID uuid.UUID) error
-	DeleteExpiredSessions(ctx context.Context) error
-}
-
-type VerificationRepository interface {
-	Create(ctx context.Context, vc *domain.VerificationCode) error
-	GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.VerificationCode, error)
-	DeleteByUserID(ctx context.Context, userID uuid.UUID) error
-}
-
-type AuthService struct {
+type authService struct {
 	userRepo         user.UserRepository
 	sessionRepo      SessionRepository
 	verificationRepo VerificationRepository
@@ -52,8 +38,8 @@ func NewAuthService(
 	verificationRepo VerificationRepository,
 	mailService MailService,
 	jwtSecret string,
-) *AuthService {
-	return &AuthService{
+) AuthService {
+	return &authService{
 		userRepo:         userRepo,
 		sessionRepo:      sessionRepo,
 		verificationRepo: verificationRepo,
@@ -62,7 +48,7 @@ func NewAuthService(
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, fullName, email, password, username string) (*AuthResponse, error) {
+func (s *authService) Register(ctx context.Context, fullName, email, password, username string) (*AuthResponse, error) {
 	existingUser, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -125,7 +111,7 @@ func (s *AuthService) Register(ctx context.Context, fullName, email, password, u
 	}, nil
 }
 
-func (s *AuthService) VerifyEmail(ctx context.Context, userID uuid.UUID, code string) error {
+func (s *authService) VerifyEmail(ctx context.Context, userID uuid.UUID, code string) error {
 	vc, err := s.verificationRepo.GetByUserID(ctx, userID)
 	if err != nil {
 		return err
@@ -151,7 +137,7 @@ func (s *AuthService) VerifyEmail(ctx context.Context, userID uuid.UUID, code st
 	return s.verificationRepo.DeleteByUserID(ctx, userID)
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password, ipAddress, userAgent string) (*AuthResponse, error) {
+func (s *authService) Login(ctx context.Context, email, password, ipAddress, userAgent string) (*AuthResponse, error) {
 	user, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -175,7 +161,7 @@ func (s *AuthService) Login(ctx context.Context, email, password, ipAddress, use
 	return s.generateAuthResponse(ctx, user, ipAddress, userAgent)
 }
 
-func (s *AuthService) generateAuthResponse(ctx context.Context, u *domain.User, ipAddress, userAgent string) (*AuthResponse, error) {
+func (s *authService) generateAuthResponse(ctx context.Context, u *domain.User, ipAddress, userAgent string) (*AuthResponse, error) {
 	accessToken, err := GenerateAccessToken(u.ID, s.jwtSecret)
 	if err != nil {
 		return nil, err
@@ -215,7 +201,7 @@ func (s *AuthService) generateAuthResponse(ctx context.Context, u *domain.User, 
 	}, nil
 }
 
-func (s *AuthService) RefreshTokens(ctx context.Context, rawToken, ipAddress, userAgent string) (*AuthResponse, error) {
+func (s *authService) RefreshTokens(ctx context.Context, rawToken, ipAddress, userAgent string) (*AuthResponse, error) {
 	tokenHash := HashToken(rawToken)
 	session, err := s.sessionRepo.GetByTokenHash(ctx, tokenHash)
 	if err != nil {
@@ -290,7 +276,7 @@ func (s *AuthService) RefreshTokens(ctx context.Context, rawToken, ipAddress, us
 	}, nil
 }
 
-func (s *AuthService) Logout(ctx context.Context, rawToken string) error {
+func (s *authService) Logout(ctx context.Context, rawToken string) error {
 	tokenHash := HashToken(rawToken)
 	session, err := s.sessionRepo.GetByTokenHash(ctx, tokenHash)
 	if err != nil {
