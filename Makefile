@@ -36,6 +36,7 @@ docker-shell: ## Interactive shell in the API container
 
 test-integration: ## Run integration tests using Testcontainers
 	@echo "Running integration tests..."
+	# Ryuk is disabled by default to support rootless Podman environments common in local development.
 	TESTCONTAINERS_RYUK_DISABLED=true go test -v -tags=integration ./test/integration/... -count=1
 
 
