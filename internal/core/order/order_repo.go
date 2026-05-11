@@ -18,12 +18,6 @@ func NewOrderRepository(db *sqlx.DB) OrderRepository {
 	return &orderRepository{db: db}
 }
 
-func (r *orderRepository) CreateOrderPaymentTX(ctx context.Context, tx *sqlx.Tx, p *domain.OrderPayment) error {
-	query := `INSERT INTO order_payments (id, user_id, amount, payment_method, status, created_at) 
-	          VALUES (:id, :user_id, :amount, :payment_method, :status, :created_at)`
-	_, err := tx.NamedExecContext(ctx, query, p)
-	return err
-}
 
 func (r *orderRepository) CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error {
 	query := `INSERT INTO orders (id, payment_id, merchant_id, user_id, status, total_amount, 
@@ -50,6 +44,22 @@ func (r *orderRepository) GetOrderByID(ctx context.Context, id uuid.UUID) (*doma
 	          FROM orders WHERE id = $1`
 	var o domain.Order
 	err := r.db.GetContext(ctx, &o, query, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &o, nil
+}
+
+func (r *orderRepository) GetOrderByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Order, error) {
+	query := `SELECT id, payment_id, merchant_id, user_id, status, total_amount, 
+	          shipping_recipient_name, shipping_phone_number, shipping_street_address, 
+	          shipping_city, shipping_province, shipping_postal_code, is_appealed, created_at, updated_at 
+	          FROM orders WHERE id = $1 FOR UPDATE`
+	var o domain.Order
+	err := tx.GetContext(ctx, &o, query, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -96,4 +106,23 @@ func (r *orderRepository) GetOrderItems(ctx context.Context, orderID uuid.UUID) 
 
 func (r *orderRepository) Begin(ctx context.Context) (*sqlx.Tx, error) {
 	return r.db.BeginTxx(ctx, nil)
+}
+
+func (r *orderRepository) GetOrdersByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.Order, error) {
+	query := `SELECT id, payment_id, merchant_id, user_id, status, total_amount, 
+	          shipping_recipient_name, shipping_phone_number, shipping_street_address, 
+	          shipping_city, shipping_province, shipping_postal_code, is_appealed, created_at, updated_at 
+	          FROM orders WHERE payment_id = $1`
+	var orders []domain.Order
+	err := r.db.SelectContext(ctx, &orders, query, paymentID)
+	return orders, err
+}
+func (r *orderRepository) GetOrdersByPaymentIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID) ([]domain.Order, error) {
+	query := `SELECT id, payment_id, merchant_id, user_id, status, total_amount, 
+	          shipping_recipient_name, shipping_phone_number, shipping_street_address, 
+	          shipping_city, shipping_province, shipping_postal_code, is_appealed, created_at, updated_at 
+	          FROM orders WHERE payment_id = $1 ORDER BY id FOR UPDATE`
+	var orders []domain.Order
+	err := tx.SelectContext(ctx, &orders, query, paymentID)
+	return orders, err
 }

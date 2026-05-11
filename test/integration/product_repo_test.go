@@ -108,7 +108,39 @@ func (s *ProductRepoSuite) TestProductOperations() {
 	dbProduct, _ = s.repo.GetByID(context.Background(), p.ID)
 	s.Equal(5, dbProduct.Stock)
 
-	// 5. Search
+	// 5. RestoreStockBatchTX
+	p2 := &domain.Product{
+		ID:        uuid.New(),
+		StoreID:   m.ID,
+		Name:      "Second Product",
+		Price:     decimal.NewFromInt(200),
+		Stock:     20,
+		CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.repo.Create(context.Background(), p2))
+
+	tx2, err := s.DB.BeginTxx(context.Background(), nil)
+	s.NoError(err)
+	defer tx2.Rollback()
+
+	batchItems := []domain.OrderItem{
+		{ProductID: p.ID, Quantity: 2},
+		{ProductID: p2.ID, Quantity: 3},
+		{ProductID: p.ID, Quantity: 1}, // Test duplicate productID in batch
+	}
+
+	err = s.repo.RestoreStockBatchTX(context.Background(), tx2, batchItems)
+	s.NoError(err)
+	s.NoError(tx2.Commit())
+
+	// p stock: 5 + 2 + 1 = 8
+	// p2 stock: 20 + 3 = 23
+	dbP1, _ := s.repo.GetByID(context.Background(), p.ID)
+	dbP2, _ := s.repo.GetByID(context.Background(), p2.ID)
+	s.Equal(8, dbP1.Stock)
+	s.Equal(23, dbP2.Stock)
+
+	// 6. Search
 	// Wait a tiny bit for search indexes if necessary, but usually synchronous in Postgres
 	products, err := s.repo.Search(context.Background(), "Updated", 10, 0)
 	s.NoError(err)

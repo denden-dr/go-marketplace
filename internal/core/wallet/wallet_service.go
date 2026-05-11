@@ -16,6 +16,12 @@ type WalletServiceInterface interface {
 	GetWalletHistory(ctx context.Context, userID uuid.UUID, page, limit int) ([]TransactionResponse, error)
 	Withdraw(ctx context.Context, userID uuid.UUID, req WithdrawRequest) error
 	CreateWallet(ctx context.Context, userID uuid.UUID) (*WalletResponse, error)
+	AddBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	AddPendingBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	SettlePendingBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	FreezeBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 }
 
 type WalletRepository interface {
@@ -24,6 +30,10 @@ type WalletRepository interface {
 	Withdraw(ctx context.Context, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	AddBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	AddPendingBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	SettlePendingBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	FreezeBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	Create(ctx context.Context, w *domain.Wallet) error
 	CreateTx(ctx context.Context, tx *sqlx.Tx, w *domain.Wallet) error
 	GetPool() domain.Pool
@@ -47,14 +57,15 @@ func (s *WalletService) GetWalletByUserID(ctx context.Context, userID uuid.UUID)
 	}
 
 	return &WalletResponse{
-		ID:           wallet.ID,
-		UserID:       wallet.UserID,
-		WalletNumber: wallet.WalletNumber,
-		Balance:      wallet.Balance,
-		Currency:     wallet.Currency,
-		Status:       string(wallet.Status),
-		CreatedAt:    wallet.CreatedAt,
-		UpdatedAt:    wallet.UpdatedAt,
+		ID:             wallet.ID,
+		UserID:         wallet.UserID,
+		WalletNumber:   wallet.WalletNumber,
+		Balance:        wallet.Balance,
+		PendingBalance: wallet.PendingBalance,
+		Currency:       wallet.Currency,
+		Status:         string(wallet.Status),
+		CreatedAt:      wallet.CreatedAt,
+		UpdatedAt:      wallet.UpdatedAt,
 	}, nil
 }
 
@@ -83,16 +94,17 @@ func (s *WalletService) GetWalletHistory(ctx context.Context, userID uuid.UUID, 
 	res := []TransactionResponse{}
 	for _, t := range transactions {
 		res = append(res, TransactionResponse{
-			ID:           t.ID,
-			WalletID:     t.WalletID,
-			Amount:       t.Amount,
-			Direction:    string(t.Direction),
-			Type:         string(t.Type),
-			Status:       string(t.Status),
-			ReferenceID:  t.ReferenceID,
-			BalanceAfter: t.BalanceAfter,
-			Description:  t.Description,
-			CreatedAt:    t.CreatedAt,
+			ID:                  t.ID,
+			WalletID:            t.WalletID,
+			Amount:              t.Amount,
+			Direction:           string(t.Direction),
+			Type:                string(t.Type),
+			Status:              string(t.Status),
+			ReferenceID:         t.ReferenceID,
+			BalanceAfter:        t.BalanceAfter,
+			PendingBalanceAfter: t.PendingBalanceAfter,
+			Description:         t.Description,
+			CreatedAt:           t.CreatedAt,
 		})
 	}
 	return res, nil
@@ -142,14 +154,15 @@ func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*Wa
 	walletNumber := GenerateWalletNumber()
 
 	wallet := &domain.Wallet{
-		ID:           uuid.New(),
-		UserID:       userID,
-		WalletNumber: walletNumber,
-		Balance:      decimal.NewFromInt(0),
-		Currency:     "IDR",
-		Status:       domain.WalletStatusActive,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:             uuid.New(),
+		UserID:         userID,
+		WalletNumber:   walletNumber,
+		Balance:        decimal.NewFromInt(0),
+		PendingBalance: decimal.NewFromInt(0),
+		Currency:       "IDR",
+		Status:         domain.WalletStatusActive,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	if err := s.walletRepo.Create(ctx, wallet); err != nil {
@@ -157,13 +170,86 @@ func (s *WalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*Wa
 	}
 
 	return &WalletResponse{
-		ID:           wallet.ID,
-		UserID:       wallet.UserID,
-		WalletNumber: wallet.WalletNumber,
-		Balance:      wallet.Balance,
-		Currency:     wallet.Currency,
-		Status:       string(wallet.Status),
-		CreatedAt:    wallet.CreatedAt,
-		UpdatedAt:    wallet.UpdatedAt,
+		ID:             wallet.ID,
+		UserID:         wallet.UserID,
+		WalletNumber:   wallet.WalletNumber,
+		Balance:        wallet.Balance,
+		PendingBalance: wallet.PendingBalance,
+		Currency:       wallet.Currency,
+		Status:         string(wallet.Status),
+		CreatedAt:      wallet.CreatedAt,
+		UpdatedAt:      wallet.UpdatedAt,
 	}, nil
+}
+
+func (s *WalletService) AddBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if w == nil {
+		return domain.ErrWalletNotFound
+	}
+	txData.WalletID = w.ID
+	return s.walletRepo.AddBalanceTX(ctx, tx, w.ID, amount, txData)
+}
+
+func (s *WalletService) DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if w == nil {
+		return domain.ErrWalletNotFound
+	}
+	txData.WalletID = w.ID
+	return s.walletRepo.DeductBalanceTX(ctx, tx, w.ID, amount, txData)
+}
+
+func (s *WalletService) AddPendingBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if w == nil {
+		return domain.ErrWalletNotFound
+	}
+	txData.WalletID = w.ID
+	return s.walletRepo.AddPendingBalanceTX(ctx, tx, w.ID, amount, txData)
+}
+
+func (s *WalletService) SettlePendingBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if w == nil {
+		return domain.ErrWalletNotFound
+	}
+	txData.WalletID = w.ID
+	return s.walletRepo.SettlePendingBalanceTX(ctx, tx, w.ID, amount, txData)
+}
+
+func (s *WalletService) FreezeBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if w == nil {
+		return domain.ErrWalletNotFound
+	}
+	txData.WalletID = w.ID
+	return s.walletRepo.FreezeBalanceTX(ctx, tx, w.ID, amount, txData)
+}
+
+func (s *WalletService) RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	w, err := s.walletRepo.GetWalletByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if w == nil {
+		return domain.ErrWalletNotFound
+	}
+	txData.WalletID = w.ID
+	return s.walletRepo.RefundFromPendingTX(ctx, tx, w.ID, amount, txData)
 }

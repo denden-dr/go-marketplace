@@ -9,6 +9,7 @@ import (
 
 	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/core/order"
+	"go-marketplace/internal/core/payment"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/domain"
@@ -25,6 +26,7 @@ type OrderRepoSuite struct {
 	productRepo  product.ProductRepository
 	merchantRepo merchant.MerchantRepository
 	userRepo     user.UserRepository
+	paymentRepo  payment.PaymentRepository
 }
 
 func (s *OrderRepoSuite) SetupSuite() {
@@ -33,6 +35,7 @@ func (s *OrderRepoSuite) SetupSuite() {
 	s.productRepo = product.NewProductRepository(s.DB)
 	s.merchantRepo = merchant.NewMerchantRepository(s.DB)
 	s.userRepo = user.NewUserRepository(s.DB)
+	s.paymentRepo = payment.NewPaymentRepository(s.DB)
 }
 
 func (s *OrderRepoSuite) TestOrderOperations() {
@@ -69,19 +72,21 @@ func (s *OrderRepoSuite) TestOrderOperations() {
 	s.NoError(err)
 	defer tx.Rollback()
 
-	payment := &domain.OrderPayment{
+	pay := &domain.Payment{
 		ID:            uuid.New(),
 		UserID:        u.ID,
 		Amount:        decimal.NewFromInt(100),
-		PaymentMethod: "wallet",
-		Status:        "success",
+		Type:          domain.PaymentTypeOrder,
+		Method:        domain.PaymentMethodWallet,
+		Status:        domain.PaymentStatusSuccess,
 		CreatedAt:     time.Now().Truncate(time.Microsecond),
+		UpdatedAt:     time.Now().Truncate(time.Microsecond),
 	}
-	s.NoError(s.repo.CreateOrderPaymentTX(context.Background(), tx, payment))
+	s.NoError(s.paymentRepo.CreateTX(context.Background(), tx, pay))
 
 	o := &domain.Order{
 		ID:                    uuid.New(),
-		PaymentID:             payment.ID,
+		PaymentID:             pay.ID,
 		MerchantID:            m.ID,
 		UserID:                u.ID,
 		Status:                domain.OrderStatusPending,

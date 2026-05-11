@@ -30,14 +30,6 @@ type CartItem struct {
 	Product *Product `json:"product,omitempty"`
 }
 
-type OrderPayment struct {
-	ID            uuid.UUID       `json:"id" db:"id"`
-	UserID        uuid.UUID       `json:"user_id" db:"user_id"`
-	Amount        decimal.Decimal `json:"amount" db:"amount"`
-	PaymentMethod string          `json:"payment_method" db:"payment_method"`
-	Status        string          `json:"status" db:"status"`
-	CreatedAt     time.Time       `json:"created_at" db:"created_at"`
-}
 
 type Order struct {
 	ID                    uuid.UUID       `json:"id" db:"id"`

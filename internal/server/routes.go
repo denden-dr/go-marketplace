@@ -7,6 +7,7 @@ import (
 	"go-marketplace/internal/core/health"
 	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/core/order"
+	"go-marketplace/internal/core/payment"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/core/wallet"
@@ -29,6 +30,7 @@ func SetupRoutes(
 	walletHandler *wallet.WalletHandler,
 	cartHandler *cart.CartHandler,
 	orderHandler *order.OrderHandler,
+	paymentHandler *payment.PaymentHandler,
 	healthHandler *health.HealthHandler,
 	jwtSecret string,
 	appEnv string,
@@ -92,6 +94,10 @@ func SetupRoutes(
 	wallets.Get("/", walletHandler.GetWallet)
 	wallets.Get("/history", walletHandler.GetHistory)
 	wallets.Post("/withdraw", walletHandler.Withdraw)
+	wallets.Post("/topup", paymentHandler.Topup)
+
+	// Webhook (Public)
+	apiBase.Post("/payments/webhook", paymentHandler.Webhook)
 
 	// Cart
 	cartRoutes := users.Group("/cart")

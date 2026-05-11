@@ -21,7 +21,7 @@ func NewWalletRepository(db *sqlx.DB) WalletRepository {
 }
 
 func (r *walletRepository) GetWalletByUserID(ctx context.Context, userID uuid.UUID) (*domain.Wallet, error) {
-	query := `SELECT id, user_id, wallet_number, balance, currency, status, created_at, updated_at 
+	query := `SELECT id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at 
 	          FROM wallets WHERE user_id = $1`
 	var w domain.Wallet
 	err := r.db.GetContext(ctx, &w, query, userID)
@@ -35,7 +35,7 @@ func (r *walletRepository) GetWalletByUserID(ctx context.Context, userID uuid.UU
 }
 
 func (r *walletRepository) GetWalletHistory(ctx context.Context, walletID uuid.UUID, limit, offset int) ([]domain.WalletTransaction, error) {
-	query := `SELECT id, wallet_id, amount, direction, type, status, reference_id, balance_after, description, created_at 
+	query := `SELECT id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at 
 	          FROM wallets_transaction WHERE wallet_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`
 	var transactions []domain.WalletTransaction
 	err := r.db.SelectContext(ctx, &transactions, query, walletID, limit, offset)
@@ -53,10 +53,10 @@ func (r *walletRepository) Withdraw(ctx context.Context, walletID uuid.UUID, amo
 	defer tx.Rollback()
 
 	// Get current balance and lock row
-	var currentBalance decimal.Decimal
+	var currentBalance, currentPending decimal.Decimal
 	var status domain.WalletStatus
-	query := `SELECT balance, status FROM wallets WHERE id = $1 FOR UPDATE`
-	err = tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &status)
+	query := `SELECT balance, pending_balance, status FROM wallets WHERE id = $1 FOR UPDATE`
+	err = tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &currentPending, &status)
 	if err != nil {
 		return err
 	}
@@ -80,9 +80,10 @@ func (r *walletRepository) Withdraw(ctx context.Context, walletID uuid.UUID, amo
 	}
 
 	// Create transaction record
-	txData.BalanceAfter = newBalance // Ensure balance_after is accurate
-	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, description, created_at) 
-	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :description, :created_at)`
+	txData.BalanceAfter = newBalance
+	txData.PendingBalanceAfter = currentPending
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) 
+	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :pending_balance_after, :description, :created_at)`
 	_, err = tx.NamedExecContext(ctx, insertQuery, txData)
 	if err != nil {
 		return err
@@ -92,10 +93,10 @@ func (r *walletRepository) Withdraw(ctx context.Context, walletID uuid.UUID, amo
 }
 
 func (r *walletRepository) DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
-	var currentBalance decimal.Decimal
+	var currentBalance, currentPending decimal.Decimal
 	var status domain.WalletStatus
-	query := `SELECT balance, status FROM wallets WHERE id = $1 FOR UPDATE`
-	err := tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &status)
+	query := `SELECT balance, pending_balance, status FROM wallets WHERE id = $1 FOR UPDATE`
+	err := tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &currentPending, &status)
 	if err != nil {
 		return err
 	}
@@ -116,16 +117,17 @@ func (r *walletRepository) DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, wal
 	}
 
 	txData.BalanceAfter = newBalance
-	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, description, created_at) 
-	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :description, :created_at)`
+	txData.PendingBalanceAfter = currentPending
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) 
+	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :pending_balance_after, :description, :created_at)`
 	_, err = tx.NamedExecContext(ctx, insertQuery, txData)
 	return err
 }
 
 func (r *walletRepository) AddBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
-	var currentBalance decimal.Decimal
-	query := `SELECT balance FROM wallets WHERE id = $1 FOR UPDATE`
-	err := tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance)
+	var currentBalance, currentPending decimal.Decimal
+	query := `SELECT balance, pending_balance FROM wallets WHERE id = $1 FOR UPDATE`
+	err := tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &currentPending)
 	if err != nil {
 		return err
 	}
@@ -138,22 +140,129 @@ func (r *walletRepository) AddBalanceTX(ctx context.Context, tx *sqlx.Tx, wallet
 	}
 
 	txData.BalanceAfter = newBalance
-	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, description, created_at) 
-	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :description, :created_at)`
+	txData.PendingBalanceAfter = currentPending
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) 
+	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :pending_balance_after, :description, :created_at)`
+	_, err = tx.NamedExecContext(ctx, insertQuery, txData)
+	return err
+}
+
+func (r *walletRepository) AddPendingBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	var currentBalance, currentPending decimal.Decimal
+	query := `SELECT balance, pending_balance FROM wallets WHERE id = $1 FOR UPDATE`
+	err := tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &currentPending)
+	if err != nil {
+		return err
+	}
+
+	newPending := currentPending.Add(amount)
+	updateQuery := `UPDATE wallets SET pending_balance = $1, updated_at = NOW() WHERE id = $2`
+	_, err = tx.ExecContext(ctx, updateQuery, newPending, walletID)
+	if err != nil {
+		return err
+	}
+
+	txData.BalanceAfter = currentBalance
+	txData.PendingBalanceAfter = newPending
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) 
+	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :pending_balance_after, :description, :created_at)`
+	_, err = tx.NamedExecContext(ctx, insertQuery, txData)
+	return err
+}
+
+func (r *walletRepository) SettlePendingBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	var currentBalance, currentPending decimal.Decimal
+	query := `SELECT balance, pending_balance FROM wallets WHERE id = $1 FOR UPDATE`
+	err := tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &currentPending)
+	if err != nil {
+		return err
+	}
+
+	if currentPending.LessThan(amount) {
+		return domain.ErrInsufficientPendingBalance
+	}
+
+	newBalance := currentBalance.Add(amount)
+	newPending := currentPending.Sub(amount)
+	updateQuery := `UPDATE wallets SET balance = $1, pending_balance = $2, updated_at = NOW() WHERE id = $3`
+	_, err = tx.ExecContext(ctx, updateQuery, newBalance, newPending, walletID)
+	if err != nil {
+		return err
+	}
+
+	txData.BalanceAfter = newBalance
+	txData.PendingBalanceAfter = newPending
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) 
+	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :pending_balance_after, :description, :created_at)`
+	_, err = tx.NamedExecContext(ctx, insertQuery, txData)
+	return err
+}
+
+func (r *walletRepository) FreezeBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	var currentBalance, currentPending decimal.Decimal
+	query := `SELECT balance, pending_balance FROM wallets WHERE id = $1 FOR UPDATE`
+	err := tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &currentPending)
+	if err != nil {
+		return err
+	}
+
+	if currentBalance.LessThan(amount) {
+		return domain.ErrInsufficientBalance
+	}
+
+	newBalance := currentBalance.Sub(amount)
+	newPending := currentPending.Add(amount)
+	updateQuery := `UPDATE wallets SET balance = $1, pending_balance = $2, updated_at = NOW() WHERE id = $3`
+	_, err = tx.ExecContext(ctx, updateQuery, newBalance, newPending, walletID)
+	if err != nil {
+		return err
+	}
+
+	txData.BalanceAfter = newBalance
+	txData.PendingBalanceAfter = newPending
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) 
+	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :pending_balance_after, :description, :created_at)`
+	_, err = tx.NamedExecContext(ctx, insertQuery, txData)
+	return err
+}
+
+func (r *walletRepository) RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
+	var currentBalance, currentPending decimal.Decimal
+	query := `SELECT balance, pending_balance FROM wallets WHERE id = $1 FOR UPDATE`
+	err := tx.QueryRowContext(ctx, query, walletID).Scan(&currentBalance, &currentPending)
+	if err != nil {
+		return err
+	}
+
+	if currentPending.LessThan(amount) {
+		return domain.ErrInsufficientPendingBalance
+	}
+
+	newPending := currentPending.Sub(amount)
+	updateQuery := `UPDATE wallets SET pending_balance = $1, updated_at = NOW() WHERE id = $2`
+	_, err = tx.ExecContext(ctx, updateQuery, newPending, walletID)
+	if err != nil {
+		return err
+	}
+
+	txData.BalanceAfter = currentBalance
+	txData.PendingBalanceAfter = newPending
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) 
+	                VALUES (:id, :wallet_id, :amount, :direction, :type, :status, :reference_id, :balance_after, :pending_balance_after, :description, :created_at)`
 	_, err = tx.NamedExecContext(ctx, insertQuery, txData)
 	return err
 }
 
 func (r *walletRepository) Create(ctx context.Context, w *domain.Wallet) error {
-	query := `INSERT INTO wallets (id, user_id, wallet_number, balance, currency, status, created_at, updated_at) 
-	          VALUES (:id, :user_id, :wallet_number, :balance, :currency, :status, :created_at, :updated_at)`
+	query := `INSERT INTO wallets (id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at) 
+	          VALUES (:id, :user_id, :wallet_number, :balance, :pending_balance, :currency, :status, :created_at, :updated_at)`
 	_, err := r.db.NamedExecContext(ctx, query, w)
 	return err
 }
 
 func (r *walletRepository) CreateTx(ctx context.Context, tx *sqlx.Tx, w *domain.Wallet) error {
-	query := `INSERT INTO wallets (id, user_id, wallet_number, balance, currency, status, created_at, updated_at) 
-	          VALUES (:id, :user_id, :wallet_number, :balance, :currency, :status, :created_at, :updated_at)`
+	query := `INSERT INTO wallets (id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at) 
+	          VALUES (:id, :user_id, :wallet_number, :balance, :pending_balance, :currency, :status, :created_at, :updated_at)`
 	_, err := tx.NamedExecContext(ctx, query, w)
 	return err
 }
