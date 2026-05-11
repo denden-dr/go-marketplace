@@ -34,9 +34,10 @@ type PaymentResponse struct {
 	SnapToken *string
 }
 
-type PaymentServiceInterface interface {
+type PaymentService interface {
 	CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error)
 	ProcessWebhook(ctx context.Context, externalID string, status domain.PaymentStatus) error
+	SetOrderManager(OrderManager)
 }
 
 type PaymentProvider interface {
@@ -47,16 +48,16 @@ type OrderManager interface {
 	HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error
 }
 
-type PaymentService struct {
+type paymentService struct {
 	paymentRepo   PaymentRepository
-	walletService wallet.WalletServiceInterface
+	walletService wallet.WalletService
 	provider      PaymentProvider
 	orderManager  OrderManager
 	db            *sqlx.DB
 }
 
-func NewPaymentService(paymentRepo PaymentRepository, walletService wallet.WalletServiceInterface, provider PaymentProvider, orderManager OrderManager, db *sqlx.DB) *PaymentService {
-	return &PaymentService{
+func NewPaymentService(paymentRepo PaymentRepository, walletService wallet.WalletService, provider PaymentProvider, orderManager OrderManager, db *sqlx.DB) PaymentService {
+	return &paymentService{
 		paymentRepo:   paymentRepo,
 		walletService: walletService,
 		provider:      provider,
@@ -65,11 +66,11 @@ func NewPaymentService(paymentRepo PaymentRepository, walletService wallet.Walle
 	}
 }
 
-func (s *PaymentService) SetOrderManager(om OrderManager) {
+func (s *paymentService) SetOrderManager(om OrderManager) {
 	s.orderManager = om
 }
 
-func (s *PaymentService) CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error) {
+func (s *paymentService) CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -94,7 +95,7 @@ func (s *PaymentService) CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req C
 	return s.createPaymentInternal(ctx, tx, req)
 }
 
-func (s *PaymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error) {
+func (s *paymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error) {
 	payment := &domain.Payment{
 		ID:          uuid.New(),
 		UserID:      req.UserID,
@@ -204,7 +205,7 @@ func (s *PaymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 	}, nil
 }
 
-func (s *PaymentService) ProcessWebhook(ctx context.Context, externalID string, status domain.PaymentStatus) error {
+func (s *paymentService) ProcessWebhook(ctx context.Context, externalID string, status domain.PaymentStatus) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 

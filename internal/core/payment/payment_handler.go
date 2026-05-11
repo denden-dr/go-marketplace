@@ -10,10 +10,10 @@ import (
 )
 
 type PaymentHandler struct {
-	paymentService PaymentServiceInterface
+	paymentService PaymentService
 }
 
-func NewPaymentHandler(paymentService PaymentServiceInterface) *PaymentHandler {
+func NewPaymentHandler(paymentService PaymentService) *PaymentHandler {
 	return &PaymentHandler{paymentService: paymentService}
 }
 
