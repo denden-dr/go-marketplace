@@ -10,6 +10,14 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type MerchantRepository interface {
+	Create(ctx context.Context, m *domain.Merchant) error
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.Merchant, error)
+	GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Merchant, error)
+	CreateTx(ctx context.Context, tx *sqlx.Tx, m *domain.Merchant) error
+	GetPool() domain.Pool
+}
+
 type merchantRepository struct {
 	db *sqlx.DB
 }

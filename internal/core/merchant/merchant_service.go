@@ -10,33 +10,24 @@ import (
 	"go-marketplace/internal/core/wallet"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 )
 
-type MerchantServiceInterface interface {
+type MerchantService interface {
 	RegisterMerchant(ctx context.Context, userID uuid.UUID, req MerchantRegisterRequest) (*MerchantResponse, error)
 }
 
-type MerchantRepository interface {
-	Create(ctx context.Context, m *domain.Merchant) error
-	GetByID(ctx context.Context, id uuid.UUID) (*domain.Merchant, error)
-	GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Merchant, error)
-	CreateTx(ctx context.Context, tx *sqlx.Tx, m *domain.Merchant) error
-	GetPool() domain.Pool
-}
-
-type MerchantService struct {
+type merchantService struct {
 	repo       MerchantRepository
 	userRepo   user.UserRepository
 	walletRepo wallet.WalletRepository
 }
 
-func NewMerchantService(repo MerchantRepository, userRepo user.UserRepository, walletRepo wallet.WalletRepository) *MerchantService {
-	return &MerchantService{repo: repo, userRepo: userRepo, walletRepo: walletRepo}
+func NewMerchantService(repo MerchantRepository, userRepo user.UserRepository, walletRepo wallet.WalletRepository) MerchantService {
+	return &merchantService{repo: repo, userRepo: userRepo, walletRepo: walletRepo}
 }
 
-func (s *MerchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID, req MerchantRegisterRequest) (*MerchantResponse, error) {
+func (s *merchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID, req MerchantRegisterRequest) (*MerchantResponse, error) {
 	// Check if user exists
 	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {

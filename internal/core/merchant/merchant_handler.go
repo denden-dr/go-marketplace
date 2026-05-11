@@ -10,10 +10,10 @@ import (
 )
 
 type MerchantHandler struct {
-	service MerchantServiceInterface
+	service MerchantService
 }
 
-func NewMerchantHandler(service MerchantServiceInterface) *MerchantHandler {
+func NewMerchantHandler(service MerchantService) *MerchantHandler {
 	return &MerchantHandler{service: service}
 }
 
