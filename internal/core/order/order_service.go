@@ -80,6 +80,9 @@ func NewOrderService(
 }
 
 func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID, req CheckoutRequest) (*OrderPaymentResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
 	tx, err := s.orderRepo.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -278,6 +281,9 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 }
 
 func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	tx, err := s.orderRepo.Begin(ctx)
 	if err != nil {
 		return err
@@ -403,6 +409,9 @@ func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid
 }
 
 func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	tx, err := s.orderRepo.Begin(ctx)
 	if err != nil {
 		return err
@@ -458,6 +467,9 @@ func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, ord
 }
 
 func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orderID uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	tx, err := s.orderRepo.Begin(ctx)
 	if err != nil {
 		return err

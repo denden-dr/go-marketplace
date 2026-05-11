@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"go-marketplace/internal/core/wallet"
@@ -69,6 +70,9 @@ func (s *PaymentService) SetOrderManager(om OrderManager) {
 }
 
 func (s *PaymentService) CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	if tx == nil {
 		newTx, err := s.db.BeginTxx(ctx, nil)
 		if err != nil {
@@ -201,6 +205,9 @@ func (s *PaymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 }
 
 func (s *PaymentService) ProcessWebhook(ctx context.Context, externalID string, status domain.PaymentStatus) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -223,6 +230,7 @@ func (s *PaymentService) ProcessWebhook(ctx context.Context, externalID string, 
 	}
 
 	if p.Status != domain.PaymentStatusPending {
+		log.Printf("[Webhook] Skipping already processed payment: ID=%s, CurrentStatus=%s, NewStatus=%s", p.ID, p.Status, status)
 		return nil
 	}
 

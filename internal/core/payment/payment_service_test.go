@@ -47,9 +47,9 @@ func TestPaymentService_CreatePaymentTX_ExternalAtomicity(t *testing.T) {
 	// for external payments inside createPaymentInternal.
 	// This test expects it NOT to call BeginTxx if a tx is provided.
 	
-	mockRepo.On("CreateTX", ctx, mock.Anything, mock.Anything).Return(nil).Once()
-	mockProvider.On("CreateTransaction", ctx, mock.Anything).Return("snap-token", nil).Once()
-	mockRepo.On("UpdateSnapTokenTX", ctx, mock.Anything, mock.Anything, "snap-token").Return(nil).Once()
+	mockRepo.On("CreateTX", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	mockProvider.On("CreateTransaction", mock.Anything, mock.Anything).Return("snap-token", nil).Once()
+	mockRepo.On("UpdateSnapTokenTX", mock.Anything, mock.Anything, mock.Anything, "snap-token").Return(nil).Once()
 
 	_, err := s.CreatePaymentTX(ctx, tx, req)
 	assert.NoError(t, err)
