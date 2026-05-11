@@ -8,10 +8,9 @@ import (
 	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 )
 
-type CartServiceInterface interface {
+type CartService interface {
 	AddToCart(ctx context.Context, userID uuid.UUID, req AddToCartRequest) error
 	UpdateCartItem(ctx context.Context, userID, productID uuid.UUID, quantity int) error
 	RemoveFromCart(ctx context.Context, userID, productID uuid.UUID) error
@@ -19,28 +18,19 @@ type CartServiceInterface interface {
 	ClearCart(ctx context.Context, userID uuid.UUID) error
 }
 
-type CartRepository interface {
-	UpsertCartItem(ctx context.Context, item *domain.CartItem) error
-	UpdateCartItem(ctx context.Context, userID, productID uuid.UUID, quantity int) error
-	DeleteCartItem(ctx context.Context, userID, productID uuid.UUID) error
-	ClearCart(ctx context.Context, userID uuid.UUID) error
-	ClearCartTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID) error
-	GetCartByUserID(ctx context.Context, userID uuid.UUID) ([]domain.CartItem, error)
-}
-
-type CartService struct {
+type cartService struct {
 	repo        CartRepository
 	productRepo product.ProductRepository
 }
 
-func NewCartService(repo CartRepository, productRepo product.ProductRepository) *CartService {
-	return &CartService{
+func NewCartService(repo CartRepository, productRepo product.ProductRepository) CartService {
+	return &cartService{
 		repo:        repo,
 		productRepo: productRepo,
 	}
 }
 
-func (s *CartService) AddToCart(ctx context.Context, userID uuid.UUID, req AddToCartRequest) error {
+func (s *cartService) AddToCart(ctx context.Context, userID uuid.UUID, req AddToCartRequest) error {
 	// Check if product exists
 	p, err := s.productRepo.GetByID(ctx, req.ProductID)
 	if err != nil {
@@ -62,19 +52,19 @@ func (s *CartService) AddToCart(ctx context.Context, userID uuid.UUID, req AddTo
 	return s.repo.UpsertCartItem(ctx, item)
 }
 
-func (s *CartService) UpdateCartItem(ctx context.Context, userID, productID uuid.UUID, quantity int) error {
+func (s *cartService) UpdateCartItem(ctx context.Context, userID, productID uuid.UUID, quantity int) error {
 	return s.repo.UpdateCartItem(ctx, userID, productID, quantity)
 }
 
-func (s *CartService) RemoveFromCart(ctx context.Context, userID, productID uuid.UUID) error {
+func (s *cartService) RemoveFromCart(ctx context.Context, userID, productID uuid.UUID) error {
 	return s.repo.DeleteCartItem(ctx, userID, productID)
 }
 
-func (s *CartService) ClearCart(ctx context.Context, userID uuid.UUID) error {
+func (s *cartService) ClearCart(ctx context.Context, userID uuid.UUID) error {
 	return s.repo.ClearCart(ctx, userID)
 }
 
-func (s *CartService) GetCart(ctx context.Context, userID uuid.UUID) (*CartResponse, error) {
+func (s *cartService) GetCart(ctx context.Context, userID uuid.UUID) (*CartResponse, error) {
 	models, err := s.repo.GetCartByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
