@@ -192,6 +192,54 @@ func (_c *MockProductRepository_GetByIDForUpdateTX_Call) RunAndReturn(run func(c
 	return _c
 }
 
+// RestoreStockBatchTX provides a mock function with given fields: ctx, tx, items
+func (_m *MockProductRepository) RestoreStockBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error {
+	ret := _m.Called(ctx, tx, items)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RestoreStockBatchTX")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, []domain.OrderItem) error); ok {
+		r0 = rf(ctx, tx, items)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockProductRepository_RestoreStockBatchTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RestoreStockBatchTX'
+type MockProductRepository_RestoreStockBatchTX_Call struct {
+	*mock.Call
+}
+
+// RestoreStockBatchTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - items []domain.OrderItem
+func (_e *MockProductRepository_Expecter) RestoreStockBatchTX(ctx interface{}, tx interface{}, items interface{}) *MockProductRepository_RestoreStockBatchTX_Call {
+	return &MockProductRepository_RestoreStockBatchTX_Call{Call: _e.mock.On("RestoreStockBatchTX", ctx, tx, items)}
+}
+
+func (_c *MockProductRepository_RestoreStockBatchTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem)) *MockProductRepository_RestoreStockBatchTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].([]domain.OrderItem))
+	})
+	return _c
+}
+
+func (_c *MockProductRepository_RestoreStockBatchTX_Call) Return(_a0 error) *MockProductRepository_RestoreStockBatchTX_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockProductRepository_RestoreStockBatchTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, []domain.OrderItem) error) *MockProductRepository_RestoreStockBatchTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Search provides a mock function with given fields: ctx, query, limit, offset
 func (_m *MockProductRepository) Search(ctx context.Context, query string, limit int, offset int) ([]domain.Product, error) {
 	ret := _m.Called(ctx, query, limit, offset)

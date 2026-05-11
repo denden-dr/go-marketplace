@@ -464,6 +464,66 @@ func (_c *MockOrderRepository_GetOrdersByPaymentID_Call) RunAndReturn(run func(c
 	return _c
 }
 
+// GetOrdersByPaymentIDForUpdateTX provides a mock function with given fields: ctx, tx, paymentID
+func (_m *MockOrderRepository) GetOrdersByPaymentIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID) ([]domain.Order, error) {
+	ret := _m.Called(ctx, tx, paymentID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetOrdersByPaymentIDForUpdateTX")
+	}
+
+	var r0 []domain.Order
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) ([]domain.Order, error)); ok {
+		return rf(ctx, tx, paymentID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID) []domain.Order); ok {
+		r0 = rf(ctx, tx, paymentID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Order)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *sqlx.Tx, uuid.UUID) error); ok {
+		r1 = rf(ctx, tx, paymentID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetOrdersByPaymentIDForUpdateTX'
+type MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call struct {
+	*mock.Call
+}
+
+// GetOrdersByPaymentIDForUpdateTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - paymentID uuid.UUID
+func (_e *MockOrderRepository_Expecter) GetOrdersByPaymentIDForUpdateTX(ctx interface{}, tx interface{}, paymentID interface{}) *MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call {
+	return &MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call{Call: _e.mock.On("GetOrdersByPaymentIDForUpdateTX", ctx, tx, paymentID)}
+}
+
+func (_c *MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID)) *MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call) Return(_a0 []domain.Order, _a1 error) *MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID) ([]domain.Order, error)) *MockOrderRepository_GetOrdersByPaymentIDForUpdateTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateOrderAppealTX provides a mock function with given fields: ctx, tx, orderID, isAppealed
 func (_m *MockOrderRepository) UpdateOrderAppealTX(ctx context.Context, tx *sqlx.Tx, orderID uuid.UUID, isAppealed bool) error {
 	ret := _m.Called(ctx, tx, orderID, isAppealed)

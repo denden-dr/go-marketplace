@@ -74,7 +74,7 @@ func (s *PaymentService) CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req C
 		if err != nil {
 			return nil, err
 		}
-		defer newTx.Rollback()
+		defer func() { _ = newTx.Rollback() }()
 
 		res, err := s.createPaymentInternal(ctx, newTx, req)
 		if err != nil {
@@ -164,16 +164,8 @@ func (s *PaymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 		}, nil
 	}
 
-	// Handle External Provider (Midtrans) - Step A: Commit record as Pending
-	// We use a separate transaction to ensure it's committed before the API call
-	// even if the caller (like OrderService) is still holding a transaction.
-	paymentTx, err := s.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer paymentTx.Rollback()
-
-	if err := s.paymentRepo.CreateTX(ctx, paymentTx, payment); err != nil {
+	// Handle External Provider (Midtrans) - Atomic with caller's tx
+	if err := s.paymentRepo.CreateTX(ctx, tx, payment); err != nil {
 		return nil, err
 	}
 
@@ -185,33 +177,18 @@ func (s *PaymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 			Amount:      dist.Amount,
 			CreatedAt:   time.Now(),
 		}
-		if err := s.paymentRepo.CreateDistributionTX(ctx, paymentTx, d); err != nil {
+		if err := s.paymentRepo.CreateDistributionTX(ctx, tx, d); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := paymentTx.Commit(); err != nil {
-		return nil, err
-	}
-
-	// Step B: Call External Provider (No DB transaction held)
+	// Call External Provider (Holding the transaction, but ensures atomicity)
 	snapToken, err := s.provider.CreateTransaction(ctx, payment)
 	if err != nil {
 		return nil, err
 	}
 
-	// Step C: Update record with SnapToken in a new transaction
-	updateTx, err := s.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer updateTx.Rollback()
-
-	if err := s.paymentRepo.UpdateSnapTokenTX(ctx, updateTx, payment.ID, snapToken); err != nil {
-		return nil, err
-	}
-
-	if err := updateTx.Commit(); err != nil {
+	if err := s.paymentRepo.UpdateSnapTokenTX(ctx, tx, payment.ID, snapToken); err != nil {
 		return nil, err
 	}
 
@@ -228,7 +205,7 @@ func (s *PaymentService) ProcessWebhook(ctx context.Context, externalID string, 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	var p *domain.Payment
 	var repoErr error

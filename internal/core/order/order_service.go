@@ -40,6 +40,7 @@ type OrderRepository interface {
 	UpdateOrderAppealTX(ctx context.Context, tx *sqlx.Tx, orderID uuid.UUID, isAppealed bool) error
 	GetOrderItems(ctx context.Context, orderID uuid.UUID) ([]domain.OrderItem, error)
 	GetOrdersByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.Order, error)
+	GetOrdersByPaymentIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID) ([]domain.Order, error)
 }
 
 type OrderPaymentResponse struct {
@@ -83,7 +84,7 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// 1. Get Cart Items
 	cartItems, err := s.cartRepo.GetCartByUserID(ctx, userID)
@@ -281,7 +282,7 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Lock and fetch current state
 	o, err := s.orderRepo.GetOrderByIDForUpdateTX(ctx, tx, orderID)
@@ -349,12 +350,8 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 	if err != nil {
 		return err
 	}
-	for _, item := range items {
-		p, err := s.productRepo.GetByIDForUpdateTX(ctx, tx, item.ProductID)
-		if err != nil {
-			return err
-		}
-		if err := s.productRepo.UpdateStockTX(ctx, tx, item.ProductID, p.Stock+item.Quantity); err != nil {
+	if len(items) > 0 {
+		if err := s.productRepo.RestoreStockBatchTX(ctx, tx, items); err != nil {
 			return err
 		}
 	}
@@ -367,7 +364,7 @@ func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Lock and fetch current state
 	o, err := s.orderRepo.GetOrderByIDForUpdateTX(ctx, tx, orderID)
@@ -410,7 +407,7 @@ func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, ord
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Lock and fetch current state
 	o, err := s.orderRepo.GetOrderByIDForUpdateTX(ctx, tx, orderID)
@@ -465,7 +462,7 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Lock and fetch current state
 	o, err := s.orderRepo.GetOrderByIDForUpdateTX(ctx, tx, orderID)
@@ -532,12 +529,8 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 	if err != nil {
 		return err
 	}
-	for _, item := range items {
-		p, err := s.productRepo.GetByIDForUpdateTX(ctx, tx, item.ProductID)
-		if err != nil {
-			return err
-		}
-		if err := s.productRepo.UpdateStockTX(ctx, tx, item.ProductID, p.Stock+item.Quantity); err != nil {
+	if len(items) > 0 {
+		if err := s.productRepo.RestoreStockBatchTX(ctx, tx, items); err != nil {
 			return err
 		}
 	}
@@ -589,31 +582,41 @@ func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderRespon
 }
 
 func (s *OrderService) HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error {
-	if status == domain.PaymentStatusFailed || status == domain.PaymentStatusExpired {
-		orders, err := s.orderRepo.GetOrdersByPaymentID(ctx, paymentID)
+	switch status {
+	case domain.PaymentStatusFailed, domain.PaymentStatusExpired:
+		orders, err := s.orderRepo.GetOrdersByPaymentIDForUpdateTX(ctx, tx, paymentID)
 		if err != nil {
 			return err
 		}
 
+		var allItems []domain.OrderItem
 		for _, o := range orders {
 			// Update Order Status
 			if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, o.ID, domain.OrderStatusCancelled); err != nil {
 				return err
 			}
 
-			// Return Stock
+			// Collect Items
 			items, err := s.orderRepo.GetOrderItems(ctx, o.ID)
 			if err != nil {
 				return err
 			}
-			for _, item := range items {
-				p, err := s.productRepo.GetByIDForUpdateTX(ctx, tx, item.ProductID)
-				if err != nil {
-					return err
-				}
-				if err := s.productRepo.UpdateStockTX(ctx, tx, item.ProductID, p.Stock+item.Quantity); err != nil {
-					return err
-				}
+			allItems = append(allItems, items...)
+		}
+
+		if len(allItems) > 0 {
+			if err := s.productRepo.RestoreStockBatchTX(ctx, tx, allItems); err != nil {
+				return err
+			}
+		}
+	case domain.PaymentStatusSuccess:
+		orders, err := s.orderRepo.GetOrdersByPaymentIDForUpdateTX(ctx, tx, paymentID)
+		if err != nil {
+			return err
+		}
+		for _, o := range orders {
+			if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, o.ID, domain.OrderStatusProcessing); err != nil {
+				return err
 			}
 		}
 	}

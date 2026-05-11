@@ -175,7 +175,6 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 					CreatedAt:   time.Now().Add(-10 * time.Minute),
 				}
 				items := []domain.OrderItem{{ProductID: productID, Quantity: 2}}
-				p := &domain.Product{ID: productID, Stock: 5}
 
 				mr.On("Begin", mock.Anything).Return(tx, nil)
 				mr.On("GetOrderByIDForUpdateTX", mock.Anything, tx, orderID).Return(order, nil)
@@ -186,8 +185,7 @@ func TestOrderService_CancelUserOrder(t *testing.T) {
 				mw.On("AddBalanceTX", mock.Anything, tx, userID, order.TotalAmount, mock.Anything).Return(nil)
 
 				mr.On("GetOrderItems", mock.Anything, orderID).Return(items, nil)
-				mp.On("GetByIDForUpdateTX", mock.Anything, tx, productID).Return(p, nil)
-				mp.On("UpdateStockTX", mock.Anything, tx, productID, 7).Return(nil)
+				mp.On("RestoreStockBatchTX", mock.Anything, tx, items).Return(nil)
 
 				sqlMock.ExpectCommit()
 			},
@@ -351,4 +349,47 @@ func TestOrderService_AppealUserOrder(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOrderService_HandlePaymentStatusChangeTX_Success(t *testing.T) {
+	mockRepo := NewMockOrderRepository(t)
+	s := NewOrderService(mockRepo, nil, nil, nil, nil, nil, nil)
+
+	ctx := context.Background()
+	paymentID := uuid.New()
+	orderID := uuid.New()
+
+	mockRepo.On("GetOrdersByPaymentIDForUpdateTX", ctx, mock.Anything, paymentID).Return([]domain.Order{
+		{ID: orderID, Status: domain.OrderStatusPending},
+	}, nil).Once()
+
+	mockRepo.On("UpdateOrderStatusTX", ctx, mock.Anything, orderID, domain.OrderStatusProcessing).Return(nil).Once()
+
+	err := s.HandlePaymentStatusChangeTX(ctx, nil, paymentID, domain.PaymentStatusSuccess)
+	assert.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestOrderService_HandlePaymentStatusChangeTX_Failed(t *testing.T) {
+	mockRepo := NewMockOrderRepository(t)
+	mockProductRepo := product.NewMockProductRepository(t)
+	s := NewOrderService(mockRepo, nil, mockProductRepo, nil, nil, nil, nil)
+
+	ctx := context.Background()
+	paymentID := uuid.New()
+	orderID := uuid.New()
+	productID := uuid.New()
+
+	orders := []domain.Order{{ID: orderID, Status: domain.OrderStatusPending}}
+	items := []domain.OrderItem{{OrderID: orderID, ProductID: productID, Quantity: 2}}
+
+	mockRepo.On("GetOrdersByPaymentIDForUpdateTX", ctx, mock.Anything, paymentID).Return(orders, nil).Once()
+	mockRepo.On("UpdateOrderStatusTX", ctx, mock.Anything, orderID, domain.OrderStatusCancelled).Return(nil).Once()
+	mockRepo.On("GetOrderItems", ctx, orderID).Return(items, nil).Once()
+	mockProductRepo.On("RestoreStockBatchTX", ctx, mock.Anything, items).Return(nil).Once()
+
+	err := s.HandlePaymentStatusChangeTX(ctx, nil, paymentID, domain.PaymentStatusFailed)
+	assert.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+	mockProductRepo.AssertExpectations(t)
 }

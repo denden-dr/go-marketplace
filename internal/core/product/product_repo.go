@@ -3,6 +3,8 @@ package product
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"sort"
 
 	"go-marketplace/internal/domain"
 
@@ -81,4 +83,41 @@ func (r *productRepository) Search(ctx context.Context, query string, limit, off
 	}
 
 	return products, nil
+}
+func (r *productRepository) RestoreStockBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	// Aggregate quantities to handle duplicate products across items
+	quantities := make(map[uuid.UUID]int)
+	var productIDs []string
+	for _, item := range items {
+		if _, exists := quantities[item.ProductID]; !exists {
+			productIDs = append(productIDs, item.ProductID.String())
+		}
+		quantities[item.ProductID] += item.Quantity
+	}
+
+	// Sort IDs to prevent deadlocks when updating multiple rows
+	sort.Strings(productIDs)
+
+	// Update stock using a bulk UPDATE query to avoid N+1 and deadlocks
+	query := "UPDATE products SET stock = stock + v.quantity FROM (VALUES "
+	args := []interface{}{}
+	i := 1
+	for idx, idStr := range productIDs {
+		id := uuid.MustParse(idStr)
+		qty := quantities[id]
+		if idx > 0 {
+			query += ", "
+		}
+		query += fmt.Sprintf("($%d::uuid, $%d::int)", i, i+1)
+		args = append(args, id, qty)
+		i += 2
+	}
+	query += ") AS v(id, quantity) WHERE products.id = v.id"
+
+	_, err := tx.ExecContext(ctx, query, args...)
+	return err
 }
