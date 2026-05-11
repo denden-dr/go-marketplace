@@ -12,7 +12,7 @@ DOCKER_COMPOSE := $(shell if $(DOCKER_BIN) compose version >/dev/null 2>&1; then
 DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 MIGRATIONS_PATH=internal/database/migrations
 
-.PHONY: docker-up docker-down docker-logs docker-shell test-docker swagger test help build run clean fmt tidy migrate-up migrate-down migrate-create mock seed
+.PHONY: docker-up docker-down docker-logs docker-shell test-integration swagger test help build run clean fmt tidy migrate-up migrate-down migrate-create mock seed
 
 seed: ## Seed the database with initial data
 	@echo "Seeding database..."
@@ -34,12 +34,10 @@ docker-shell: ## Interactive shell in the API container
 	@echo "Opening shell..."
 	$(DOCKER_BIN) exec -it marketplace-api sh
 
-test-docker: ## Run tests in Docker containers
-	@echo "Running tests in Docker..."
-	$(DOCKER_COMPOSE) -f docker-compose.test.yaml up --build --abort-on-container-exit --exit-code-from test-runner; \
-	RET=$$?; \
-	$(DOCKER_COMPOSE) -f docker-compose.test.yaml down -v; \
-	exit $$RET
+test-integration: ## Run integration tests using Testcontainers
+	@echo "Running integration tests..."
+	# Ryuk is disabled by default to support rootless Podman environments common in local development.
+	TESTCONTAINERS_RYUK_DISABLED=true go test -v -tags=integration ./test/integration/... -count=1
 
 
 
