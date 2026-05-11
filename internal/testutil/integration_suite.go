@@ -11,6 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -50,7 +51,7 @@ func (s *IntegrationSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	// Connect to DB
-	db, err := sqlx.Connect("postgres", connStr)
+	db, err := sqlx.Connect("pgx", connStr)
 	s.Require().NoError(err)
 	s.DB = db
 
@@ -64,6 +65,7 @@ func (s *IntegrationSuite) SetupSuite() {
 		connStr,
 	)
 	s.Require().NoError(err)
+	defer m.Close()
 
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
