@@ -10,6 +10,21 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type OrderRepository interface {
+	Begin(ctx context.Context) (*sqlx.Tx, error)
+	CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error
+	CreateOrderItemTX(ctx context.Context, tx *sqlx.Tx, item *domain.OrderItem) error
+	GetOrderByID(ctx context.Context, id uuid.UUID) (*domain.Order, error)
+	GetOrderByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Order, error)
+	UpdateOrderStatus(ctx context.Context, id uuid.UUID, status domain.OrderStatus) error
+	UpdateOrderStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.OrderStatus) error
+	CreateAppeal(ctx context.Context, appeal *domain.CancellationAppeal) error
+	UpdateOrderAppealTX(ctx context.Context, tx *sqlx.Tx, orderID uuid.UUID, isAppealed bool) error
+	GetOrderItems(ctx context.Context, orderID uuid.UUID) ([]domain.OrderItem, error)
+	GetOrdersByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.Order, error)
+	GetOrdersByPaymentIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID) ([]domain.Order, error)
+}
+
 type orderRepository struct {
 	db *sqlx.DB
 }

@@ -13,11 +13,11 @@ import (
 )
 
 type OrderHandler struct {
-	orderService OrderServiceInterface
+	orderService OrderService
 	MerchantRepo merchant.MerchantRepository
 }
 
-func NewOrderHandler(orderService OrderServiceInterface, merchantRepo merchant.MerchantRepository) *OrderHandler {
+func NewOrderHandler(orderService OrderService, merchantRepo merchant.MerchantRepository) *OrderHandler {
 	return &OrderHandler{
 		orderService: orderService,
 		MerchantRepo: merchantRepo,

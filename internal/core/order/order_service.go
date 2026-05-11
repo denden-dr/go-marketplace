@@ -18,7 +18,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type OrderServiceInterface interface {
+type OrderService interface {
 	CreateUserCheckout(ctx context.Context, userID uuid.UUID, req CheckoutRequest) (*OrderPaymentResponse, error)
 	CancelUserOrder(ctx context.Context, userID, orderID uuid.UUID) error
 	AppealUserOrder(ctx context.Context, userID, orderID uuid.UUID, reason string) error
@@ -28,47 +28,32 @@ type OrderServiceInterface interface {
 	HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error
 }
 
-type OrderRepository interface {
-	Begin(ctx context.Context) (*sqlx.Tx, error)
-	CreateOrderTX(ctx context.Context, tx *sqlx.Tx, o *domain.Order) error
-	CreateOrderItemTX(ctx context.Context, tx *sqlx.Tx, item *domain.OrderItem) error
-	GetOrderByID(ctx context.Context, id uuid.UUID) (*domain.Order, error)
-	GetOrderByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Order, error)
-	UpdateOrderStatus(ctx context.Context, id uuid.UUID, status domain.OrderStatus) error
-	UpdateOrderStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.OrderStatus) error
-	CreateAppeal(ctx context.Context, appeal *domain.CancellationAppeal) error
-	UpdateOrderAppealTX(ctx context.Context, tx *sqlx.Tx, orderID uuid.UUID, isAppealed bool) error
-	GetOrderItems(ctx context.Context, orderID uuid.UUID) ([]domain.OrderItem, error)
-	GetOrdersByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.Order, error)
-	GetOrdersByPaymentIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID) ([]domain.Order, error)
-}
-
 type OrderPaymentResponse struct {
 	PaymentID uuid.UUID       `json:"payment_id"`
 	Amount    decimal.Decimal `json:"amount"`
 	Orders    []uuid.UUID     `json:"order_ids"`
 }
 
-type OrderService struct {
+type orderService struct {
 	orderRepo      OrderRepository
 	cartRepo       cart.CartRepository
 	productRepo    product.ProductRepository
-	walletService  wallet.WalletServiceInterface
+	walletService  wallet.WalletService
 	userRepo       user.UserRepository
 	merchantRepo   merchant.MerchantRepository
-	paymentService payment.PaymentServiceInterface
+	paymentService payment.PaymentService
 }
 
 func NewOrderService(
 	orderRepo OrderRepository,
 	cartRepo cart.CartRepository,
 	productRepo product.ProductRepository,
-	walletService wallet.WalletServiceInterface,
+	walletService wallet.WalletService,
 	userRepo user.UserRepository,
 	merchantRepo merchant.MerchantRepository,
-	paymentService payment.PaymentServiceInterface,
-) *OrderService {
-	return &OrderService{
+	paymentService payment.PaymentService,
+) OrderService {
+	return &orderService{
 		orderRepo:      orderRepo,
 		cartRepo:       cartRepo,
 		productRepo:    productRepo,
@@ -79,7 +64,7 @@ func NewOrderService(
 	}
 }
 
-func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID, req CheckoutRequest) (*OrderPaymentResponse, error) {
+func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID, req CheckoutRequest) (*OrderPaymentResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
@@ -280,7 +265,7 @@ func (s *OrderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 	}, nil
 }
 
-func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid.UUID) error {
+func (s *orderService) CancelUserOrder(ctx context.Context, userID, orderID uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -365,7 +350,7 @@ func (s *OrderService) CancelUserOrder(ctx context.Context, userID, orderID uuid
 	return tx.Commit()
 }
 
-func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid.UUID, reason string) error {
+func (s *orderService) AppealUserOrder(ctx context.Context, userID, orderID uuid.UUID, reason string) error {
 	tx, err := s.orderRepo.Begin(ctx)
 	if err != nil {
 		return err
@@ -408,7 +393,7 @@ func (s *OrderService) AppealUserOrder(ctx context.Context, userID, orderID uuid
 	return tx.Commit()
 }
 
-func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error {
+func (s *orderService) MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -466,7 +451,7 @@ func (s *OrderService) MerchantUpdateStatus(ctx context.Context, merchantID, ord
 	return tx.Commit()
 }
 
-func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orderID uuid.UUID) error {
+func (s *orderService) MerchantCancelOrder(ctx context.Context, merchantID, orderID uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -550,7 +535,7 @@ func (s *OrderService) MerchantCancelOrder(ctx context.Context, merchantID, orde
 	return tx.Commit()
 }
 
-func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderResponse, error) {
+func (s *orderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderResponse, error) {
 	o, err := s.orderRepo.GetOrderByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -593,7 +578,7 @@ func (s *OrderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderRespon
 	}, nil
 }
 
-func (s *OrderService) HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error {
+func (s *orderService) HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error {
 	switch status {
 	case domain.PaymentStatusFailed, domain.PaymentStatusExpired:
 		orders, err := s.orderRepo.GetOrdersByPaymentIDForUpdateTX(ctx, tx, paymentID)
