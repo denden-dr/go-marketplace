@@ -9,35 +9,24 @@ import (
 	"go-marketplace/internal/core/merchant"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 )
 
-type ProductServiceInterface interface {
+type ProductService interface {
 	CreateProduct(ctx context.Context, userID uuid.UUID, req ProductCreateRequest) (*ProductResponse, error)
 	UpdateProduct(ctx context.Context, userID uuid.UUID, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error)
 	SearchProducts(ctx context.Context, req ProductSearchRequest) ([]ProductResponse, error)
 }
 
-type ProductRepository interface {
-	Create(ctx context.Context, p *domain.Product) error
-	Update(ctx context.Context, p *domain.Product) error
-	GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, error)
-	GetByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Product, error)
-	UpdateStockTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, stock int) error
-	RestoreStockBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error
-	Search(ctx context.Context, query string, limit, offset int) ([]domain.Product, error)
-}
-
-type ProductService struct {
+type productService struct {
 	repo         ProductRepository
 	merchantRepo merchant.MerchantRepository
 }
 
-func NewProductService(repo ProductRepository, merchantRepo merchant.MerchantRepository) *ProductService {
-	return &ProductService{repo: repo, merchantRepo: merchantRepo}
+func NewProductService(repo ProductRepository, merchantRepo merchant.MerchantRepository) ProductService {
+	return &productService{repo: repo, merchantRepo: merchantRepo}
 }
 
-func (s *ProductService) CreateProduct(ctx context.Context, userID uuid.UUID, req ProductCreateRequest) (*ProductResponse, error) {
+func (s *productService) CreateProduct(ctx context.Context, userID uuid.UUID, req ProductCreateRequest) (*ProductResponse, error) {
 	// Verify merchant exists and belongs to the user
 	merchant, err := s.merchantRepo.GetByID(ctx, req.StoreID)
 	if err != nil {
@@ -81,7 +70,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, userID uuid.UUID, re
 	}, nil
 }
 
-func (s *ProductService) UpdateProduct(ctx context.Context, userID uuid.UUID, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error) {
+func (s *productService) UpdateProduct(ctx context.Context, userID uuid.UUID, id uuid.UUID, req ProductUpdateRequest) (*ProductResponse, error) {
 	m, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -117,7 +106,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, userID uuid.UUID, id
 	}, nil
 }
 
-func (s *ProductService) SearchProducts(ctx context.Context, req ProductSearchRequest) ([]ProductResponse, error) {
+func (s *productService) SearchProducts(ctx context.Context, req ProductSearchRequest) ([]ProductResponse, error) {
 	if req.Limit <= 0 {
 		req.Limit = 10
 	}
