@@ -12,6 +12,16 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type ProductRepository interface {
+	Create(ctx context.Context, p *domain.Product) error
+	Update(ctx context.Context, p *domain.Product) error
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, error)
+	GetByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Product, error)
+	UpdateStockTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, stock int) error
+	RestoreStockBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error
+	Search(ctx context.Context, query string, limit, offset int) ([]domain.Product, error)
+}
+
 type productRepository struct {
 	db *sqlx.DB
 }

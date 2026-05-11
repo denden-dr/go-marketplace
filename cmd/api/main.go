@@ -110,6 +110,9 @@ func main() {
 	paymentService := payment.NewPaymentService(paymentRepo, walletService, mockPaymentProvider, nil, db)
 
 	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletService, userRepo, merchantRepo, paymentService)
+	// SetOrderManager injects the order manager dependency. Required because
+	// order ↔ payment have a circular dependency that cannot be resolved via
+	// constructor injection. Call this immediately after construction in routes.go.
 	paymentService.SetOrderManager(orderService)
 
 	authHandler := auth.NewAuthHandler(authService)

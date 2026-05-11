@@ -12,10 +12,10 @@ import (
 )
 
 type CartHandler struct {
-	cartService CartServiceInterface
+	cartService CartService
 }
 
-func NewCartHandler(cartService CartServiceInterface) *CartHandler {
+func NewCartHandler(cartService CartService) *CartHandler {
 	return &CartHandler{cartService: cartService}
 }
 

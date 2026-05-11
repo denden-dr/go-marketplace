@@ -1,9 +1,8 @@
 # GOALS
-- Scenario of authentication
-- Integration test based on scenarios
+
 
 # Description
-I want integration test for authentication, focus on register, login and logout with manual changin to verfied status with psql command (should code on the test), and after that write the integration test for the email verfication scenario
+
 
 **NOTES:**
 * Create the spec

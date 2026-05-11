@@ -143,13 +143,13 @@ func TestCartService_SimpleOperations(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		operation func(s CartServiceInterface) error
+		operation func(s CartService) error
 		mockSetup func(mr *MockCartRepository)
 		wantErr   bool
 	}{
 		{
 			name: "UpdateCartItem Success",
-			operation: func(s CartServiceInterface) error {
+			operation: func(s CartService) error {
 				return s.UpdateCartItem(context.Background(), userID, productID, 5)
 			},
 			mockSetup: func(mr *MockCartRepository) {
@@ -159,7 +159,7 @@ func TestCartService_SimpleOperations(t *testing.T) {
 		},
 		{
 			name: "RemoveFromCart Success",
-			operation: func(s CartServiceInterface) error {
+			operation: func(s CartService) error {
 				return s.RemoveFromCart(context.Background(), userID, productID)
 			},
 			mockSetup: func(mr *MockCartRepository) {
@@ -169,7 +169,7 @@ func TestCartService_SimpleOperations(t *testing.T) {
 		},
 		{
 			name: "ClearCart Success",
-			operation: func(s CartServiceInterface) error {
+			operation: func(s CartService) error {
 				return s.ClearCart(context.Background(), userID)
 			},
 			mockSetup: func(mr *MockCartRepository) {

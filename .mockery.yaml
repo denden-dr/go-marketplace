@@ -9,36 +9,36 @@ packages:
   go-marketplace/internal/core/user:
     interfaces:
       UserRepository:
-      UserServiceInterface:
+      UserService:
   go-marketplace/internal/core/auth:
     interfaces:
-      AuthServiceInterface:
+      AuthService:
       SessionRepository:
       VerificationRepository:
-      MailServiceInterface:
+      MailService:
   go-marketplace/internal/core/merchant:
     interfaces:
-      MerchantServiceInterface:
+      MerchantService:
       MerchantRepository:
   go-marketplace/internal/core/product:
     interfaces:
-      ProductServiceInterface:
+      ProductService:
       ProductRepository:
   go-marketplace/internal/core/wallet:
     interfaces:
-      WalletServiceInterface:
+      WalletService:
       WalletRepository:
   go-marketplace/internal/core/cart:
     interfaces:
-      CartServiceInterface:
+      CartService:
       CartRepository:
   go-marketplace/internal/core/order:
     interfaces:
-      OrderServiceInterface:
+      OrderService:
       OrderRepository:
   go-marketplace/internal/core/payment:
     interfaces:
-      PaymentServiceInterface:
+      PaymentService:
       PaymentRepository:
   go-marketplace/internal/domain:
     interfaces:

@@ -27,7 +27,7 @@ func getSqlxTx(t *testing.T) (*sqlx.Tx, sqlmock.Sqlmock, *sqlx.DB) {
 
 func TestPaymentService_CreatePaymentTX_ExternalAtomicity(t *testing.T) {
 	mockRepo := NewMockPaymentRepository(t)
-	mockWallet := wallet.NewMockWalletServiceInterface(t)
+	mockWallet := wallet.NewMockWalletService(t)
 	mockProvider := NewMockPaymentProvider(t)
 	mockOrder := NewMockOrderManager(t)
 

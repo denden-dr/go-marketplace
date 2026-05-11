@@ -10,6 +10,14 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type SessionRepository interface {
+	Create(ctx context.Context, session *domain.Session) error
+	GetByTokenHash(ctx context.Context, hash string) (*domain.Session, error)
+	RevokeByID(ctx context.Context, id uuid.UUID) error
+	RevokeAllByFamilyID(ctx context.Context, familyID uuid.UUID) error
+	DeleteExpiredSessions(ctx context.Context) error
+}
+
 type sessionRepository struct {
 	db *sqlx.DB
 }
