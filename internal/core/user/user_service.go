@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserServiceInterface interface {
+type UserService interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error)
 	// Addresses
 	AddAddress(ctx context.Context, userID uuid.UUID, req *AddressRequest) (*AddressResponse, error)
@@ -19,32 +19,15 @@ type UserServiceInterface interface {
 	DeleteAddress(ctx context.Context, userID, addressID uuid.UUID) error
 }
 
-type UserRepository interface {
-	CreateUser(ctx context.Context, u *domain.User) error
-	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
-	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
-	GetUserByProviderID(ctx context.Context, provider string, providerID string) (*domain.User, error)
-	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
-	UpdateVerifiedStatus(ctx context.Context, id uuid.UUID, status bool) error
-
-	// Addresses
-	CreateAddress(ctx context.Context, addr *domain.UserAddress) error
-	GetAddressesByUserID(ctx context.Context, userID uuid.UUID) ([]domain.UserAddress, error)
-	GetAddressByID(ctx context.Context, addressID uuid.UUID) (*domain.UserAddress, error)
-	UpdateAddress(ctx context.Context, addr *domain.UserAddress) error
-	DeleteAddress(ctx context.Context, addressID uuid.UUID) error
-	UnsetDefaultAddresses(ctx context.Context, userID uuid.UUID) error
-}
-
-type UserService struct {
+type userService struct {
 	userRepo UserRepository
 }
 
-func NewUserService(userRepo UserRepository) *UserService {
-	return &UserService{userRepo: userRepo}
+func NewUserService(userRepo UserRepository) UserService {
+	return &userService{userRepo: userRepo}
 }
 
-func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error) {
+func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error) {
 	user, err := s.userRepo.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -64,7 +47,7 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*UserRespo
 	}, nil
 }
 
-func (s *UserService) AddAddress(ctx context.Context, userID uuid.UUID, req *AddressRequest) (*AddressResponse, error) {
+func (s *userService) AddAddress(ctx context.Context, userID uuid.UUID, req *AddressRequest) (*AddressResponse, error) {
 	if req.IsDefault {
 		_ = s.userRepo.UnsetDefaultAddresses(ctx, userID)
 	}
@@ -102,7 +85,7 @@ func (s *UserService) AddAddress(ctx context.Context, userID uuid.UUID, req *Add
 	}, nil
 }
 
-func (s *UserService) ListAddresses(ctx context.Context, userID uuid.UUID) ([]AddressResponse, error) {
+func (s *userService) ListAddresses(ctx context.Context, userID uuid.UUID) ([]AddressResponse, error) {
 	addresses, err := s.userRepo.GetAddressesByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -126,7 +109,7 @@ func (s *UserService) ListAddresses(ctx context.Context, userID uuid.UUID) ([]Ad
 	return res, nil
 }
 
-func (s *UserService) UpdateAddress(ctx context.Context, userID, addressID uuid.UUID, req *AddressRequest) (*AddressResponse, error) {
+func (s *userService) UpdateAddress(ctx context.Context, userID, addressID uuid.UUID, req *AddressRequest) (*AddressResponse, error) {
 	m, err := s.userRepo.GetAddressByID(ctx, addressID)
 	if err != nil {
 		return nil, err
@@ -164,7 +147,7 @@ func (s *UserService) UpdateAddress(ctx context.Context, userID, addressID uuid.
 	}, nil
 }
 
-func (s *UserService) DeleteAddress(ctx context.Context, userID, addressID uuid.UUID) error {
+func (s *userService) DeleteAddress(ctx context.Context, userID, addressID uuid.UUID) error {
 	m, err := s.userRepo.GetAddressByID(ctx, addressID)
 	if err != nil {
 		return err

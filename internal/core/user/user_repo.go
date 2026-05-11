@@ -10,6 +10,23 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type UserRepository interface {
+	CreateUser(ctx context.Context, u *domain.User) error
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	GetUserByProviderID(ctx context.Context, provider string, providerID string) (*domain.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
+	UpdateVerifiedStatus(ctx context.Context, id uuid.UUID, status bool) error
+
+	// Addresses
+	CreateAddress(ctx context.Context, addr *domain.UserAddress) error
+	GetAddressesByUserID(ctx context.Context, userID uuid.UUID) ([]domain.UserAddress, error)
+	GetAddressByID(ctx context.Context, addressID uuid.UUID) (*domain.UserAddress, error)
+	UpdateAddress(ctx context.Context, addr *domain.UserAddress) error
+	DeleteAddress(ctx context.Context, addressID uuid.UUID) error
+	UnsetDefaultAddresses(ctx context.Context, userID uuid.UUID) error
+}
+
 type userRepository struct {
 	db *sqlx.DB
 }
