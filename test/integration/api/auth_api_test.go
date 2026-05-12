@@ -9,9 +9,12 @@ import (
 	"go-marketplace/internal/domain"
 	"go-marketplace/internal/testutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/oauth2"
 )
 
 type AuthApiTestSuite struct {
@@ -189,6 +192,95 @@ func (s *AuthApiTestSuite) TestGetProfile() {
 
 			if tt.verify != nil {
 				tt.verify(u, resp)
+			}
+		})
+	}
+}
+
+func (s *AuthApiTestSuite) TestGoogleLogin() {
+	s.SetupTest()
+	s.MockGoogleClient.On("GetAuthURL", mock.Anything).Return("https://accounts.google.com/o/oauth2/auth?client_id=...")
+
+	req := httptest.NewRequest("GET", "/api/auth/google/login", nil)
+	resp, err := s.App.Test(req)
+	s.Require().NoError(err)
+	s.Equal(http.StatusFound, resp.StatusCode)
+
+	cookies := resp.Cookies()
+	var hasState bool
+	for _, cookie := range cookies {
+		if cookie.Name == "oauth_state" {
+			hasState = true
+			s.NotEmpty(cookie.Value)
+		}
+	}
+	s.True(hasState, "Should have oauth_state cookie")
+}
+
+func (s *AuthApiTestSuite) TestGoogleCallback() {
+	email := "google_test@example.com"
+	sub := "google-sub-123"
+	name := "Google Tester"
+
+	tests := []struct {
+		name           string
+		setup          func() (string, string) // returns code, state
+		mockSetup      func()
+		expectedStatus int
+	}{
+		{
+			name: "Success - New User",
+			setup: func() (string, string) {
+				return "valid-code", "valid-state"
+			},
+			mockSetup: func() {
+				s.MockGoogleClient.On("ExchangeCode", mock.Anything, "valid-code").Return(&oauth2.Token{}, nil)
+				s.MockGoogleClient.On("GetUserInfo", mock.Anything, mock.Anything).Return(&auth.GoogleUserInfo{
+					Sub:   sub,
+					Email: email,
+					Name:  name,
+				}, nil)
+			},
+			expectedStatus: http.StatusFound,
+		},
+		{
+			name: "Invalid State",
+			setup: func() (string, string) {
+				return "valid-code", "wrong-state"
+			},
+			mockSetup: func() {
+				// No calls expected
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			s.SetupTest()
+			code, state := tt.setup()
+			if tt.mockSetup != nil {
+				tt.mockSetup()
+			}
+
+			req := httptest.NewRequest("GET", "/api/auth/google/callback?code="+code+"&state="+state, nil)
+			// Add the expected state cookie
+			req.AddCookie(&http.Cookie{
+				Name:  "oauth_state",
+				Value: "valid-state",
+			})
+
+			resp, err := s.App.Test(req)
+			s.Require().NoError(err)
+			s.Equal(tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedStatus == http.StatusFound {
+				// Verify user created
+				var u domain.User
+				err := s.DB.Get(&u, "SELECT * FROM users WHERE email = $1", email)
+				s.Require().NoError(err)
+				s.Equal(name, u.FullName)
+				s.Equal(domain.AuthProviderGoogle, u.AuthProvider)
 			}
 		})
 	}
