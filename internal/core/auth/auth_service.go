@@ -22,6 +22,7 @@ type AuthService interface {
 	Login(ctx context.Context, email, password, ipAddress, userAgent string) (*AuthResponse, error)
 	RefreshTokens(ctx context.Context, rawToken, ipAddress, userAgent string) (*AuthResponse, error)
 	Logout(ctx context.Context, rawToken string) error
+	HandleGoogleLogin(ctx context.Context, code, state, expectedState, ipAddress, userAgent string) (*AuthResponse, error)
 }
 
 type authService struct {
@@ -29,6 +30,7 @@ type authService struct {
 	sessionRepo      SessionRepository
 	verificationRepo VerificationRepository
 	mailService      MailService
+	googleClient     GoogleClient
 	jwtSecret        string
 }
 
@@ -37,6 +39,7 @@ func NewAuthService(
 	sessionRepo SessionRepository,
 	verificationRepo VerificationRepository,
 	mailService MailService,
+	googleClient GoogleClient,
 	jwtSecret string,
 ) AuthService {
 	return &authService{
@@ -44,6 +47,7 @@ func NewAuthService(
 		sessionRepo:      sessionRepo,
 		verificationRepo: verificationRepo,
 		mailService:      mailService,
+		googleClient:     googleClient,
 		jwtSecret:        jwtSecret,
 	}
 }
@@ -288,4 +292,68 @@ func (s *authService) Logout(ctx context.Context, rawToken string) error {
 
 	// Revoke the entire family for safety on logout
 	return s.sessionRepo.RevokeAllByFamilyID(ctx, session.FamilyID)
+}
+
+func (s *authService) HandleGoogleLogin(ctx context.Context, code, state, expectedState, ipAddress, userAgent string) (*AuthResponse, error) {
+	if state != expectedState {
+		return nil, domain.ErrInvalidOAuthState
+	}
+
+	token, err := s.googleClient.ExchangeCode(ctx, code)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", domain.ErrInvalidSocialToken, err)
+	}
+
+	userInfo, err := s.googleClient.GetUserInfo(ctx, token)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", domain.ErrInvalidSocialToken, err)
+	}
+
+	existingUser, err := s.userRepo.GetUserByEmail(ctx, userInfo.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	if existingUser != nil {
+		// Account linking happens automatically — we just issue tokens for the existing user.
+		// We don't change the provider if it's already "local" or something else.
+		return s.generateAuthResponse(ctx, existingUser, ipAddress, userAgent)
+	}
+
+	// Create new user
+	username := s.generateUsername(userInfo.Email)
+	// Check for username collision (simple retry with random suffix)
+	// In a real production app, we might want a more robust collision resolver.
+	existingByUsername, _ := s.userRepo.GetUserByUsername(ctx, username)
+	if existingByUsername != nil {
+		username = fmt.Sprintf("%s_%s", username, uuid.New().String()[:4])
+	}
+
+	user := &domain.User{
+		ID:           uuid.New(),
+		FullName:     userInfo.Name,
+		Username:     username,
+		Email:        userInfo.Email,
+		Password:     nil, // Social users have no password initially
+		AuthProvider: domain.AuthProviderGoogle,
+		ProviderID:   &userInfo.Sub,
+		IsVerified:   true, // Google emails are already verified
+		CreatedAt:    time.Now(),
+	}
+
+	if err := s.userRepo.CreateUser(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return s.generateAuthResponse(ctx, user, ipAddress, userAgent)
+}
+
+func (s *authService) generateUsername(email string) string {
+	// Simple implementation: take prefix before @
+	for i := 0; i < len(email); i++ {
+		if email[i] == '@' {
+			return email[:i]
+		}
+	}
+	return email
 }
