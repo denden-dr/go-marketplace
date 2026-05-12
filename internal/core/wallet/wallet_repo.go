@@ -3,7 +3,6 @@ package wallet
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
@@ -77,12 +76,12 @@ func (r *walletRepository) Withdraw(ctx context.Context, walletID uuid.UUID, amo
 
 	// Check status
 	if status != domain.WalletStatusActive {
-		return errors.New("wallet is not active")
+		return domain.ErrWalletNotActive
 	}
 
 	// Check balance
 	if currentBalance.LessThan(amount) {
-		return errors.New("insufficient balance")
+		return domain.ErrInsufficientBalance
 	}
 
 	// Update balance
@@ -116,11 +115,11 @@ func (r *walletRepository) DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, wal
 	}
 
 	if status != domain.WalletStatusActive {
-		return errors.New("wallet is not active")
+		return domain.ErrWalletNotActive
 	}
 
 	if currentBalance.LessThan(amount) {
-		return errors.New("insufficient balance")
+		return domain.ErrInsufficientBalance
 	}
 
 	newBalance := currentBalance.Sub(amount)
