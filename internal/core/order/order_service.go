@@ -117,6 +117,9 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		if err != nil {
 			return nil, err
 		}
+		if m == nil {
+			return nil, domain.ErrMerchantNotFound
+		}
 		distributions = append(distributions, payment.PaymentDistribution{RecipientID: m.UserID, Amount: merchantAmount})
 	}
 
