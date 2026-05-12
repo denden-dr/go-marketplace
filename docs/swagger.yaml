@@ -383,6 +383,40 @@ info:
   title: Go Marketplace API
   version: "1.0"
 paths:
+  /auth/google/callback:
+    get:
+      description: Handles the callback from Google, exchanges the code for tokens,
+        and creates a session.
+      parameters:
+      - description: OAuth2 Code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: OAuth2 State
+        in: query
+        name: state
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Found
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ResponseWrapper'
+      summary: Google Callback
+      tags:
+      - auth
+  /auth/google/login:
+    get:
+      description: Redirects the user to Google's OAuth2 consent page.
+      responses:
+        "302":
+          description: Found
+      summary: Google Login
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
