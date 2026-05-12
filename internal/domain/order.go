@@ -30,7 +30,6 @@ type CartItem struct {
 	Product *Product `json:"product,omitempty"`
 }
 
-
 type Order struct {
 	ID                    uuid.UUID       `json:"id" db:"id"`
 	PaymentID             uuid.UUID       `json:"payment_id" db:"payment_id"`

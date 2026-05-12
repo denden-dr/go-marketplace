@@ -45,6 +45,7 @@ func SetupRoutes(
 
 	// Health check (Public)
 	apiBase.Get("/health", healthHandler.CheckStatus)
+	apiBase.Post("/payments/webhook", paymentHandler.Webhook)
 
 	// Public Auth routes
 	authRoutes := apiBase.Group("/auth")
@@ -95,9 +96,6 @@ func SetupRoutes(
 	wallets.Get("/history", walletHandler.GetHistory)
 	wallets.Post("/withdraw", walletHandler.Withdraw)
 	wallets.Post("/topup", paymentHandler.Topup)
-
-	// Webhook (Public)
-	apiBase.Post("/payments/webhook", paymentHandler.Webhook)
 
 	// Cart
 	cartRoutes := users.Group("/cart")

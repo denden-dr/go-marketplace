@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/domain"
-	"go-marketplace/internal/testutil"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -21,7 +21,7 @@ func TestProductService_CreateProduct(t *testing.T) {
 	req := ProductCreateRequest{
 		StoreID:     storeID,
 		Name:        "Test Product",
-		Description: testutil.Ptr("Good product"),
+		Description: common.Ptr("Good product"),
 		Price:       decimal.NewFromInt(100),
 		Stock:       10,
 	}
@@ -156,7 +156,7 @@ func TestProductService_SearchProducts(t *testing.T) {
 		{
 			ID:          productID,
 			Name:        "Gaming Laptop",
-			Description: testutil.Ptr("Powerful laptop"),
+			Description: common.Ptr("Powerful laptop"),
 		},
 	}
 

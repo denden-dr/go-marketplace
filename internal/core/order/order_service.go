@@ -108,6 +108,11 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 	// 3. Prepare Payment Distributions (for escrow)
 	distributions := []payment.PaymentDistribution{}
 	for merchantID, items := range merchantItems {
+		merchantAmount := decimal.Zero
+		for _, item := range items {
+			merchantAmount = merchantAmount.Add(item.Product.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
+		}
+
 		m, err := s.merchantRepo.GetByID(ctx, merchantID)
 		if err != nil {
 			return nil, err
@@ -115,16 +120,7 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		if m == nil {
 			return nil, domain.ErrMerchantNotFound
 		}
-
-		merchantTotal := decimal.Zero
-		for _, item := range items {
-			merchantTotal = merchantTotal.Add(item.Product.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
-		}
-
-		distributions = append(distributions, payment.PaymentDistribution{
-			RecipientID: m.UserID,
-			Amount:      merchantTotal,
-		})
+		distributions = append(distributions, payment.PaymentDistribution{RecipientID: m.UserID, Amount: merchantAmount})
 	}
 
 	// 4. Call Payment Service

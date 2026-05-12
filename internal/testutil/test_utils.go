@@ -15,7 +15,3 @@ func AuthTestMiddleware(userID uuid.UUID) fiber.Handler {
 		return c.Next()
 	}
 }
-
-func Ptr[T any](v T) *T {
-	return &v
-}
