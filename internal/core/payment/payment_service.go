@@ -278,11 +278,9 @@ func (s *paymentService) ProcessWebhook(ctx context.Context, externalID string, 
 		}
 	}
 
-	if status == domain.PaymentStatusFailed || status == domain.PaymentStatusExpired {
+	if status == domain.PaymentStatusSuccess || status == domain.PaymentStatusFailed || status == domain.PaymentStatusExpired {
 		if p.Type == domain.PaymentTypeOrder {
 			if err := s.orderManager.HandlePaymentStatusChangeTX(ctx, tx, p.ID, status); err != nil {
-				// Log error but continue? Or fail?
-				// Usually we want to ensure stock is recovered.
 				return err
 			}
 		}
