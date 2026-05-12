@@ -1,12 +1,13 @@
 //go:build integration
 
-package integration
+package repo
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/domain"
 	"go-marketplace/internal/testutil"
@@ -31,7 +32,7 @@ func (s *UserRepoSuite) TestCreateUser() {
 		FullName:     "Test User",
 		Username:     "testuser",
 		Email:        "test@example.com",
-		Password:     testutil.Ptr("hashed_password"),
+		Password:     common.Ptr("hashed_password"),
 		AuthProvider: domain.AuthProviderLocal,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}

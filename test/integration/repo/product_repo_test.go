@@ -1,12 +1,13 @@
 //go:build integration
 
-package integration
+package repo
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/core/user"
@@ -58,7 +59,7 @@ func (s *ProductRepoSuite) TestProductOperations() {
 		ID:          uuid.New(),
 		StoreID:     m.ID,
 		Name:        "Test Product",
-		Description: testutil.Ptr("Best product ever"),
+		Description: common.Ptr("Best product ever"),
 		Price:       decimal.NewFromInt(100),
 		Stock:       10,
 		HeightCM:    10.5,
