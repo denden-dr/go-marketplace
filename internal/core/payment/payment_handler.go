@@ -19,7 +19,7 @@ func NewPaymentHandler(paymentService PaymentService) *PaymentHandler {
 
 // Topup handles wallet top-up requests
 func (h *PaymentHandler) Topup(c *fiber.Ctx) error {
-	userID := c.Locals("user_id").(uuid.UUID)
+	userID := c.Locals("userID").(uuid.UUID)
 	var req TopupRequest
 	if err := c.BodyParser(&req); err != nil {
 		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
