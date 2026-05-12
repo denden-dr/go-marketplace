@@ -8,10 +8,12 @@ import (
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/domain"
 
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
 )
 
 func TestAuthService_Register(t *testing.T) {
@@ -62,7 +64,7 @@ func TestAuthService_Register(t *testing.T) {
 
 			tt.mockSetup(mockRepo, mockSessionRepo, mockVerifRepo, mockMailService)
 
-			service := NewAuthService(mockRepo, mockSessionRepo, mockVerifRepo, mockMailService, "secret")
+			service := NewAuthService(mockRepo, mockSessionRepo, mockVerifRepo, mockMailService, nil, "secret")
 			res, err := service.Register(context.Background(), tt.fullName, tt.email, tt.password, tt.username)
 
 			if tt.wantErr {
@@ -148,7 +150,7 @@ func TestAuthService_VerifyEmail(t *testing.T) {
 
 			tt.mockSetup(mockRepo, mockVerifRepo)
 
-			service := NewAuthService(mockRepo, nil, mockVerifRepo, nil, "secret")
+			service := NewAuthService(mockRepo, nil, mockVerifRepo, nil, nil, "secret")
 			err := service.VerifyEmail(context.Background(), tt.userID, tt.code)
 
 			if tt.wantErr {
@@ -226,7 +228,7 @@ func TestAuthService_Login(t *testing.T) {
 
 			tt.mockSetup(mockRepo, mockSessionRepo)
 
-			service := NewAuthService(mockRepo, mockSessionRepo, nil, nil, "secret")
+			service := NewAuthService(mockRepo, mockSessionRepo, nil, nil, nil, "secret")
 			res, err := service.Login(context.Background(), tt.email, tt.password, "127.0.0.1", "test-agent")
 
 			if tt.wantErr {
@@ -298,7 +300,7 @@ func TestAuthService_RefreshTokens(t *testing.T) {
 
 			tt.mockSetup(mockRepo, mockSessionRepo)
 
-			service := NewAuthService(mockRepo, mockSessionRepo, nil, nil, "secret")
+			service := NewAuthService(mockRepo, mockSessionRepo, nil, nil, nil, "secret")
 			res, err := service.RefreshTokens(context.Background(), tt.rawToken, "127.0.0.1", "test-agent")
 
 			if tt.wantErr {
@@ -350,7 +352,7 @@ func TestAuthService_Logout(t *testing.T) {
 
 			tt.mockSetup(mockSessionRepo)
 
-			service := NewAuthService(nil, mockSessionRepo, nil, nil, "secret")
+			service := NewAuthService(nil, mockSessionRepo, nil, nil, nil, "secret")
 			err := service.Logout(context.Background(), tt.token)
 
 			if tt.wantErr {
@@ -358,6 +360,101 @@ func TestAuthService_Logout(t *testing.T) {
 				assert.ErrorIs(t, err, tt.errType)
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestAuthService_HandleGoogleLogin(t *testing.T) {
+	state := "valid-state"
+	code := "valid-code"
+	email := "google@example.com"
+	sub := "google-sub-123"
+	name := "Google User"
+
+	userInfo := &GoogleUserInfo{
+		Sub:   sub,
+		Email: email,
+		Name:  name,
+	}
+
+	tests := []struct {
+		name      string
+		state     string
+		code      string
+		mockSetup func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient)
+		wantErr   bool
+		errType   error
+	}{
+		{
+			name:  "Success - New User",
+			state: state,
+			code:  code,
+			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient) {
+				mgc.On("ExchangeCode", mock.Anything, code).Return(&oauth2.Token{}, nil)
+				mgc.On("GetUserInfo", mock.Anything, mock.Anything).Return(userInfo, nil)
+				mr.On("GetUserByEmail", mock.Anything, email).Return(nil, nil)
+				mr.On("GetUserByUsername", mock.Anything, "google").Return(nil, nil)
+				mr.On("CreateUser", mock.Anything, mock.MatchedBy(func(u *domain.User) bool {
+					return u.Email == email && u.AuthProvider == domain.AuthProviderGoogle && *u.ProviderID == sub
+				})).Return(nil)
+				msr.On("Create", mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Success - Existing User (Linking)",
+			state: state,
+			code:  code,
+			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient) {
+				mgc.On("ExchangeCode", mock.Anything, code).Return(&oauth2.Token{}, nil)
+				mgc.On("GetUserInfo", mock.Anything, mock.Anything).Return(userInfo, nil)
+				mr.On("GetUserByEmail", mock.Anything, email).Return(&domain.User{ID: uuid.New(), Email: email}, nil)
+				msr.On("Create", mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:  "Invalid State",
+			state: "wrong-state",
+			code:  code,
+			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient) {
+			},
+			wantErr: true,
+			errType: domain.ErrInvalidOAuthState,
+		},
+		{
+			name:  "Exchange Code Failure",
+			state: state,
+			code:  code,
+			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient) {
+				mgc.On("ExchangeCode", mock.Anything, code).Return(nil, fmt.Errorf("exchange failed"))
+			},
+			wantErr: true,
+			errType: domain.ErrInvalidSocialToken,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := user.NewMockUserRepository(t)
+			mockSessionRepo := NewMockSessionRepository(t)
+			mockGoogleClient := NewMockGoogleClient(t)
+
+			tt.mockSetup(mockRepo, mockSessionRepo, mockGoogleClient)
+
+			service := NewAuthService(mockRepo, mockSessionRepo, nil, nil, mockGoogleClient, "secret")
+			res, err := service.HandleGoogleLogin(context.Background(), tt.code, tt.state, state, "127.0.0.1", "test-agent")
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errType != nil {
+					assert.ErrorIs(t, err, tt.errType)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, email, res.Email)
 			}
 		})
 	}
