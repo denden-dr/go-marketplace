@@ -56,13 +56,13 @@ The project follows a **Feature-Based Architecture** with a **Rich Domain Model*
 | Web Framework | Fiber v2 |
 | Database | PostgreSQL via `sqlx` + `pgx` |
 | Vector Search | pgvector (`pgvector-go`) |
-| Auth | JWT (RS256/HS256) + Supabase Social Login |
+| Auth | JWT (RS256/HS256) + Google OAuth2 |
 | Migrations | golang-migrate |
-| Testing | testify, sqlmock, mockery |
+| Testing | testify, sqlmock, mockery, **testcontainers-go** |
 
 ## 🔑 Key Features & Logic
 
-- **Authentication**: Local email/password and Supabase social login. Uses a refresh token *family* pattern for secure session rotation.
+- **Authentication**: Local email/password and Google OAuth2. Uses a refresh token *family* pattern for secure session rotation.
 - **Wallet & Escrow System**: Internal digital wallet with transaction history. Funds move to `pending_balance` on order and are released to merchants on delivery confirmation.
 - **Payment System**: Unified interface for internal wallet payments and external providers (e.g., Midtrans) via webhooks. Webhooks use idempotency keys to prevent duplicate processing.
 - **Merchant System**: Users can register shops and manage product listings.
@@ -71,8 +71,10 @@ The project follows a **Feature-Based Architecture** with a **Rich Domain Model*
 ## 🧪 Testing Strategy
 
 1. **Unit Tests**: Alongside source files (e.g., `auth_service_test.go`, `domain_test.go`). Mocks isolate dependencies.
-2. **Integration Tests**: Under `test/integration/`. Tests the repository layer against a real PostgreSQL instance (via Docker).
-3. **Run tests**: `make test` (unit) or `make test-docker` (full integration suite in Docker).
+2. **Integration Tests**: Under `test/integration/`. Uses **Testcontainers** for a real PostgreSQL instance.
+   - `test/integration/repo/`: Tests for the repository layer.
+   - `test/integration/api/`: Tests for the HTTP/handler layer.
+3. **Run tests**: `make test` (unit) or `make test-integration` (full integration suite).
 
 ## 🛠 Common Make Targets
 
@@ -80,7 +82,7 @@ The project follows a **Feature-Based Architecture** with a **Rich Domain Model*
 make run            # Run the application
 make build          # Compile to bin/go-marketplace
 make test           # Run all unit tests
-make test-docker    # Run integration tests in Docker
+make test-integration # Run integration tests using Testcontainers
 make mock           # Regenerate all mockery mocks
 make swagger        # Regenerate Swagger docs (swag init)
 make migrate-up     # Apply pending DB migrations
@@ -88,7 +90,7 @@ make migrate-down   # Roll back last migration
 make migrate-create name=<name>  # Create a new migration file
 make fmt            # go fmt ./...
 make tidy           # go mod tidy
-make docker-up      # Start docker-compose services
+make docker-up      # Start docker-compose services (optional)
 make docker-down    # Stop docker-compose services
 ```
 
@@ -97,31 +99,21 @@ make docker-down    # Stop docker-compose services
 ### Architecture Rules
 - **Rich Domain Model first**: Before adding logic to a service, ask — does this belong in `domain.go`? Services orchestrate; domains enforce invariants.
 - **Private implementations**: Service and repository concrete types should be unexported structs. Only expose their interfaces.
-- **Interface segregation**: Prefer small, focused interfaces. Repository interfaces live in the same file as their implementation.
+- **Interface naming**: Do not use the `Interface` suffix (e.g., use `AuthService`, not `AuthServiceInterface`).
 
 ### Error Handling
-- Always use or extend `internal/domain/errors.go` for domain-level errors — never create ad-hoc `errors.New()` in service or handler files.
+- Always use or extend `internal/domain/errors.go` for domain-level errors.
 - Wrap errors with context: `fmt.Errorf("methodName: %w", err)`.
 
 ### Dependency Injection
-- All wiring happens in `internal/server/routes.go`.
+- All wiring happens in `cmd/api/main.go` and `internal/server/routes.go`.
 - Use `New*` constructors that accept interfaces.
-- If a circular dependency arises, prefer **setter injection** over constructor injection (see `payment` service as the established pattern).
+- Use **setter injection** for circular dependencies (e.g., `payment` ↔ `order`).
 
 ### Database
-- Inserts/updates: use `NamedExecContext` with named params (`:field_name`).
-- Reads: use `GetContext` (single row) / `SelectContext` (multiple rows).
-- Always propagate `context.Context` through the call stack — never use `context.Background()` in handlers.
-- Use `SELECT ... FOR UPDATE` (or `SKIP LOCKED`) when locking rows for concurrent writes (e.g., wallet balance updates).
-
-### HTTP Layer
-- Parse and validate request bodies via DTOs before calling the service.
-- Always respond with: `common.NewResponse(c, statusCode, message, data)`.
-- Document every endpoint with Swagger comments; run `make swagger` after changes.
-
-### Mock Regeneration
-- Mockery is configured in `.mockery.yaml` (`inpackage: true`, `with-expecter: true`).
-- After adding or renaming an interface, run `make mock` — **do not edit `mock_*.go` files manually**.
+- Use `NamedExecContext` for inserts/updates with named parameters.
+- Use `GetContext` (single row) / `SelectContext` (multiple rows) for queries.
+- Always propagate `context.Context`.
 
 ## 📂 Directory Structure
 
@@ -129,25 +121,26 @@ make docker-down    # Stop docker-compose services
 .
 ├── cmd/api/            # Application entry point (main.go)
 ├── internal/
-│   ├── common/         # Shared utilities (ResponseWrapper, etc.)
+│   ├── common/         # Shared utilities
 │   ├── core/           # Feature-based domains
 │   │   └── [feature]/  # e.g., auth, wallet, order, payment, product, cart
-│   │       ├── domain.go         # Rich domain entity & business rules
-│   │       ├── *_handler.go      # HTTP handler (Fiber)
-│   │       ├── *_service.go      # Business orchestrator + interface
-│   │       ├── *_repo.go         # Data access + repository interface
+│   │       ├── domain.go         # Rich domain entity
+│   │       ├── *_handler.go      # HTTP handler
+│   │       ├── *_service.go      # Business orchestrator
+│   │       ├── *_repo.go         # Data access
 │   │       ├── *_dto.go          # Request/response DTOs
-│   │       └── mock_*.go         # Auto-generated mocks (do not edit)
+│   │       └── mock_*.go         # Auto-generated mocks
 │   ├── database/       # DB connection & migrations
-│   ├── domain/         # Shared structs (db tags) & errors.go
-│   ├── middleware/      # Custom Fiber middlewares (JWT, etc.)
-│   └── server/         # Fiber app setup & routes.go (DI wiring)
-├── test/integration/   # Repository integration tests
-├── docs/               # Swagger documentation (auto-generated)
-├── Makefile            # Build and development commands
-├── .mockery.yaml       # Mockery configuration
-└── go.mod              # Module: go-marketplace
+│   ├── domain/         # Shared structs & errors.go
+│   ├── middleware/      # Custom Fiber middlewares
+│   └── server/         # Fiber app setup & routes.go
+├── test/integration/   # Integration tests (Testcontainers)
+│   ├── api/            # Handler integration tests
+│   └── repo/           # Repository integration tests
+├── docs/               # Swagger documentation
+└── Makefile            # Build and development commands
 ```
+
 
 ## ⚠️ Common Gotchas
 
