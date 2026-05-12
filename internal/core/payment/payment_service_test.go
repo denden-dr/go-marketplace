@@ -43,10 +43,10 @@ func TestPaymentService_CreatePaymentTX_ExternalAtomicity(t *testing.T) {
 		ReferenceID: uuid.New(),
 	}
 
-	// The current implementation starts a new transaction with s.db.BeginTxx() 
+	// The current implementation starts a new transaction with s.db.BeginTxx()
 	// for external payments inside createPaymentInternal.
 	// This test expects it NOT to call BeginTxx if a tx is provided.
-	
+
 	mockRepo.On("CreateTX", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockProvider.On("CreateTransaction", mock.Anything, mock.Anything).Return("snap-token", nil).Once()
 	mockRepo.On("UpdateSnapTokenTX", mock.Anything, mock.Anything, mock.Anything, "snap-token").Return(nil).Once()
