@@ -32,6 +32,14 @@ definitions:
     - OrderStatusShipping
     - OrderStatusDelivered
     - OrderStatusCancelled
+  go-marketplace_internal_domain.PaymentMethod:
+    enum:
+    - wallet
+    - midtrans
+    type: string
+    x-enum-varnames:
+    - PaymentMethodWallet
+    - PaymentMethodMidtrans
   go-marketplace_internal_domain.User:
     properties:
       auth_provider:
@@ -148,7 +156,7 @@ definitions:
       address_id:
         type: string
       payment_method:
-        type: string
+        $ref: '#/definitions/go-marketplace_internal_domain.PaymentMethod'
       shipping_city:
         type: string
       shipping_phone_number:
@@ -322,6 +330,8 @@ definitions:
         type: string
       id:
         type: string
+      pending_balance_after:
+        type: number
       reference_id:
         type: string
       status:
@@ -341,6 +351,8 @@ definitions:
         type: string
       id:
         type: string
+      pending_balance:
+        type: number
       status:
         type: string
       updated_at:

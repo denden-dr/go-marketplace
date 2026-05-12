@@ -1637,6 +1637,17 @@ const docTemplate = `{
                 "OrderStatusCancelled"
             ]
         },
+        "go-marketplace_internal_domain.PaymentMethod": {
+            "type": "string",
+            "enum": [
+                "wallet",
+                "midtrans"
+            ],
+            "x-enum-varnames": [
+                "PaymentMethodWallet",
+                "PaymentMethodMidtrans"
+            ]
+        },
         "go-marketplace_internal_domain.User": {
             "type": "object",
             "properties": {
@@ -1816,7 +1827,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "payment_method": {
-                    "type": "string"
+                    "$ref": "#/definitions/go-marketplace_internal_domain.PaymentMethod"
                 },
                 "shipping_city": {
                     "type": "string"
@@ -2082,6 +2093,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "pending_balance_after": {
+                    "type": "number"
+                },
                 "reference_id": {
                     "type": "string"
                 },
@@ -2110,6 +2124,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "pending_balance": {
+                    "type": "number"
                 },
                 "status": {
                     "type": "string"

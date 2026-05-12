@@ -1631,6 +1631,17 @@
                 "OrderStatusCancelled"
             ]
         },
+        "go-marketplace_internal_domain.PaymentMethod": {
+            "type": "string",
+            "enum": [
+                "wallet",
+                "midtrans"
+            ],
+            "x-enum-varnames": [
+                "PaymentMethodWallet",
+                "PaymentMethodMidtrans"
+            ]
+        },
         "go-marketplace_internal_domain.User": {
             "type": "object",
             "properties": {
@@ -1810,7 +1821,7 @@
                     "type": "string"
                 },
                 "payment_method": {
-                    "type": "string"
+                    "$ref": "#/definitions/go-marketplace_internal_domain.PaymentMethod"
                 },
                 "shipping_city": {
                     "type": "string"
@@ -2076,6 +2087,9 @@
                 "id": {
                     "type": "string"
                 },
+                "pending_balance_after": {
+                    "type": "number"
+                },
                 "reference_id": {
                     "type": "string"
                 },
@@ -2104,6 +2118,9 @@
                 },
                 "id": {
                     "type": "string"
+                },
+                "pending_balance": {
+                    "type": "number"
                 },
                 "status": {
                     "type": "string"
