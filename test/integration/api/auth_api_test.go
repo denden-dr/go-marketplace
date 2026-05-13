@@ -57,6 +57,15 @@ func (s *AuthApiTestSuite) TestRegister() {
 			},
 			expectedStatus: http.StatusConflict,
 		},
+		{
+			name: "Validation_Failed",
+			reqBody: auth.RegisterRequest{
+				FullName: "",
+				Email:    "invalid-email",
+				Password: "123",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -87,7 +96,10 @@ func (s *AuthApiTestSuite) TestRegister() {
 				json.NewDecoder(resp.Body).Decode(&pd)
 				s.Equal(tt.expectedStatus, pd.Status)
 				s.NotEmpty(pd.Title)
-				s.NotEmpty(pd.Type)
+				s.Contains(pd.Type, "/errors/")
+				if tt.expectedStatus == http.StatusBadRequest && pd.Type == "/errors/validation-failed" {
+					s.NotEmpty(pd.Errors)
+				}
 			}
 		})
 	}
@@ -155,6 +167,8 @@ func (s *AuthApiTestSuite) TestLogin() {
 				var pd common.ProblemDetails
 				json.NewDecoder(resp.Body).Decode(&pd)
 				s.Equal(tt.expectedStatus, pd.Status)
+				s.NotEmpty(pd.Title)
+				s.Contains(pd.Type, "/errors/")
 			}
 		})
 	}
