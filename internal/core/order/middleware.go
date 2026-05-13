@@ -1,7 +1,6 @@
 package order
 
 import (
-	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/merchant"
 	"net/http"
 
@@ -13,15 +12,15 @@ func MerchantMiddleware(repo merchant.MerchantRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userID, ok := c.Locals("userID").(uuid.UUID)
 		if !ok {
-			return common.NewResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
+			return fiber.ErrUnauthorized
 		}
 
 		m, err := repo.GetByUserID(c.Context(), userID)
 		if err != nil {
-			return common.NewResponse(c, http.StatusInternalServerError, "Error retrieving merchant profile", nil)
+			return err
 		}
 		if m == nil {
-			return common.NewResponse(c, http.StatusForbidden, "Only merchants can access this resource", nil)
+			return fiber.NewError(http.StatusForbidden, "Only merchants can access this resource")
 		}
 
 		c.Locals("merchant", m)

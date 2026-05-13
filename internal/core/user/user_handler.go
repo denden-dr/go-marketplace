@@ -1,9 +1,7 @@
 package user
 
 import (
-	"errors"
 	"go-marketplace/internal/common"
-	"go-marketplace/internal/domain"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,26 +22,23 @@ func NewUserHandler(userService UserService) *UserHandler {
 // @Tags users
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {object} common.ResponseWrapper{data=domain.User}
-// @Failure 401 {object} common.ResponseWrapper
-// @Failure 404 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 200 {object} common.SuccessResponse{data=UserResponse}
+// @Failure 401 {object} common.ProblemDetails
+// @Failure 404 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /users/me [get]
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
-		return common.NewResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
+		return fiber.NewError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	user, err := h.userService.GetUserByID(c.Context(), userID)
 	if err != nil {
-		if errors.Is(err, domain.ErrUserNotFound) {
-			return common.NewResponse(c, http.StatusNotFound, err.Error(), nil)
-		}
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusOK, "User profile retrieved", user)
+	return common.NewSuccessResponse(c, http.StatusOK, "User profile retrieved", user)
 }
 
 // AddAddress adds a new address for the user
@@ -54,32 +49,32 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param request body AddressRequest true "Address Info"
-// @Success 201 {object} common.ResponseWrapper{data=AddressResponse}
-// @Failure 400 {object} common.ResponseWrapper
-// @Failure 401 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 201 {object} common.SuccessResponse{data=AddressResponse}
+// @Failure 400 {object} common.ProblemDetails
+// @Failure 401 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /users/addresses [post]
 func (h *UserHandler) AddAddress(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
-		return common.NewResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
+		return fiber.NewError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	var req AddressRequest
 	if err := c.BodyParser(&req); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+		return fiber.NewError(http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := req.Validate(); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
+		return err
 	}
 
 	res, err := h.userService.AddAddress(c.Context(), userID, &req)
 	if err != nil {
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusCreated, "Address added successfully", res)
+	return common.NewSuccessResponse(c, http.StatusCreated, "Address added successfully", res)
 }
 
 // ListAddresses lists all addresses for the user
@@ -88,22 +83,22 @@ func (h *UserHandler) AddAddress(c *fiber.Ctx) error {
 // @Tags users
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {object} common.ResponseWrapper{data=[]AddressResponse}
-// @Failure 401 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 200 {object} common.SuccessResponse{data=[]AddressResponse}
+// @Failure 401 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /users/addresses [get]
 func (h *UserHandler) ListAddresses(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
-		return common.NewResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
+		return fiber.NewError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	addresses, err := h.userService.ListAddresses(c.Context(), userID)
 	if err != nil {
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Addresses retrieved", addresses)
+	return common.NewSuccessResponse(c, http.StatusOK, "Addresses retrieved", addresses)
 }
 
 // UpdateAddress updates an existing address
@@ -115,42 +110,39 @@ func (h *UserHandler) ListAddresses(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path string true "Address ID (UUID)"
 // @Param request body AddressRequest true "Updated Address Info"
-// @Success 200 {object} common.ResponseWrapper{data=AddressResponse}
-// @Failure 400 {object} common.ResponseWrapper
-// @Failure 401 {object} common.ResponseWrapper
-// @Failure 403 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 200 {object} common.SuccessResponse{data=AddressResponse}
+// @Failure 400 {object} common.ProblemDetails
+// @Failure 401 {object} common.ProblemDetails
+// @Failure 403 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /users/addresses/{id} [put]
 func (h *UserHandler) UpdateAddress(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
-		return common.NewResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
+		return fiber.NewError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	idStr := c.Params("id")
 	addressID, err := uuid.Parse(idStr)
 	if err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid address ID format", nil)
+		return fiber.NewError(http.StatusBadRequest, "Invalid address ID format")
 	}
 
 	var req AddressRequest
 	if err := c.BodyParser(&req); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+		return fiber.NewError(http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := req.Validate(); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
+		return err
 	}
 
 	res, err := h.userService.UpdateAddress(c.Context(), userID, addressID, &req)
 	if err != nil {
-		if errors.Is(err, domain.ErrForbidden) {
-			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
-		}
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Address updated successfully", res)
+	return common.NewSuccessResponse(c, http.StatusOK, "Address updated successfully", res)
 }
 
 // DeleteAddress removes an address
@@ -159,31 +151,28 @@ func (h *UserHandler) UpdateAddress(c *fiber.Ctx) error {
 // @Tags users
 // @Security BearerAuth
 // @Param id path string true "Address ID (UUID)"
-// @Success 200 {object} common.ResponseWrapper
-// @Failure 400 {object} common.ResponseWrapper
-// @Failure 401 {object} common.ResponseWrapper
-// @Failure 403 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 200 {object} common.SuccessResponse
+// @Failure 400 {object} common.ProblemDetails
+// @Failure 401 {object} common.ProblemDetails
+// @Failure 403 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /users/addresses/{id} [delete]
 func (h *UserHandler) DeleteAddress(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok {
-		return common.NewResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
+		return fiber.NewError(http.StatusUnauthorized, "Unauthorized")
 	}
 
 	idStr := c.Params("id")
 	addressID, err := uuid.Parse(idStr)
 	if err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid address ID format", nil)
+		return fiber.NewError(http.StatusBadRequest, "Invalid address ID format")
 	}
 
 	err = h.userService.DeleteAddress(c.Context(), userID, addressID)
 	if err != nil {
-		if errors.Is(err, domain.ErrForbidden) {
-			return common.NewResponse(c, http.StatusForbidden, err.Error(), nil)
-		}
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Address deleted successfully", nil)
+	return common.NewSuccessResponse(c, http.StatusOK, "Address deleted successfully", nil)
 }
