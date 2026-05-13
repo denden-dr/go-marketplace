@@ -379,12 +379,13 @@ func TestAuthService_HandleGoogleLogin(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		state     string
-		code      string
-		mockSetup func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient)
-		wantErr   bool
-		errType   error
+		name          string
+		state         string
+		expectedState string
+		code          string
+		mockSetup     func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient)
+		wantErr       bool
+		errType       error
 	}{
 		{
 			name:  "Success - New User",
@@ -424,6 +425,16 @@ func TestAuthService_HandleGoogleLogin(t *testing.T) {
 			errType: domain.ErrInvalidOAuthState,
 		},
 		{
+			name:          "Invalid State - Both Empty",
+			state:         "",
+			expectedState: "",
+			code:          code,
+			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient) {
+			},
+			wantErr: true,
+			errType: domain.ErrInvalidOAuthState,
+		},
+		{
 			name:  "Exchange Code Failure",
 			state: state,
 			code:  code,
@@ -432,6 +443,23 @@ func TestAuthService_HandleGoogleLogin(t *testing.T) {
 			},
 			wantErr: true,
 			errType: domain.ErrInvalidSocialToken,
+		},
+		{
+			name:  "Success - Username Collision",
+			state: state,
+			code:  code,
+			mockSetup: func(mr *user.MockUserRepository, msr *MockSessionRepository, mgc *MockGoogleClient) {
+				mgc.On("ExchangeCode", mock.Anything, code).Return(&oauth2.Token{}, nil)
+				mgc.On("GetUserInfo", mock.Anything, mock.Anything).Return(userInfo, nil)
+				mr.On("GetUserByEmail", mock.Anything, email).Return(nil, nil)
+				mr.On("GetUserByUsername", mock.Anything, "google").Return(&domain.User{}, nil).Once()
+				mr.On("GetUserByUsername", mock.Anything, mock.MatchedBy(func(u string) bool {
+					return len(u) > 6 // google_ + suffix
+				})).Return(nil, nil).Once()
+				mr.On("CreateUser", mock.Anything, mock.Anything).Return(nil)
+				msr.On("Create", mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: false,
 		},
 	}
 
@@ -444,7 +472,16 @@ func TestAuthService_HandleGoogleLogin(t *testing.T) {
 			tt.mockSetup(mockRepo, mockSessionRepo, mockGoogleClient)
 
 			service := NewAuthService(mockRepo, mockSessionRepo, nil, nil, mockGoogleClient, "secret")
-			res, err := service.HandleGoogleLogin(context.Background(), tt.code, tt.state, state, "127.0.0.1", "test-agent")
+
+			expState := state
+			if tt.name == "Invalid State - Both Empty" {
+				expState = ""
+			}
+			if tt.expectedState != "" {
+				expState = tt.expectedState
+			}
+
+			res, err := service.HandleGoogleLogin(context.Background(), tt.code, tt.state, expState, "127.0.0.1", "test-agent")
 
 			if tt.wantErr {
 				assert.Error(t, err)

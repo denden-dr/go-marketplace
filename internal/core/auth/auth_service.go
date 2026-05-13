@@ -295,7 +295,7 @@ func (s *authService) Logout(ctx context.Context, rawToken string) error {
 }
 
 func (s *authService) HandleGoogleLogin(ctx context.Context, code, state, expectedState, ipAddress, userAgent string) (*AuthResponse, error) {
-	if state != expectedState {
+	if expectedState == "" || state != expectedState {
 		return nil, domain.ErrInvalidOAuthState
 	}
 
@@ -321,12 +321,23 @@ func (s *authService) HandleGoogleLogin(ctx context.Context, code, state, expect
 	}
 
 	// Create new user
-	username := s.generateUsername(userInfo.Email)
-	// Check for username collision (simple retry with random suffix)
-	// In a real production app, we might want a more robust collision resolver.
-	existingByUsername, _ := s.userRepo.GetUserByUsername(ctx, username)
-	if existingByUsername != nil {
-		username = fmt.Sprintf("%s_%s", username, uuid.New().String()[:4])
+	baseUsername := s.generateUsername(userInfo.Email)
+	username := baseUsername
+	maxRetries := 5
+
+	for i := 0; i < maxRetries; i++ {
+		existingByUsername, err := s.userRepo.GetUserByUsername(ctx, username)
+		if err != nil {
+			return nil, err
+		}
+		if existingByUsername == nil {
+			break
+		}
+		// Append random suffix and retry
+		username = fmt.Sprintf("%s_%s", baseUsername, uuid.New().String()[:4])
+		if i == maxRetries-1 {
+			return nil, fmt.Errorf("failed to generate unique username after %d attempts", maxRetries)
+		}
 	}
 
 	user := &domain.User{
