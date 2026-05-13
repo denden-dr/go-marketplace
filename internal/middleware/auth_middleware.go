@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/auth"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,13 +25,13 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 		}
 
 		if token == "" {
-			return common.NewResponse(c, http.StatusUnauthorized, "Missing or invalid access token", nil)
+			return fiber.NewError(http.StatusUnauthorized, "Missing or invalid access token")
 		}
 
 		userID, err := auth.ValidateAccessToken(token, jwtSecret)
 		if err != nil {
 			log.Printf("Token validation failed: %v", err)
-			return common.NewResponse(c, http.StatusUnauthorized, "Unauthorized: "+err.Error(), nil)
+			return fiber.NewError(http.StatusUnauthorized, "Unauthorized: "+err.Error())
 		}
 
 		c.Locals("userID", userID)
