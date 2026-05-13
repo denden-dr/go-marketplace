@@ -11,7 +11,7 @@ import (
 	"go-marketplace/internal/core/order"
 	"go-marketplace/internal/core/payment"
 	"go-marketplace/internal/core/product"
-	userPkg "go-marketplace/internal/core/user"
+	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/domain"
 	"go-marketplace/internal/testutil"
 	"net/http"
@@ -89,7 +89,7 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			json.NewDecoder(resp.Body).Decode(&result)
 			prodID := result.Data.(map[string]interface{})["id"].(string)
 
-			addrReq := userPkg.AddressRequest{
+			addrReq := user.AddressRequest{
 				Tag: domain.AddressTagHome, RecipientName: "Recipient", PhoneNumber: "123",
 				StreetAddress: "Street", City: "City", Province: "Province", PostalCode: "12345",
 			}
@@ -132,7 +132,7 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			resp, err := s.App.Test(req)
 			s.Require().NoError(err)
 			s.Equal(tt.expectedStatus, resp.StatusCode)
- 
+
 			if tt.expectedStatus >= 400 {
 				var pd common.ProblemDetails
 				json.NewDecoder(resp.Body).Decode(&pd)
