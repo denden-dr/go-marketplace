@@ -59,12 +59,13 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 
 	// Handle fiber.Error (e.g. 404, 405)
 	var fiberErr *fiber.Error
+	var vErrs domain.ValidationErrors
 	if errors.As(err, &fiberErr) {
 		status = fiberErr.Code
 		title = http.StatusText(status)
 		detail = fiberErr.Message
 		typeURI = getErrorTypeURI(status)
-	} else if vErrs, ok := err.(domain.ValidationErrors); ok {
+	} else if errors.As(err, &vErrs) {
 		// Handle ValidationErrors
 		status = fiber.StatusBadRequest
 		title = "Validation Failed"
@@ -80,7 +81,8 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 
 	// Log internal errors
 	if status == fiber.StatusInternalServerError {
-		log.Printf("[ERROR] Internal Server Error: %v", err)
+		requestID := c.Get("X-Request-Id")
+		log.Printf("[ERROR] Internal Server Error: %v | Path: %s | RequestID: %s", err, c.Path(), requestID)
 		detail = "An unexpected error occurred. Please contact support."
 	}
 
@@ -162,14 +164,14 @@ func mapDomainError(err error) (int, string) {
 	}
 }
 
-// Deprecated: Use NewSuccessResponse instead
+// Deprecated: Use SuccessResponse instead. Will be removed in v2.0.
 type ResponseWrapper struct {
 	Message string      `json:"message"`
 	Status  int         `json:"status"`
 	Data    interface{} `json:"data"`
 }
 
-// Deprecated: Use NewSuccessResponse instead
+// Deprecated: Use NewSuccessResponse instead. Will be removed in v2.0.
 func NewResponse(c *fiber.Ctx, status int, message string, data interface{}) error {
 	return NewSuccessResponse(c, status, message, data)
 }
