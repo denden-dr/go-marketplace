@@ -83,6 +83,17 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	return h.handleAuthSuccess(c, res, "Login successful")
 }
 
+// VerifyEmail handles email verification
+// @Summary Verify email address
+// @Description Verifies a user's email address using a verification code.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyRequest true "Verification Info"
+// @Success 200 {object} common.SuccessResponse
+// @Failure 400 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
+// @Router /auth/verify-email [post]
 func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
 	var req VerifyRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -101,6 +112,16 @@ func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
 	return common.NewSuccessResponse(c, http.StatusOK, "Email verified successfully", nil)
 }
 
+// RefreshTokens refreshes access and refresh tokens
+// @Summary Refresh access token
+// @Description Refreshes the user's access token using a valid refresh token from cookies.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} common.SuccessResponse{data=AuthResponse}
+// @Failure 401 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
+// @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
 	refreshToken := c.Cookies("refresh_token")
 	if refreshToken == "" {
@@ -116,6 +137,16 @@ func (h *AuthHandler) RefreshTokens(c *fiber.Ctx) error {
 	return h.handleAuthSuccess(c, res, "Token refreshed successfully")
 }
 
+// Logout logs out the user
+// @Summary Logout user
+// @Description Logs out the user and clears authentication cookies.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} common.SuccessResponse
+// @Failure 500 {object} common.ProblemDetails
+// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	refreshToken := c.Cookies("refresh_token")
 	if refreshToken != "" {
@@ -155,6 +186,11 @@ func (h *AuthHandler) clearTokensCookies(c *fiber.Ctx) {
 }
 
 // GoogleLogin redirects to Google's OAuth2 consent page
+// @Summary Login with Google
+// @Description Redirects the user to Google's OAuth2 consent page.
+// @Tags auth
+// @Success 302
+// @Router /auth/google/login [get]
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 	state := uuid.New().String()
 	c.Cookie(&fiber.Cookie{
@@ -171,6 +207,15 @@ func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 }
 
 // GoogleCallback handles the callback from Google OAuth2
+// @Summary Google OAuth2 Callback
+// @Description Handles the callback from Google OAuth2 and authenticates the user.
+// @Tags auth
+// @Param code query string true "OAuth2 Code"
+// @Param state query string true "OAuth2 State"
+// @Success 302
+// @Failure 400 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
+// @Router /auth/google/callback [get]
 func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
 	state := c.Query("state")
