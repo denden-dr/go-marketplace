@@ -24,56 +24,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/google/callback": {
-            "get": {
-                "description": "Handles the callback from Google, exchanges the code for tokens, and creates a session.",
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Google Callback",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "OAuth2 Code",
-                        "name": "code",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "OAuth2 State",
-                        "name": "state",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "302": {
-                        "description": "Found"
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/google/login": {
-            "get": {
-                "description": "Redirects the user to Google's OAuth2 consent page.",
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Google Login",
-                "responses": {
-                    "302": {
-                        "description": "Found"
-                    }
-                }
-            }
-        },
         "/auth/login": {
             "post": {
                 "description": "Authenticates a user and returns access and refresh tokens.",
@@ -104,7 +54,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -120,19 +70,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -168,7 +118,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -184,19 +134,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -237,7 +187,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -253,25 +203,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -291,13 +241,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Application is healthy",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "503": {
                         "description": "Application is unhealthy",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -334,25 +284,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -398,25 +348,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -457,7 +407,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -473,19 +423,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -530,7 +480,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -549,13 +499,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -603,7 +553,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -619,19 +569,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -658,7 +608,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -677,13 +627,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -722,7 +672,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -738,19 +688,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -798,7 +748,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -814,25 +764,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -861,31 +811,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -915,7 +865,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -931,7 +881,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -968,25 +918,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1012,13 +962,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1064,19 +1014,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1111,19 +1061,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1150,13 +1100,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/go-marketplace_internal_domain.User"
+                                            "$ref": "#/definitions/internal_core_user.UserResponse"
                                         }
                                     }
                                 }
@@ -1166,19 +1116,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1219,7 +1169,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1235,13 +1185,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1280,7 +1230,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1296,19 +1246,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1354,19 +1304,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1403,19 +1353,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1445,7 +1395,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1461,13 +1411,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1495,7 +1445,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1511,13 +1461,13 @@ const docTemplate = `{
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1561,7 +1511,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1580,13 +1530,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1625,19 +1575,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
                     }
                 }
@@ -1645,7 +1595,39 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "go-marketplace_internal_common.ResponseWrapper": {
+        "go-marketplace_internal_common.ProblemDetails": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "description": "Specific explanation",
+                    "type": "string"
+                },
+                "errors": {
+                    "description": "Field-specific issues",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "instance": {
+                    "description": "Request URI",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "HTTP status",
+                    "type": "integer"
+                },
+                "title": {
+                    "description": "Short summary",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Error category URI",
+                    "type": "string"
+                }
+            }
+        },
+        "go-marketplace_internal_common.SuccessResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -1697,35 +1679,6 @@ const docTemplate = `{
                 "PaymentMethodWallet",
                 "PaymentMethodMidtrans"
             ]
-        },
-        "go-marketplace_internal_domain.User": {
-            "type": "object",
-            "properties": {
-                "auth_provider": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "is_verified": {
-                    "type": "boolean"
-                },
-                "provider_id": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
         },
         "internal_core_auth.AuthResponse": {
             "type": "object",
@@ -2119,6 +2072,32 @@ const docTemplate = `{
                 },
                 "tag": {
                     "$ref": "#/definitions/go-marketplace_internal_domain.AddressTag"
+                }
+            }
+        },
+        "internal_core_user.UserResponse": {
+            "type": "object",
+            "properties": {
+                "auth_provider": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provider_id": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },
