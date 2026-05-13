@@ -132,6 +132,17 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			resp, err := s.App.Test(req)
 			s.Require().NoError(err)
 			s.Equal(tt.expectedStatus, resp.StatusCode)
+ 
+			if tt.expectedStatus >= 400 {
+				var pd common.ProblemDetails
+				json.NewDecoder(resp.Body).Decode(&pd)
+				s.Equal(tt.expectedStatus, pd.Status)
+				s.NotEmpty(pd.Title)
+				s.Contains(pd.Type, "/errors/")
+				if tt.expectedStatus == http.StatusBadRequest && pd.Type == "/errors/validation-failed" {
+					s.NotEmpty(pd.Errors)
+				}
+			}
 
 			// 4. Verify Order Status
 			req = s.JSONRequest("GET", "/api/users/orders/"+orderID, nil)

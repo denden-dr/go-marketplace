@@ -85,6 +85,11 @@ func (s *WalletApiTestSuite) TestWalletEndpoints() {
 				var pd common.ProblemDetails
 				json.NewDecoder(resp.Body).Decode(&pd)
 				s.Equal(tt.expectedStatus, pd.Status)
+				s.NotEmpty(pd.Title)
+				s.Contains(pd.Type, "/errors/")
+				if tt.expectedStatus == http.StatusBadRequest && pd.Type == "/errors/validation-failed" {
+					s.NotEmpty(pd.Errors)
+				}
 			}
 
 			if tt.verify != nil {
