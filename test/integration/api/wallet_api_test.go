@@ -30,9 +30,9 @@ func (s *WalletApiTestSuite) TestWalletEndpoints() {
 		verify         func(resp *http.Response)
 	}{
 		{
-			name: "Create_Success",
+			name:   "Create_Success",
 			method: "POST",
-			path: "/api/wallets/",
+			path:   "/api/wallets/",
 			setup: func() string {
 				_, token := s.CreateSeedUser()
 				return token
@@ -40,9 +40,9 @@ func (s *WalletApiTestSuite) TestWalletEndpoints() {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name: "Get_Success",
+			name:   "Get_Success",
 			method: "GET",
-			path: "/api/wallets/",
+			path:   "/api/wallets/",
 			setup: func() string {
 				_, token := s.CreateSeedUser()
 				// Create wallet first
@@ -53,7 +53,7 @@ func (s *WalletApiTestSuite) TestWalletEndpoints() {
 			},
 			expectedStatus: http.StatusOK,
 			verify: func(resp *http.Response) {
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				walletData := result.Data.(map[string]interface{})
 				s.Equal("active", walletData["status"])
@@ -80,6 +80,12 @@ func (s *WalletApiTestSuite) TestWalletEndpoints() {
 			resp, err := s.App.Test(req)
 			s.Require().NoError(err)
 			s.Equal(tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedStatus >= 400 {
+				var pd common.ProblemDetails
+				json.NewDecoder(resp.Body).Decode(&pd)
+				s.Equal(tt.expectedStatus, pd.Status)
+			}
 
 			if tt.verify != nil {
 				tt.verify(resp)

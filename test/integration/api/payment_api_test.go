@@ -66,7 +66,7 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			resp, _ := s.App.Test(req)
 			s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-			var result common.ResponseWrapper
+			var result common.SuccessResponse
 			json.NewDecoder(resp.Body).Decode(&result)
 			merchID := result.Data.(map[string]interface{})["id"].(string)
 

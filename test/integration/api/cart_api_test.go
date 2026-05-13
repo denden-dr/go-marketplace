@@ -35,7 +35,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 		verify         func(resp *http.Response)
 	}{
 		{
-			name: "Add_To_Cart_Success",
+			name:   "Add_To_Cart_Success",
 			method: "POST",
 			setup: func() (string, string) {
 				_, token := s.CreateSeedUser()
@@ -44,7 +44,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -70,7 +70,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name: "Get_Cart_Success",
+			name:   "Get_Cart_Success",
 			method: "GET",
 			setup: func() (string, string) {
 				_, token := s.CreateSeedUser()
@@ -79,7 +79,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -103,7 +103,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			},
 			expectedStatus: http.StatusOK,
 			verify: func(resp *http.Response) {
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				cartData := result.Data.(map[string]interface{})
 				items := cartData["items"].([]interface{})
@@ -111,7 +111,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			},
 		},
 		{
-			name: "Update_Cart_Item_Success",
+			name:   "Update_Cart_Item_Success",
 			method: "PUT",
 			setup: func() (string, string) {
 				_, token := s.CreateSeedUser()
@@ -119,7 +119,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -147,7 +147,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Remove_From_Cart_Success",
+			name:   "Remove_From_Cart_Success",
 			method: "DELETE",
 			setup: func() (string, string) {
 				_, token := s.CreateSeedUser()
@@ -155,7 +155,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -203,6 +203,12 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			resp, err := s.App.Test(req)
 			s.Require().NoError(err)
 			s.Equal(tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedStatus >= 400 {
+				var pd common.ProblemDetails
+				json.NewDecoder(resp.Body).Decode(&pd)
+				s.Equal(tt.expectedStatus, pd.Status)
+			}
 
 			if tt.verify != nil {
 				tt.verify(resp)

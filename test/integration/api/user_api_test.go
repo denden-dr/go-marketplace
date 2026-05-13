@@ -32,7 +32,7 @@ func (s *UserApiTestSuite) TestAddressEndpoints() {
 		verify         func(resp *http.Response)
 	}{
 		{
-			name: "Add_Address_Success",
+			name:   "Add_Address_Success",
 			method: "POST",
 			setup: func() (string, string) {
 				_, token := s.CreateSeedUser()
@@ -53,7 +53,7 @@ func (s *UserApiTestSuite) TestAddressEndpoints() {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name: "List_Addresses_Success",
+			name:   "List_Addresses_Success",
 			method: "GET",
 			setup: func() (string, string) {
 				_, token := s.CreateSeedUser()
@@ -69,14 +69,14 @@ func (s *UserApiTestSuite) TestAddressEndpoints() {
 			},
 			expectedStatus: http.StatusOK,
 			verify: func(resp *http.Response) {
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				addresses := result.Data.([]interface{})
 				s.Len(addresses, 1)
 			},
 		},
 		{
-			name: "Update_Address_Success",
+			name:   "Update_Address_Success",
 			method: "PUT",
 			setup: func() (string, string) {
 				_, token := s.CreateSeedUser()
@@ -87,7 +87,7 @@ func (s *UserApiTestSuite) TestAddressEndpoints() {
 				req := s.JSONRequest("POST", "/api/users/addresses", addReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				addrID := result.Data.(map[string]interface{})["id"].(string)
 				return token, addrID
@@ -106,7 +106,7 @@ func (s *UserApiTestSuite) TestAddressEndpoints() {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Delete_Address_Success",
+			name:   "Delete_Address_Success",
 			method: "DELETE",
 			setup: func() (string, string) {
 				_, token := s.CreateSeedUser()
@@ -117,7 +117,7 @@ func (s *UserApiTestSuite) TestAddressEndpoints() {
 				req := s.JSONRequest("POST", "/api/users/addresses", addReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				addrID := result.Data.(map[string]interface{})["id"].(string)
 				return token, addrID
@@ -148,6 +148,12 @@ func (s *UserApiTestSuite) TestAddressEndpoints() {
 			resp, err := s.App.Test(req)
 			s.Require().NoError(err)
 			s.Equal(tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedStatus >= 400 {
+				var pd common.ProblemDetails
+				json.NewDecoder(resp.Body).Decode(&pd)
+				s.Equal(tt.expectedStatus, pd.Status)
+			}
 
 			if tt.verify != nil {
 				tt.verify(resp)
