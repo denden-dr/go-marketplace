@@ -18,6 +18,17 @@ func NewPaymentHandler(paymentService PaymentService) *PaymentHandler {
 }
 
 // Topup handles wallet top-up requests
+// @Summary Top up wallet
+// @Description Initiates a wallet top-up payment.
+// @Tags payment
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body TopupRequest true "Topup Info"
+// @Success 200 {object} common.SuccessResponse{data=domain.Payment}
+// @Failure 400 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
+// @Router /wallets/topup [post]
 func (h *PaymentHandler) Topup(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 	var req TopupRequest
@@ -44,6 +55,16 @@ func (h *PaymentHandler) Topup(c *fiber.Ctx) error {
 }
 
 // Webhook handles Midtrans status notifications
+// @Summary Payment Webhook
+// @Description Handles payment status webhooks from Midtrans.
+// @Tags payment
+// @Accept json
+// @Produce json
+// @Param request body MidtransWebhookRequest true "Webhook Payload"
+// @Success 200
+// @Failure 400
+// @Failure 500 {object} common.ProblemDetails
+// @Router /payments/webhook [post]
 func (h *PaymentHandler) Webhook(c *fiber.Ctx) error {
 	var req MidtransWebhookRequest
 	if err := c.BodyParser(&req); err != nil {
