@@ -1,7 +1,8 @@
 package merchant
 
 import (
-	"errors"
+	"go-marketplace/internal/domain"
+
 	"github.com/google/uuid"
 )
 
@@ -12,11 +13,16 @@ type MerchantRegisterRequest struct {
 }
 
 func (r MerchantRegisterRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Name == "" {
-		return errors.New("merchant name is required")
+		errs["name"] = "is required"
 	}
 	if r.TaxID == "" {
-		return errors.New("tax id is required")
+		errs["tax_id"] = "is required"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }

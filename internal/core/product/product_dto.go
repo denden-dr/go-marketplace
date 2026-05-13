@@ -1,7 +1,7 @@
 package product
 
 import (
-	"errors"
+	"go-marketplace/internal/domain"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,17 +32,22 @@ type ProductCreateRequest struct {
 }
 
 func (r ProductCreateRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Name == "" {
-		return errors.New("product name is required")
+		errs["name"] = "is required"
 	}
 	if r.Price.IsZero() || r.Price.IsNegative() {
-		return errors.New("price must be greater than 0")
+		errs["price"] = "must be greater than 0"
 	}
 	if r.Stock < 0 {
-		return errors.New("stock cannot be negative")
+		errs["stock"] = "cannot be negative"
 	}
 	if r.StoreID == uuid.Nil {
-		return errors.New("store id is required")
+		errs["store_id"] = "is required"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
@@ -56,14 +61,19 @@ type ProductUpdateRequest struct {
 }
 
 func (r ProductUpdateRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Name == "" {
-		return errors.New("product name is required")
+		errs["name"] = "is required"
 	}
 	if r.Price.IsZero() || r.Price.IsNegative() {
-		return errors.New("price must be greater than 0")
+		errs["price"] = "must be greater than 0"
 	}
 	if r.Stock < 0 {
-		return errors.New("stock cannot be negative")
+		errs["stock"] = "cannot be negative"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
@@ -75,14 +85,19 @@ type ProductSearchRequest struct {
 }
 
 func (r ProductSearchRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Query != "" && len(r.Query) < 2 {
-		return errors.New("search query must be at least 2 characters")
+		errs["q"] = "must be at least 2 characters"
 	}
 	if r.Limit < 0 {
-		return errors.New("limit cannot be negative")
+		errs["limit"] = "cannot be negative"
 	}
 	if r.Page < 0 {
-		return errors.New("page cannot be negative")
+		errs["page"] = "cannot be negative"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }

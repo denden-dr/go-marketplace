@@ -1,7 +1,6 @@
 package order
 
 import (
-	"errors"
 	"time"
 
 	"go-marketplace/internal/domain"
@@ -22,11 +21,15 @@ type CheckoutRequest struct {
 }
 
 func (r CheckoutRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.PaymentMethod == "" {
-		return errors.New("payment method is required")
+		errs["payment_method"] = "is required"
+	} else if r.PaymentMethod != domain.PaymentMethodWallet && r.PaymentMethod != domain.PaymentMethodMidtrans {
+		errs["payment_method"] = "is invalid"
 	}
-	if r.PaymentMethod != domain.PaymentMethodWallet && r.PaymentMethod != domain.PaymentMethodMidtrans {
-		return errors.New("invalid payment method")
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
@@ -61,8 +64,13 @@ type UpdateStatusRequest struct {
 }
 
 func (r UpdateStatusRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Status == "" {
-		return errors.New("status is required")
+		errs["status"] = "is required"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
@@ -72,8 +80,13 @@ type AppealOrderRequest struct {
 }
 
 func (r AppealOrderRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Reason == "" {
-		return errors.New("appeal reason is required")
+		errs["reason"] = "is required"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
