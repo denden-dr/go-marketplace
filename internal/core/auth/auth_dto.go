@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"errors"
+	"go-marketplace/internal/domain"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,20 +15,24 @@ type RegisterRequest struct {
 }
 
 func (r RegisterRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.FullName == "" {
-		return errors.New("full name is required")
+		errs["full_name"] = "is required"
 	}
 	if r.Email == "" {
-		return errors.New("email is required")
+		errs["email"] = "is required"
 	}
 	if r.Password == "" {
-		return errors.New("password is required")
-	}
-	if len(r.Password) < 6 {
-		return errors.New("password must be at least 6 characters")
+		errs["password"] = "is required"
+	} else if len(r.Password) < 6 {
+		errs["password"] = "must be at least 6 characters"
 	}
 	if r.Username == "" {
-		return errors.New("username is required")
+		errs["username"] = "is required"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
@@ -61,14 +65,18 @@ type VerifyRequest struct {
 }
 
 func (r VerifyRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.UserID == uuid.Nil {
-		return errors.New("user_id is required")
+		errs["user_id"] = "is required"
 	}
 	if r.Code == "" {
-		return errors.New("code is required")
+		errs["code"] = "is required"
+	} else if len(r.Code) != 6 {
+		errs["code"] = "must be 6 digits"
 	}
-	if len(r.Code) != 6 {
-		return errors.New("code must be 6 digits")
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
@@ -79,11 +87,16 @@ type LoginRequest struct {
 }
 
 func (r LoginRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Email == "" {
-		return errors.New("email is required")
+		errs["email"] = "is required"
 	}
 	if r.Password == "" {
-		return errors.New("password is required")
+		errs["password"] = "is required"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }

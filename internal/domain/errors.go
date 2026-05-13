@@ -47,3 +47,9 @@ var (
 	ErrDuplicatePayment           = errors.New("payment already processed")
 	ErrInsufficientPendingBalance = errors.New("insufficient pending balance")
 )
+
+type ValidationErrors map[string]string
+
+func (v ValidationErrors) Error() string {
+	return "validation failed"
+}

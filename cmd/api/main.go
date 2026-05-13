@@ -17,6 +17,7 @@ import (
 	"go-marketplace/internal/core/wallet"
 	"go-marketplace/internal/database"
 
+	"go-marketplace/internal/common"
 	"go-marketplace/internal/config"
 	"go-marketplace/internal/server"
 
@@ -137,7 +138,10 @@ func main() {
 	}
 
 	// Initialize Fiber app
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		Immutable:    true,
+		ErrorHandler: common.ErrorHandler,
+	})
 
 	// Setup Routes
 	server.SetupRoutes(

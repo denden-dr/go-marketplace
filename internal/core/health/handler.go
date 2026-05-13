@@ -2,11 +2,10 @@ package health
 
 import (
 	"go-marketplace/internal/common"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jmoiron/sqlx"
-
-	"os"
 )
 
 type HealthHandler struct {
@@ -24,19 +23,12 @@ func NewHealthHandler(db *sqlx.DB) *HealthHandler {
 // @Description Checks connectivity to the database and Supabase configuration.
 // @Tags Health
 // @Produce json
-// @Success 200 {object} common.ResponseWrapper "Application is healthy"
-// @Failure 503 {object} common.ResponseWrapper "Application is unhealthy"
+// @Success 200 {object} common.SuccessResponse "Application is healthy"
+// @Failure 503 {object} common.ProblemDetails "Application is unhealthy"
 // @Router /health [get]
 func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
-	dbStatus := "up"
-	message := "application is healthy"
-	statusCode := fiber.StatusOK
-
-	// Check Database
 	if err := h.db.Ping(); err != nil {
-		dbStatus = "down"
-		message = "application is unhealthy"
-		statusCode = fiber.StatusServiceUnavailable
+		return fiber.NewError(fiber.StatusServiceUnavailable, "Database is unreachable")
 	}
 
 	mailersendStatus := "configured"
@@ -44,9 +36,9 @@ func (h *HealthHandler) CheckStatus(c *fiber.Ctx) error {
 		mailersendStatus = "unconfigured"
 	}
 
-	return common.NewResponse(c, statusCode, message, fiber.Map{
+	return common.NewSuccessResponse(c, fiber.StatusOK, "Application is healthy", fiber.Map{
 		"components": fiber.Map{
-			"database":   dbStatus,
+			"database":   "up",
 			"mailersend": mailersendStatus,
 		},
 	})

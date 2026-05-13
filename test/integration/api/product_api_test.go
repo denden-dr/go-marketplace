@@ -35,7 +35,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 		verify         func(resp *http.Response)
 	}{
 		{
-			name: "Create_Product_Success",
+			name:   "Create_Product_Success",
 			method: "POST",
 			setup: func() (string, string, string) {
 				_, token := s.CreateSeedUser()
@@ -44,7 +44,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 				return token, merchID, ""
@@ -60,7 +60,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name: "Search_Product_Success",
+			name:   "Search_Product_Success",
 			method: "GET",
 			setup: func() (string, string, string) {
 				_, token := s.CreateSeedUser()
@@ -69,7 +69,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -87,14 +87,14 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 			query:          "q=Searchable",
 			expectedStatus: http.StatusOK,
 			verify: func(resp *http.Response) {
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				products := result.Data.([]interface{})
 				s.NotEmpty(products)
 			},
 		},
 		{
-			name: "Update_Product_Success",
+			name:   "Update_Product_Success",
 			method: "PUT",
 			setup: func() (string, string, string) {
 				_, token := s.CreateSeedUser()
@@ -102,7 +102,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -154,6 +154,17 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 			resp, err := s.App.Test(req)
 			s.Require().NoError(err)
 			s.Equal(tt.expectedStatus, resp.StatusCode)
+
+			if tt.expectedStatus >= 400 {
+				var pd common.ProblemDetails
+				json.NewDecoder(resp.Body).Decode(&pd)
+				s.Equal(tt.expectedStatus, pd.Status)
+				s.NotEmpty(pd.Title)
+				s.Contains(pd.Type, "/errors/")
+				if tt.expectedStatus == http.StatusBadRequest && pd.Type == "/errors/validation-failed" {
+					s.NotEmpty(pd.Errors)
+				}
+			}
 
 			if tt.verify != nil {
 				tt.verify(resp)

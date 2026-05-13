@@ -1,7 +1,6 @@
 package payment
 
 import (
-	"errors"
 	"go-marketplace/internal/domain"
 
 	"github.com/shopspring/decimal"
@@ -13,14 +12,19 @@ type TopupRequest struct {
 }
 
 func (r TopupRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Amount.IsZero() || r.Amount.IsNegative() {
-		return errors.New("amount must be greater than 0")
+		errs["amount"] = "must be greater than 0"
 	}
-	if r.Method == "" {
-		return errors.New("payment method is required")
+	switch r.Method {
+	case "":
+		errs["method"] = "is required"
+	case domain.PaymentMethodWallet:
+		errs["method"] = "cannot top-up using wallet balance"
 	}
-	if r.Method == domain.PaymentMethodWallet {
-		return errors.New("cannot top-up using wallet balance")
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }

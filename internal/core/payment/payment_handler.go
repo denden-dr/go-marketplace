@@ -22,11 +22,11 @@ func (h *PaymentHandler) Topup(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 	var req TopupRequest
 	if err := c.BodyParser(&req); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+		return fiber.NewError(http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := req.Validate(); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
+		return err
 	}
 
 	res, err := h.paymentService.CreatePaymentTX(c.Context(), nil, CreatePaymentRequest{
@@ -37,10 +37,10 @@ func (h *PaymentHandler) Topup(c *fiber.Ctx) error {
 		ReferenceID: uuid.New(),
 	})
 	if err != nil {
-		return common.NewResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Topup initiated", res)
+	return common.NewSuccessResponse(c, http.StatusOK, "Topup initiated", res)
 }
 
 // Webhook handles Midtrans status notifications
@@ -63,7 +63,7 @@ func (h *PaymentHandler) Webhook(c *fiber.Ctx) error {
 	}
 
 	if err := h.paymentService.ProcessWebhook(c.Context(), req.OrderID, status); err != nil {
-		return c.SendStatus(http.StatusInternalServerError)
+		return err
 	}
 
 	return c.SendStatus(http.StatusOK)

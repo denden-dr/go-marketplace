@@ -1,7 +1,7 @@
 package cart
 
 import (
-	"errors"
+	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -13,11 +13,16 @@ type AddToCartRequest struct {
 }
 
 func (r AddToCartRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.ProductID == uuid.Nil {
-		return errors.New("product id is required")
+		errs["product_id"] = "is required"
 	}
 	if r.Quantity <= 0 {
-		return errors.New("quantity must be greater than 0")
+		errs["quantity"] = "must be greater than 0"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
@@ -27,8 +32,13 @@ type UpdateCartItemRequest struct {
 }
 
 func (r UpdateCartItemRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Quantity <= 0 {
-		return errors.New("quantity must be greater than 0")
+		errs["quantity"] = "must be greater than 0"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }

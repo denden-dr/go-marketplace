@@ -51,7 +51,7 @@ func (s *OrderApiTestSuite) TestCheckout() {
 				resp, _ := s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -117,7 +117,7 @@ func (s *OrderApiTestSuite) TestCheckout() {
 				resp, _ := s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -188,11 +188,20 @@ func (s *OrderApiTestSuite) TestCheckout() {
 			s.Equal(tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusCreated {
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				payRes := result.Data.(map[string]interface{})
 				orders := payRes["order_ids"].([]interface{})
 				s.Len(orders, 1)
+			} else if tt.expectedStatus >= 400 {
+				var pd common.ProblemDetails
+				json.NewDecoder(resp.Body).Decode(&pd)
+				s.Equal(tt.expectedStatus, pd.Status)
+				s.NotEmpty(pd.Title)
+				s.Contains(pd.Type, "/errors/")
+				if tt.expectedStatus == http.StatusBadRequest && pd.Type == "/errors/validation-failed" {
+					s.NotEmpty(pd.Errors)
+				}
 			}
 		})
 	}

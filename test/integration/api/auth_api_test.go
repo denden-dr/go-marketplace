@@ -57,6 +57,15 @@ func (s *AuthApiTestSuite) TestRegister() {
 			},
 			expectedStatus: http.StatusConflict,
 		},
+		{
+			name: "Validation_Failed",
+			reqBody: auth.RegisterRequest{
+				FullName: "",
+				Email:    "invalid-email",
+				Password: "123",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -76,10 +85,21 @@ func (s *AuthApiTestSuite) TestRegister() {
 			s.Require().NoError(err)
 			s.Equal(tt.expectedStatus, resp.StatusCode)
 
-			if tt.expectedMsg != "" {
-				var result common.ResponseWrapper
-				json.NewDecoder(resp.Body).Decode(&result)
-				s.Equal(tt.expectedMsg, result.Message)
+			if tt.expectedStatus < 400 {
+				if tt.expectedMsg != "" {
+					var result common.SuccessResponse
+					json.NewDecoder(resp.Body).Decode(&result)
+					s.Equal(tt.expectedMsg, result.Message)
+				}
+			} else {
+				var pd common.ProblemDetails
+				json.NewDecoder(resp.Body).Decode(&pd)
+				s.Equal(tt.expectedStatus, pd.Status)
+				s.NotEmpty(pd.Title)
+				s.Contains(pd.Type, "/errors/")
+				if tt.expectedStatus == http.StatusBadRequest && pd.Type == "/errors/validation-failed" {
+					s.NotEmpty(pd.Errors)
+				}
 			}
 		})
 	}
@@ -143,6 +163,12 @@ func (s *AuthApiTestSuite) TestLogin() {
 				}
 				s.True(hasAccess, "Should have access_token cookie")
 				s.True(hasRefresh, "Should have refresh_token cookie")
+			} else {
+				var pd common.ProblemDetails
+				json.NewDecoder(resp.Body).Decode(&pd)
+				s.Equal(tt.expectedStatus, pd.Status)
+				s.NotEmpty(pd.Title)
+				s.Contains(pd.Type, "/errors/")
 			}
 		})
 	}
@@ -162,7 +188,7 @@ func (s *AuthApiTestSuite) TestGetProfile() {
 			},
 			expectedStatus: http.StatusOK,
 			verify: func(u *domain.User, resp *http.Response) {
-				var result common.ResponseWrapper
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				data := result.Data.(map[string]interface{})
 				s.Equal(u.Email, data["email"])

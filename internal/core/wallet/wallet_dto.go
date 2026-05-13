@@ -1,7 +1,7 @@
 package wallet
 
 import (
-	"errors"
+	"go-marketplace/internal/domain"
 	"time"
 
 	"github.com/google/uuid"
@@ -40,8 +40,13 @@ type WithdrawRequest struct {
 }
 
 func (r WithdrawRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.Amount.IsZero() || r.Amount.IsNegative() {
-		return errors.New("amount must be greater than 0")
+		errs["amount"] = "must be greater than 0"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }

@@ -30,26 +30,31 @@ type AddressRequest struct {
 }
 
 func (r *AddressRequest) Validate() error {
+	errs := make(domain.ValidationErrors)
 	if r.RecipientName == "" {
-		return domain.ErrRecipientNameRequired
+		errs["recipient_name"] = "is required"
 	}
 	if r.PhoneNumber == "" {
-		return domain.ErrPhoneNumberRequired
+		errs["phone_number"] = "is required"
 	}
 	if r.StreetAddress == "" {
-		return domain.ErrStreetAddressRequired
+		errs["street_address"] = "is required"
 	}
 	if r.City == "" {
-		return domain.ErrCityRequired
+		errs["city"] = "is required"
 	}
 	if r.Province == "" {
-		return domain.ErrProvinceRequired
+		errs["province"] = "is required"
 	}
 	if r.PostalCode == "" {
-		return domain.ErrPostalCodeRequired
+		errs["postal_code"] = "is required"
 	}
 	if r.Tag != domain.AddressTagHome && r.Tag != domain.AddressTagWork {
-		return domain.ErrInvalidAddressTag
+		errs["tag"] = "is invalid"
+	}
+
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }

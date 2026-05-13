@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/auth"
 	"go-marketplace/internal/core/cart"
 	"go-marketplace/internal/core/health"
@@ -43,7 +44,8 @@ func (s *ApiTestSuite) SetupTest() {
 
 	// Initialize Fiber app
 	s.App = fiber.New(fiber.Config{
-		Immutable: true,
+		Immutable:    true,
+		ErrorHandler: common.ErrorHandler,
 	})
 
 	// Initialize Layers

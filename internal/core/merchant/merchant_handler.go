@@ -1,9 +1,8 @@
 package merchant
 
 import (
-	"errors"
 	"go-marketplace/internal/common"
-	"go-marketplace/internal/domain"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -25,34 +24,28 @@ func NewMerchantHandler(service MerchantService) *MerchantHandler {
 // @Accept json
 // @Produce json
 // @Param request body MerchantRegisterRequest true "Merchant Registration Info"
-// @Success 201 {object} common.ResponseWrapper{data=MerchantResponse}
-// @Failure 400 {object} common.ResponseWrapper
-// @Failure 404 {object} common.ResponseWrapper
-// @Failure 409 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 201 {object} common.SuccessResponse{data=MerchantResponse}
+// @Failure 400 {object} common.ProblemDetails
+// @Failure 404 {object} common.ProblemDetails
+// @Failure 409 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /auth/register-merchant [post]
 func (h *MerchantHandler) RegisterMerchant(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 
 	var req MerchantRegisterRequest
 	if err := c.BodyParser(&req); err != nil {
-		return common.NewResponse(c, fiber.StatusBadRequest, "Invalid request payload", nil)
+		return fiber.NewError(http.StatusBadRequest, "Invalid request payload")
 	}
 
 	if err := req.Validate(); err != nil {
-		return common.NewResponse(c, fiber.StatusBadRequest, err.Error(), nil)
+		return err
 	}
 
 	res, err := h.service.RegisterMerchant(c.Context(), userID, req)
 	if err != nil {
-		if errors.Is(err, domain.ErrUserNotFound) {
-			return common.NewResponse(c, fiber.StatusNotFound, err.Error(), nil)
-		}
-		if errors.Is(err, domain.ErrMerchantAlreadyExists) {
-			return common.NewResponse(c, fiber.StatusConflict, err.Error(), nil)
-		}
-		return common.NewResponse(c, fiber.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, fiber.StatusCreated, "Merchant registered successfully", res)
+	return common.NewSuccessResponse(c, http.StatusCreated, "Merchant registered successfully", res)
 }

@@ -1,10 +1,7 @@
 package wallet
 
 import (
-	"errors"
 	"go-marketplace/internal/common"
-	"go-marketplace/internal/domain"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -27,23 +24,19 @@ func NewWalletHandler(walletService WalletService) *WalletHandler {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} common.ResponseWrapper{data=WalletResponse}
-// @Failure 404 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 200 {object} common.SuccessResponse{data=WalletResponse}
+// @Failure 404 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /wallets/ [get]
 func (h *WalletHandler) GetWallet(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 
 	wallet, err := h.walletService.GetWalletByUserID(c.Context(), userID)
 	if err != nil {
-		if errors.Is(err, domain.ErrWalletNotFound) {
-			return common.NewResponse(c, http.StatusNotFound, err.Error(), nil)
-		}
-		log.Printf("Error getting wallet for user %s: %v", userID, err)
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Wallet details retrieved", wallet)
+	return common.NewSuccessResponse(c, http.StatusOK, "Wallet details retrieved", wallet)
 }
 
 // GetHistory retrieves wallet transaction history
@@ -55,9 +48,9 @@ func (h *WalletHandler) GetWallet(c *fiber.Ctx) error {
 // @Produce json
 // @Param page query int false "Page number"
 // @Param limit query int false "Items per page"
-// @Success 200 {object} common.ResponseWrapper{data=[]TransactionResponse}
-// @Failure 404 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 200 {object} common.SuccessResponse{data=[]TransactionResponse}
+// @Failure 404 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /wallets/history [get]
 func (h *WalletHandler) GetHistory(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
@@ -67,14 +60,10 @@ func (h *WalletHandler) GetHistory(c *fiber.Ctx) error {
 
 	history, err := h.walletService.GetWalletHistory(c.Context(), userID, page, limit)
 	if err != nil {
-		if errors.Is(err, domain.ErrWalletNotFound) {
-			return common.NewResponse(c, http.StatusNotFound, err.Error(), nil)
-		}
-		log.Printf("Error getting wallet history for user %s: %v", userID, err)
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Wallet history retrieved", history)
+	return common.NewSuccessResponse(c, http.StatusOK, "Wallet history retrieved", history)
 }
 
 // Withdraw performs a wallet withdrawal
@@ -85,28 +74,28 @@ func (h *WalletHandler) GetHistory(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param request body WithdrawRequest true "Withdrawal Info"
-// @Success 200 {object} common.ResponseWrapper
-// @Failure 400 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 200 {object} common.SuccessResponse
+// @Failure 400 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /wallets/withdraw [post]
 func (h *WalletHandler) Withdraw(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 
 	var req WithdrawRequest
 	if err := c.BodyParser(&req); err != nil {
-		return common.NewResponse(c, http.StatusBadRequest, "Invalid request body", nil)
+		return fiber.NewError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := req.Validate(); err != nil {
+		return err
 	}
 
 	err := h.walletService.Withdraw(c.Context(), userID, req)
 	if err != nil {
-		if errors.Is(err, domain.ErrInsufficientBalance) || errors.Is(err, domain.ErrWalletNotActive) || errors.Is(err, domain.ErrWalletNotFound) {
-			return common.NewResponse(c, http.StatusBadRequest, err.Error(), nil)
-		}
-		log.Printf("Internal error during withdrawal for user %s: %v", userID, err)
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusOK, "Withdrawal successful", nil)
+	return common.NewSuccessResponse(c, http.StatusOK, "Withdrawal successful", nil)
 }
 
 // CreateWallet initializes a wallet for the user
@@ -116,21 +105,17 @@ func (h *WalletHandler) Withdraw(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 201 {object} common.ResponseWrapper{data=WalletResponse}
-// @Failure 409 {object} common.ResponseWrapper
-// @Failure 500 {object} common.ResponseWrapper
+// @Success 201 {object} common.SuccessResponse{data=WalletResponse}
+// @Failure 409 {object} common.ProblemDetails
+// @Failure 500 {object} common.ProblemDetails
 // @Router /wallets/ [post]
 func (h *WalletHandler) CreateWallet(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 
 	wallet, err := h.walletService.CreateWallet(c.Context(), userID)
 	if err != nil {
-		if errors.Is(err, domain.ErrWalletAlreadyExists) {
-			return common.NewResponse(c, http.StatusConflict, err.Error(), nil)
-		}
-		log.Printf("Error creating wallet for user %s: %v", userID, err)
-		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+		return err
 	}
 
-	return common.NewResponse(c, http.StatusCreated, "Wallet created successfully", wallet)
+	return common.NewSuccessResponse(c, http.StatusCreated, "Wallet created successfully", wallet)
 }
