@@ -55,6 +55,33 @@ definitions:
     - OrderStatusShipping
     - OrderStatusDelivered
     - OrderStatusCancelled
+  go-marketplace_internal_domain.Payment:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      external_id:
+        description: Midtrans order_id
+        type: string
+      id:
+        type: string
+      payment_method:
+        $ref: '#/definitions/go-marketplace_internal_domain.PaymentMethod'
+      payment_type:
+        $ref: '#/definitions/go-marketplace_internal_domain.PaymentType'
+      reference_id:
+        description: OrderID or TopupID
+        type: string
+      snap_token:
+        type: string
+      status:
+        $ref: '#/definitions/go-marketplace_internal_domain.PaymentStatus'
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
   go-marketplace_internal_domain.PaymentMethod:
     enum:
     - wallet
@@ -63,6 +90,30 @@ definitions:
     x-enum-varnames:
     - PaymentMethodWallet
     - PaymentMethodMidtrans
+  go-marketplace_internal_domain.PaymentStatus:
+    enum:
+    - pending
+    - success
+    - failed
+    - expired
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - PaymentStatusPending
+    - PaymentStatusSuccess
+    - PaymentStatusFailed
+    - PaymentStatusExpired
+    - PaymentStatusCancelled
+  go-marketplace_internal_domain.PaymentType:
+    enum:
+    - order
+    - topup
+    - withdraw
+    type: string
+    x-enum-varnames:
+    - PaymentTypeOrder
+    - PaymentTypeTopup
+    - PaymentTypeWithdraw
   internal_core_auth.AuthResponse:
     properties:
       created_at:
@@ -92,6 +143,13 @@ definitions:
       password:
         type: string
       username:
+        type: string
+    type: object
+  internal_core_auth.VerifyRequest:
+    properties:
+      code:
+        type: string
+      user_id:
         type: string
     type: object
   internal_core_cart.AddToCartRequest:
@@ -224,6 +282,26 @@ definitions:
     properties:
       status:
         $ref: '#/definitions/go-marketplace_internal_domain.OrderStatus'
+    type: object
+  internal_core_payment.MidtransWebhookRequest:
+    properties:
+      gross_amount:
+        type: string
+      order_id:
+        type: string
+      payment_type:
+        type: string
+      signature_key:
+        type: string
+      transaction_status:
+        type: string
+    type: object
+  internal_core_payment.TopupRequest:
+    properties:
+      amount:
+        type: number
+      method:
+        $ref: '#/definitions/go-marketplace_internal_domain.PaymentMethod'
     type: object
   internal_core_product.ProductCreateRequest:
     properties:
@@ -404,6 +482,43 @@ info:
   title: Go Marketplace API
   version: "1.0"
 paths:
+  /auth/google/callback:
+    get:
+      description: Handles the callback from Google OAuth2 and authenticates the user.
+      parameters:
+      - description: OAuth2 Code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: OAuth2 State
+        in: query
+        name: state
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Found
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+      summary: Google OAuth2 Callback
+      tags:
+      - auth
+  /auth/google/login:
+    get:
+      description: Redirects the user to Google's OAuth2 consent page.
+      responses:
+        "302":
+          description: Found
+      summary: Login with Google
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
@@ -441,6 +556,56 @@ paths:
           schema:
             $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
       summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logs out the user and clears authentication cookies.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.SuccessResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refreshes the user's access token using a valid refresh token from
+        cookies.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/go-marketplace_internal_common.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_core_auth.AuthResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+      summary: Refresh access token
       tags:
       - auth
   /auth/register:
@@ -528,6 +693,36 @@ paths:
       summary: Register as merchant
       tags:
       - merchants
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies a user's email address using a verification code.
+      parameters:
+      - description: Verification Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_core_auth.VerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+      summary: Verify email address
+      tags:
+      - auth
   /health:
     get:
       description: Checks connectivity to the database and Supabase configuration.
@@ -622,6 +817,32 @@ paths:
       summary: Update order status (Merchant)
       tags:
       - orders
+  /payments/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Handles payment status webhooks from Midtrans.
+      parameters:
+      - description: Webhook Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_core_payment.MidtransWebhookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+      summary: Payment Webhook
+      tags:
+      - payment
   /products/:
     post:
       consumes:
@@ -1336,6 +1557,43 @@ paths:
       summary: Get wallet history
       tags:
       - wallets
+  /wallets/topup:
+    post:
+      consumes:
+      - application/json
+      description: Initiates a wallet top-up payment.
+      parameters:
+      - description: Topup Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_core_payment.TopupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/go-marketplace_internal_common.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/go-marketplace_internal_domain.Payment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-marketplace_internal_common.ProblemDetails'
+      security:
+      - BearerAuth: []
+      summary: Top up wallet
+      tags:
+      - payment
   /wallets/withdraw:
     post:
       consumes:

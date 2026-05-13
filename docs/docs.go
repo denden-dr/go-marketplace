@@ -24,6 +24,62 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/google/callback": {
+            "get": {
+                "description": "Handles the callback from Google OAuth2 and authenticates the user.",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Google OAuth2 Callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth2 Code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "OAuth2 State",
+                        "name": "state",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/google/login": {
+            "get": {
+                "description": "Redirects the user to Google's OAuth2 consent page.",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login with Google",
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticates a user and returns access and refresh tokens.",
@@ -75,6 +131,87 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Logs out the user and clears authentication cookies.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Refreshes the user's access token using a valid refresh token from cookies.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh access token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_core_auth.AuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
@@ -227,6 +364,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/verify-email": {
+            "post": {
+                "description": "Verifies a user's email address using a verification code.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify email address",
+                "parameters": [
+                    {
+                        "description": "Verification Info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_core_auth.VerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Checks connectivity to the database and Supabase configuration.",
@@ -362,6 +545,46 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/webhook": {
+            "post": {
+                "description": "Handles payment status webhooks from Midtrans.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Payment Webhook",
+                "parameters": [
+                    {
+                        "description": "Webhook Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_core_payment.MidtransWebhookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
                     },
                     "500": {
                         "description": "Internal Server Error",
@@ -1542,6 +1765,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/wallets/topup": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Initiates a wallet top-up payment.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Top up wallet",
+                "parameters": [
+                    {
+                        "description": "Topup Info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_core_payment.TopupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/go-marketplace_internal_common.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/go-marketplace_internal_domain.Payment"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ProblemDetails"
+                        }
+                    }
+                }
+            }
+        },
         "/wallets/withdraw": {
             "post": {
                 "security": [
@@ -1669,6 +1955,46 @@ const docTemplate = `{
                 "OrderStatusCancelled"
             ]
         },
+        "go-marketplace_internal_domain.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "description": "Midtrans order_id",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "payment_method": {
+                    "$ref": "#/definitions/go-marketplace_internal_domain.PaymentMethod"
+                },
+                "payment_type": {
+                    "$ref": "#/definitions/go-marketplace_internal_domain.PaymentType"
+                },
+                "reference_id": {
+                    "description": "OrderID or TopupID",
+                    "type": "string"
+                },
+                "snap_token": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/go-marketplace_internal_domain.PaymentStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "go-marketplace_internal_domain.PaymentMethod": {
             "type": "string",
             "enum": [
@@ -1678,6 +2004,36 @@ const docTemplate = `{
             "x-enum-varnames": [
                 "PaymentMethodWallet",
                 "PaymentMethodMidtrans"
+            ]
+        },
+        "go-marketplace_internal_domain.PaymentStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "success",
+                "failed",
+                "expired",
+                "cancelled"
+            ],
+            "x-enum-varnames": [
+                "PaymentStatusPending",
+                "PaymentStatusSuccess",
+                "PaymentStatusFailed",
+                "PaymentStatusExpired",
+                "PaymentStatusCancelled"
+            ]
+        },
+        "go-marketplace_internal_domain.PaymentType": {
+            "type": "string",
+            "enum": [
+                "order",
+                "topup",
+                "withdraw"
+            ],
+            "x-enum-varnames": [
+                "PaymentTypeOrder",
+                "PaymentTypeTopup",
+                "PaymentTypeWithdraw"
             ]
         },
         "internal_core_auth.AuthResponse": {
@@ -1724,6 +2080,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_core_auth.VerifyRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -1927,6 +2294,37 @@ const docTemplate = `{
             "properties": {
                 "status": {
                     "$ref": "#/definitions/go-marketplace_internal_domain.OrderStatus"
+                }
+            }
+        },
+        "internal_core_payment.MidtransWebhookRequest": {
+            "type": "object",
+            "properties": {
+                "gross_amount": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "payment_type": {
+                    "type": "string"
+                },
+                "signature_key": {
+                    "type": "string"
+                },
+                "transaction_status": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_core_payment.TopupRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "method": {
+                    "$ref": "#/definitions/go-marketplace_internal_domain.PaymentMethod"
                 }
             }
         },
