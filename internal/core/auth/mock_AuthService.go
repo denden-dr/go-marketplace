@@ -22,6 +22,69 @@ func (_m *MockAuthService) EXPECT() *MockAuthService_Expecter {
 	return &MockAuthService_Expecter{mock: &_m.Mock}
 }
 
+// HandleGoogleLogin provides a mock function with given fields: ctx, code, state, expectedState, ipAddress, userAgent
+func (_m *MockAuthService) HandleGoogleLogin(ctx context.Context, code string, state string, expectedState string, ipAddress string, userAgent string) (*AuthResponse, error) {
+	ret := _m.Called(ctx, code, state, expectedState, ipAddress, userAgent)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HandleGoogleLogin")
+	}
+
+	var r0 *AuthResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string, string) (*AuthResponse, error)); ok {
+		return rf(ctx, code, state, expectedState, ipAddress, userAgent)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string, string) *AuthResponse); ok {
+		r0 = rf(ctx, code, state, expectedState, ipAddress, userAgent)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*AuthResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, string, string) error); ok {
+		r1 = rf(ctx, code, state, expectedState, ipAddress, userAgent)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockAuthService_HandleGoogleLogin_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HandleGoogleLogin'
+type MockAuthService_HandleGoogleLogin_Call struct {
+	*mock.Call
+}
+
+// HandleGoogleLogin is a helper method to define mock.On call
+//   - ctx context.Context
+//   - code string
+//   - state string
+//   - expectedState string
+//   - ipAddress string
+//   - userAgent string
+func (_e *MockAuthService_Expecter) HandleGoogleLogin(ctx interface{}, code interface{}, state interface{}, expectedState interface{}, ipAddress interface{}, userAgent interface{}) *MockAuthService_HandleGoogleLogin_Call {
+	return &MockAuthService_HandleGoogleLogin_Call{Call: _e.mock.On("HandleGoogleLogin", ctx, code, state, expectedState, ipAddress, userAgent)}
+}
+
+func (_c *MockAuthService_HandleGoogleLogin_Call) Run(run func(ctx context.Context, code string, state string, expectedState string, ipAddress string, userAgent string)) *MockAuthService_HandleGoogleLogin_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), args[4].(string), args[5].(string))
+	})
+	return _c
+}
+
+func (_c *MockAuthService_HandleGoogleLogin_Call) Return(_a0 *AuthResponse, _a1 error) *MockAuthService_HandleGoogleLogin_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockAuthService_HandleGoogleLogin_Call) RunAndReturn(run func(context.Context, string, string, string, string, string) (*AuthResponse, error)) *MockAuthService_HandleGoogleLogin_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Login provides a mock function with given fields: ctx, email, password, ipAddress, userAgent
 func (_m *MockAuthService) Login(ctx context.Context, email string, password string, ipAddress string, userAgent string) (*AuthResponse, error) {
 	ret := _m.Called(ctx, email, password, ipAddress, userAgent)

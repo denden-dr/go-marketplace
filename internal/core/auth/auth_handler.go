@@ -7,15 +7,22 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"time"
 )
 
 type AuthHandler struct {
-	authService AuthService
+	authService      AuthService
+	googleClient     GoogleClient
+	googleSuccessURL string
 }
 
-func NewAuthHandler(authService AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService AuthService, googleClient GoogleClient, googleSuccessURL string) *AuthHandler {
+	return &AuthHandler{
+		authService:      authService,
+		googleClient:     googleClient,
+		googleSuccessURL: googleSuccessURL,
+	}
 }
 
 // Register handles user registration
@@ -179,4 +186,54 @@ func (h *AuthHandler) setTokensCookies(c *fiber.Ctx, accessToken, refreshToken s
 
 func (h *AuthHandler) clearTokensCookies(c *fiber.Ctx) {
 	c.ClearCookie("access_token", "refresh_token")
+}
+
+// GoogleLogin redirects to Google's OAuth2 consent page
+// @Summary Google Login
+// @Description Redirects the user to Google's OAuth2 consent page.
+// @Tags auth
+// @Success 302
+// @Router /auth/google/login [get]
+func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
+	state := uuid.New().String()
+	c.Cookie(&fiber.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		Expires:  time.Now().Add(time.Minute * 10),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "Lax",
+	})
+
+	url := h.googleClient.GetAuthURL(state)
+	return c.Redirect(url)
+}
+
+// GoogleCallback handles the callback from Google OAuth2
+// @Summary Google Callback
+// @Description Handles the callback from Google, exchanges the code for tokens, and creates a session.
+// @Tags auth
+// @Param code query string true "OAuth2 Code"
+// @Param state query string true "OAuth2 State"
+// @Success 302
+// @Failure 401 {object} common.ResponseWrapper
+// @Router /auth/google/callback [get]
+func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
+	code := c.Query("code")
+	state := c.Query("state")
+	expectedState := c.Cookies("oauth_state")
+
+	c.ClearCookie("oauth_state")
+
+	res, err := h.authService.HandleGoogleLogin(c.Context(), code, state, expectedState, c.IP(), c.Get("User-Agent"))
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidOAuthState) || errors.Is(err, domain.ErrInvalidSocialToken) {
+			return common.NewResponse(c, http.StatusUnauthorized, err.Error(), nil)
+		}
+		return common.NewResponse(c, http.StatusInternalServerError, "Internal Server Error", nil)
+	}
+
+	h.setTokensCookies(c, res.AccessToken, res.RefreshToken)
+
+	return c.Redirect(h.googleSuccessURL)
 }

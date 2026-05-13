@@ -69,6 +69,10 @@ func main() {
 		log.Fatalf("MAILERSEND_API_KEY and MAILERSEND_FROM_EMAIL must be set")
 	}
 
+	if cfg.Google.ClientID == "" || cfg.Google.ClientSecret == "" {
+		log.Fatalf("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set")
+	}
+
 	// Initialize Layers
 	userRepo := user.NewUserRepository(db)
 	merchantRepo := merchant.NewMerchantRepository(db)
@@ -81,6 +85,7 @@ func main() {
 	paymentRepo := payment.NewPaymentRepository(db)
 
 	mailService := auth.NewMailService(mailersendAPIKey, mailersendFromEmail)
+	googleClient := auth.NewGoogleClient(cfg.Google.ClientID, cfg.Google.ClientSecret, cfg.Google.RedirectURL)
 
 	// Background cleanup for expired sessions
 	log.Printf("Running initial background cleanup for expired sessions...")
@@ -98,7 +103,7 @@ func main() {
 		}
 	}()
 
-	authService := auth.NewAuthService(userRepo, sessionRepo, verificationRepo, mailService, cfg.JWTSecret)
+	authService := auth.NewAuthService(userRepo, sessionRepo, verificationRepo, mailService, googleClient, cfg.JWTSecret)
 	userService := user.NewUserService(userRepo)
 	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := product.NewProductService(productRepo, merchantRepo)
@@ -115,7 +120,7 @@ func main() {
 	// constructor injection. Call this immediately after construction in routes.go.
 	paymentService.SetOrderManager(orderService)
 
-	authHandler := auth.NewAuthHandler(authService)
+	authHandler := auth.NewAuthHandler(authService, googleClient, cfg.Google.LoginRedirectURL)
 	userHandler := user.NewUserHandler(userService)
 	merchantHandler := merchant.NewMerchantHandler(merchantService)
 	productHandler := product.NewProductHandler(productService)

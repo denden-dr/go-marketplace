@@ -7,7 +7,7 @@ A high-performance e-commerce backend built with Go, featuring a **Rich Domain M
 **Go Marketplace** is a robust e-commerce API designed for scalability and maintainability. It follows clean architecture principles, encapsulating business logic within domain entities to ensure a decoupled and testable codebase.
 
 ### Key Features
-- **Custom Authentication**: Local email/password registration with 2FA/Verification codes via MailerSend.
+- **Authentication**: Local email/password registration and Google OAuth2 integration with secure account linking.
 - **Rich Domain Model**: Business logic and state transitions encapsulated in domain entities.
 - **Wallet & Escrow System**: Secure internal wallet with a transaction-safe escrow mechanism. Funds are held in `pending_balance` until order delivery confirmation.
 - **Unified Payment Interface**: Integrated support for internal wallet payments and external provider webhooks (Midtrans).
@@ -26,9 +26,9 @@ A high-performance e-commerce backend built with Go, featuring a **Rich Domain M
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
 - **Data Access**: [sqlx](https://github.com/jmoiron/sqlx) & [pgx](https://github.com/jackc/pgx)
 - **Search**: [pgvector](https://github.com/pgvector/pgvector)
-- **Authentication**: JWT (RS256/HS256) & [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt)
+- **Authentication**: JWT (RS256/HS256) & Google OAuth2
 - **Email**: [MailerSend SDK](https://github.com/mailersend/mailersend-go)
-- **Testing**: [testify](https://github.com/stretchr/testify), [sqlmock](https://github.com/DATA-DOG/go-sqlmock), [mockery](https://github.com/vektra/mockery)
+- **Testing**: [testify](https://github.com/stretchr/testify), [sqlmock](https://github.com/DATA-DOG/go-sqlmock), [mockery](https://github.com/vektra/mockery), [testcontainers-go](https://github.com/testcontainers/testcontainers-go)
 
 ---
 
@@ -60,6 +60,10 @@ A high-performance e-commerce backend built with Go, featuring a **Rich Domain M
    JWT_SECRET=your_super_secret_key
    MAILERSEND_API_KEY=mlsn.xxxxxx
    MAILERSEND_FROM_EMAIL=no-reply@yourdomain.com
+   GOOGLE_CLIENT_ID=your_id
+   GOOGLE_CLIENT_SECRET=your_secret
+   GOOGLE_REDIRECT_URL=http://localhost:3000/api/auth/google/callback
+   GOOGLE_LOGIN_REDIRECT_URL=http://localhost:5173/login-success
    ```
 
 3. **Install Dependencies**:
@@ -112,7 +116,7 @@ internal/
 The project emphasizes a strong testing culture with high coverage of both unit and integration tests.
 
 - **Unit Tests**: Test domain logic and service orchestration using mocks.
-- **Integration Tests**: Test repository layer and database constraints using real PostgreSQL instances in Docker.
+- **Integration Tests**: Test repository and handler layers using **Testcontainers** for programmatic lifecycle management of PostgreSQL.
 
 **Run all tests**:
 ```bash
@@ -121,7 +125,7 @@ make test
 
 **Run integration tests (requires Docker)**:
 ```bash
-make test-docker
+make test-integration
 ```
 
 ---
@@ -141,7 +145,7 @@ make test-docker
 | `make build` | Build the application binary. |
 | `make run` | Run the application locally. |
 | `make test` | Run all unit tests. |
-| `make test-docker` | Run integration tests using Docker. |
+| `make test-integration` | Run integration tests using Testcontainers. |
 | `make migrate-up` | Apply database migrations. |
 | `make swagger` | Generate Swagger API documentation. |
 | `make mock` | Regenerate mocks for testing. |

@@ -30,6 +30,7 @@ type ApiTestSuite struct {
 	App                 *fiber.App
 	JwtSecret           string
 	MockPaymentProvider *payment.MockPaymentProvider
+	MockGoogleClient    *auth.MockGoogleClient
 }
 
 func (s *ApiTestSuite) SetupSuite() {
@@ -61,8 +62,9 @@ func (s *ApiTestSuite) SetupTest() {
 	mailService.On("SendVerificationCode", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
 	s.MockPaymentProvider = payment.NewMockPaymentProvider(s.T())
+	s.MockGoogleClient = auth.NewMockGoogleClient(s.T())
 
-	authService := auth.NewAuthService(userRepo, sessionRepo, verificationRepo, mailService, s.JwtSecret)
+	authService := auth.NewAuthService(userRepo, sessionRepo, verificationRepo, mailService, s.MockGoogleClient, s.JwtSecret)
 	userService := user.NewUserService(userRepo)
 	merchantService := merchant.NewMerchantService(merchantRepo, userRepo, walletRepo)
 	productService := product.NewProductService(productRepo, merchantRepo)
@@ -73,7 +75,7 @@ func (s *ApiTestSuite) SetupTest() {
 	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletService, userRepo, merchantRepo, paymentService)
 	paymentService.SetOrderManager(orderService)
 
-	authHandler := auth.NewAuthHandler(authService)
+	authHandler := auth.NewAuthHandler(authService, s.MockGoogleClient, "http://test-marketplace.local/login-success")
 	userHandler := user.NewUserHandler(userService)
 	merchantHandler := merchant.NewMerchantHandler(merchantService)
 	productHandler := product.NewProductHandler(productService)

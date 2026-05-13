@@ -61,6 +61,8 @@ func SetupRoutes(
 	authRoutes.Post("/login", authHandler.Login)
 	authRoutes.Post("/verify-email", authHandler.VerifyEmail)
 	authRoutes.Post("/refresh", authHandler.RefreshTokens)
+	authRoutes.Get("/google/login", authHandler.GoogleLogin)
+	authRoutes.Get("/google/callback", authHandler.GoogleCallback)
 
 	// Public products
 	publicProducts := apiBase.Group("/products")

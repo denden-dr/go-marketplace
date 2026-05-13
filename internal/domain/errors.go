@@ -24,6 +24,7 @@ var (
 	ErrSocialLoginNotAvailable       = errors.New("social login is not available on this server")
 	ErrInvalidVerificationCode       = errors.New("invalid verification code")
 	ErrVerificationCodeExpired       = errors.New("verification code expired")
+	ErrInvalidOAuthState             = errors.New("invalid OAuth state")
 
 	ErrOrderNotFound            = errors.New("order not found")
 	ErrOrderNotCancellable      = errors.New("order cannot be cancelled at this stage or time")

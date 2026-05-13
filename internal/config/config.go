@@ -9,6 +9,14 @@ type Config struct {
 	DB        DBConfig
 	JWTSecret string
 	AppEnv    string
+	Google    GoogleOAuthConfig
+}
+
+type GoogleOAuthConfig struct {
+	ClientID         string
+	ClientSecret     string
+	RedirectURL      string
+	LoginRedirectURL string
 }
 
 type DBConfig struct {
@@ -40,6 +48,12 @@ func Load() *Config {
 		},
 		JWTSecret: getEnv("JWT_SECRET", ""),
 		AppEnv:    getEnv("APP_ENV", "development"),
+		Google: GoogleOAuthConfig{
+			ClientID:         getEnv("GOOGLE_CLIENT_ID", ""),
+			ClientSecret:     getEnv("GOOGLE_CLIENT_SECRET", ""),
+			RedirectURL:      getEnv("GOOGLE_REDIRECT_URL", ""),
+			LoginRedirectURL: getEnv("GOOGLE_LOGIN_REDIRECT_URL", ""),
+		},
 	}
 }
 

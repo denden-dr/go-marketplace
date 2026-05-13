@@ -24,6 +24,56 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/google/callback": {
+            "get": {
+                "description": "Handles the callback from Google, exchanges the code for tokens, and creates a session.",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Google Callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth2 Code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "OAuth2 State",
+                        "name": "state",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/go-marketplace_internal_common.ResponseWrapper"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/google/login": {
+            "get": {
+                "description": "Redirects the user to Google's OAuth2 consent page.",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Google Login",
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticates a user and returns access and refresh tokens.",
