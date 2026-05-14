@@ -2,7 +2,9 @@ package order
 
 import (
 	"context"
+	"log"
 
+	"go-marketplace/internal/core/payment"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/domain"
 
@@ -10,18 +12,16 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// orderManager handles payment-related order status transitions.
-// It implements payment.OrderManager to decouple the order ↔ payment
-// circular dependency — this struct depends only on repositories,
-// never on PaymentService.
 type orderManager struct {
 	orderRepo   OrderRepository
 	productRepo product.ProductRepository
 }
 
+var _ payment.OrderManager = (*orderManager)(nil)
+
 // NewOrderManager creates an OrderManager that handles payment status
 // changes for orders. The returned value satisfies payment.OrderManager.
-func NewOrderManager(orderRepo OrderRepository, productRepo product.ProductRepository) *orderManager {
+func NewOrderManager(orderRepo OrderRepository, productRepo product.ProductRepository) payment.OrderManager {
 	return &orderManager{
 		orderRepo:   orderRepo,
 		productRepo: productRepo,
@@ -67,6 +67,8 @@ func (m *orderManager) HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx
 				return err
 			}
 		}
+	default:
+		log.Printf("[orderManager] Unrecognized or unhandled payment status: %s", status)
 	}
 	return nil
 }
