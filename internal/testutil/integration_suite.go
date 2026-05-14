@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
-	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,7 +16,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 var (
@@ -47,10 +45,6 @@ func (s *IntegrationSuite) SetupSuite() {
 			postgres.WithDatabase(dbName),
 			postgres.WithUsername(dbUser),
 			postgres.WithPassword(dbPassword),
-			testcontainers.WithWaitStrategy(
-				wait.ForLog("database system is ready to accept connections").
-					WithOccurrence(2).
-					WithStartupTimeout(30*time.Second)),
 			testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
 				req.Reuse = true
 				req.Name = "marketplace-integration-db"
