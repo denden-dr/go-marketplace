@@ -45,6 +45,8 @@ func (s *IntegrationSuite) SetupSuite() {
 			postgres.WithDatabase(dbName),
 			postgres.WithUsername(dbUser),
 			postgres.WithPassword(dbPassword),
+			// Note: The postgres testcontainers module has a built-in default wait strategy
+			// that waits for the database to be ready. A custom wait strategy is not needed.
 			testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
 				req.Reuse = true
 				req.Name = "marketplace-integration-db"

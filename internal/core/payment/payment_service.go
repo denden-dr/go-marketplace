@@ -65,7 +65,6 @@ func NewPaymentService(paymentRepo PaymentRepository, walletService wallet.Walle
 	}
 }
 
-
 func (s *paymentService) CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
