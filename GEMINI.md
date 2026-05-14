@@ -106,7 +106,7 @@ make tidy           # go mod tidy
 ### Dependency Injection
 - All wiring happens in `cmd/api/main.go` and `internal/server/routes.go`.
 - Use `New*` constructors that accept interfaces.
-- Use **setter injection** for circular dependencies (e.g., `payment` ↔ `order`).
+- The former `payment ↔ order` circular dependency was resolved by extracting `orderManager`. All dependencies now use constructor injection.
 
 ### Database
 - Use `NamedExecContext` for inserts/updates with named parameters.

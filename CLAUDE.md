@@ -108,7 +108,7 @@ make docker-down    # Stop docker-compose services
 ### Dependency Injection
 - All wiring happens in `cmd/api/main.go` and `internal/server/routes.go`.
 - Use `New*` constructors that accept interfaces.
-- Use **setter injection** for circular dependencies (e.g., `payment` ↔ `order`).
+- The former `payment ↔ order` circular dependency was resolved by extracting `orderManager`. All dependencies now use constructor injection.
 
 ### Database
 - Use `NamedExecContext` for inserts/updates with named parameters.
@@ -144,7 +144,7 @@ make docker-down    # Stop docker-compose services
 
 ## ⚠️ Common Gotchas
 
-- **Circular DI**: The `payment` service uses setter injection to break cycles — follow that pattern if you hit the same issue in new features.
+- **Circular DI (resolved)**: The `order ↔ payment` cycle was resolved by extracting `orderManager` — a focused struct that depends only on repositories. If new cycles arise, follow this extraction pattern rather than setter injection.
 - **Wallet concurrency**: Wallet balance mutations must use `SELECT ... FOR UPDATE` to prevent lost updates under concurrent requests.
 - **Webhook idempotency**: External payment webhooks can be delivered more than once — always check for an existing processed state before mutating.
 - **Escrow leak**: Never release escrow funds without confirming delivery status in the domain layer first.
