@@ -8,15 +8,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
+	"fmt"
 )
 
 type WalletRepository interface {
 	GetWalletByUserID(ctx context.Context, userID uuid.UUID) (*domain.Wallet, error)
+	GetWalletsByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]domain.Wallet, error)
 	GetWalletHistory(ctx context.Context, walletID uuid.UUID, limit, offset int) ([]domain.WalletTransaction, error)
 	Withdraw(ctx context.Context, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	AddBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	AddPendingBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	AddPendingBalancesBatchTX(ctx context.Context, tx *sqlx.Tx, updates []domain.WalletBalanceUpdate) error
 	SettlePendingBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	FreezeBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
@@ -282,4 +285,80 @@ func (r *walletRepository) CreateTx(ctx context.Context, tx *sqlx.Tx, w *domain.
 
 func (r *walletRepository) GetPool() domain.Pool {
 	return r.db
+}
+
+func (r *walletRepository) GetWalletsByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]domain.Wallet, error) {
+	if len(userIDs) == 0 {
+		return nil, nil
+	}
+
+	query := `SELECT id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at
+	           FROM wallets WHERE user_id IN (?)`
+
+	query, args, err := sqlx.In(query, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+
+	var wallets []domain.Wallet
+	err = r.db.SelectContext(ctx, &wallets, query, args...)
+	return wallets, err
+}
+
+func (r *walletRepository) AddPendingBalancesBatchTX(ctx context.Context, tx *sqlx.Tx, updates []domain.WalletBalanceUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	// Update pending balances
+	query := "UPDATE wallets SET pending_balance = wallets.pending_balance + v.amount, updated_at = NOW() FROM (VALUES "
+	args := []interface{}{}
+	i := 1
+	for idx, u := range updates {
+		if idx > 0 {
+			query += ", "
+		}
+		query += fmt.Sprintf("($%d::uuid, $%d::numeric)", i, i+1)
+		args = append(args, u.WalletID, u.Amount)
+		i += 2
+	}
+	query += ") AS v(wallet_id, amount) WHERE wallets.id = v.wallet_id"
+
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	// Create transaction records
+	// Note: We need to fetch balance_after/pending_balance_after if we want them to be accurate in history.
+	// For simplicity and performance, we might skip full accuracy in history for batch ops if not strictly required,
+	// or we can use a more complex query with RETURNING.
+	// Given the project's pattern, let's try to be consistent.
+
+	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) VALUES `
+	insertArgs := []interface{}{}
+	j := 1
+	for idx, u := range updates {
+		if idx > 0 {
+			insertQuery += ", "
+		}
+		insertQuery += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", j, j+1, j+2, j+3, j+4, j+5, j+6, j+7, j+8, j+9, j+10)
+		insertArgs = append(insertArgs, 
+			u.Transaction.ID, 
+			u.Transaction.WalletID, 
+			u.Transaction.Amount, 
+			u.Transaction.Direction, 
+			u.Transaction.Type, 
+			u.Transaction.Status, 
+			u.Transaction.ReferenceID, 
+			u.Transaction.BalanceAfter, 
+			u.Transaction.PendingBalanceAfter, 
+			u.Transaction.Description, 
+			u.Transaction.CreatedAt,
+		)
+		j += 11
+	}
+
+	_, err := tx.ExecContext(ctx, insertQuery, insertArgs...)
+	return err
 }

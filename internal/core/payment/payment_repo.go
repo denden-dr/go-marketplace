@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"fmt"
 )
 
 type PaymentRepository interface {
@@ -18,6 +19,7 @@ type PaymentRepository interface {
 	UpdateStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.PaymentStatus, externalID *string) error
 	UpdateSnapTokenTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, snapToken string) error
 	CreateDistributionTX(ctx context.Context, tx *sqlx.Tx, d *domain.PaymentDistribution) error
+	CreateDistributionsBatchTX(ctx context.Context, tx *sqlx.Tx, dists []domain.PaymentDistribution) error
 	GetDistributionsByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.PaymentDistribution, error)
 }
 
@@ -116,4 +118,25 @@ func (r *paymentRepository) GetDistributionsByPaymentID(ctx context.Context, pay
 	var distributions []domain.PaymentDistribution
 	err := r.db.SelectContext(ctx, &distributions, query, paymentID)
 	return distributions, err
+}
+
+func (r *paymentRepository) CreateDistributionsBatchTX(ctx context.Context, tx *sqlx.Tx, dists []domain.PaymentDistribution) error {
+	if len(dists) == 0 {
+		return nil
+	}
+
+	query := `INSERT INTO payment_distributions (id, payment_id, recipient_id, amount, created_at) VALUES `
+	args := []interface{}{}
+	i := 1
+	for idx, d := range dists {
+		if idx > 0 {
+			query += ", "
+		}
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i, i+1, i+2, i+3, i+4)
+		args = append(args, d.ID, d.PaymentID, d.RecipientID, d.Amount, d.CreatedAt)
+		i += 5
+	}
+
+	_, err := tx.ExecContext(ctx, query, args...)
+	return err
 }

@@ -180,6 +180,65 @@ func (_c *MockMerchantRepository_GetByID_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
+// GetByIDs provides a mock function with given fields: ctx, ids
+func (_m *MockMerchantRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]domain.Merchant, error) {
+	ret := _m.Called(ctx, ids)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByIDs")
+	}
+
+	var r0 []domain.Merchant
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, []uuid.UUID) ([]domain.Merchant, error)); ok {
+		return rf(ctx, ids)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []uuid.UUID) []domain.Merchant); ok {
+		r0 = rf(ctx, ids)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Merchant)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []uuid.UUID) error); ok {
+		r1 = rf(ctx, ids)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockMerchantRepository_GetByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByIDs'
+type MockMerchantRepository_GetByIDs_Call struct {
+	*mock.Call
+}
+
+// GetByIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ids []uuid.UUID
+func (_e *MockMerchantRepository_Expecter) GetByIDs(ctx interface{}, ids interface{}) *MockMerchantRepository_GetByIDs_Call {
+	return &MockMerchantRepository_GetByIDs_Call{Call: _e.mock.On("GetByIDs", ctx, ids)}
+}
+
+func (_c *MockMerchantRepository_GetByIDs_Call) Run(run func(ctx context.Context, ids []uuid.UUID)) *MockMerchantRepository_GetByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockMerchantRepository_GetByIDs_Call) Return(_a0 []domain.Merchant, _a1 error) *MockMerchantRepository_GetByIDs_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockMerchantRepository_GetByIDs_Call) RunAndReturn(run func(context.Context, []uuid.UUID) ([]domain.Merchant, error)) *MockMerchantRepository_GetByIDs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetByUserID provides a mock function with given fields: ctx, userID
 func (_m *MockMerchantRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Merchant, error) {
 	ret := _m.Called(ctx, userID)

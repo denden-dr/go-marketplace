@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"fmt"
 )
 
 type OrderRepository interface {
@@ -23,6 +24,9 @@ type OrderRepository interface {
 	GetOrderItems(ctx context.Context, orderID uuid.UUID) ([]domain.OrderItem, error)
 	GetOrdersByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.Order, error)
 	GetOrdersByPaymentIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID) ([]domain.Order, error)
+	UpdateOrderStatusByPaymentIDTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.OrderStatus) error
+	GetOrderItemsByOrderIDsTX(ctx context.Context, tx *sqlx.Tx, orderIDs []uuid.UUID) ([]domain.OrderItem, error)
+	CreateOrderItemsBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error
 }
 
 type orderRepository struct {
@@ -139,4 +143,52 @@ func (r *orderRepository) GetOrdersByPaymentIDForUpdateTX(ctx context.Context, t
 	var orders []domain.Order
 	err := tx.SelectContext(ctx, &orders, query, paymentID)
 	return orders, err
+}
+
+func (r *orderRepository) UpdateOrderStatusByPaymentIDTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.OrderStatus) error {
+	query := `UPDATE orders SET status = $1, updated_at = NOW() WHERE payment_id = $2`
+	_, err := tx.ExecContext(ctx, query, status, paymentID)
+	return err
+}
+
+func (r *orderRepository) GetOrderItemsByOrderIDsTX(ctx context.Context, tx *sqlx.Tx, orderIDs []uuid.UUID) ([]domain.OrderItem, error) {
+	if len(orderIDs) == 0 {
+		return nil, nil
+	}
+
+	query := `SELECT id, order_id, product_id, quantity, price, created_at
+	           FROM order_items WHERE order_id IN (?)`
+
+	// sqlx.In expands the slice into individual placeholders
+	query, args, err := sqlx.In(query, orderIDs)
+	if err != nil {
+		return nil, err
+	}
+	// Rebind to PostgreSQL placeholder style ($1, $2, ...)
+	query = tx.Rebind(query)
+
+	var items []domain.OrderItem
+	err = tx.SelectContext(ctx, &items, query, args...)
+	return items, err
+}
+
+func (r *orderRepository) CreateOrderItemsBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	query := `INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at) VALUES `
+	args := []interface{}{}
+	i := 1
+	for idx, item := range items {
+		if idx > 0 {
+			query += ", "
+		}
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", i, i+1, i+2, i+3, i+4, i+5)
+		args = append(args, item.ID, item.OrderID, item.ProductID, item.Quantity, item.Price, item.CreatedAt)
+		i += 6
+	}
+
+	_, err := tx.ExecContext(ctx, query, args...)
+	return err
 }
