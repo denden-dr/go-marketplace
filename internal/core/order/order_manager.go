@@ -39,33 +39,32 @@ func (m *orderManager) HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx
 			return err
 		}
 
-		var allItems []domain.OrderItem
-		for _, o := range orders {
-			if err := m.orderRepo.UpdateOrderStatusTX(ctx, tx, o.ID, domain.OrderStatusCancelled); err != nil {
-				return err
-			}
-
-			items, err := m.orderRepo.GetOrderItems(ctx, o.ID)
-			if err != nil {
-				return err
-			}
-			allItems = append(allItems, items...)
+		if err := m.orderRepo.UpdateOrderStatusByPaymentIDTX(ctx, tx, paymentID, domain.OrderStatusCancelled); err != nil {
+			return err
 		}
 
-		if len(allItems) > 0 {
-			if err := m.productRepo.RestoreStockBatchTX(ctx, tx, allItems); err != nil {
+		orderIDs := make([]uuid.UUID, len(orders))
+		for i, o := range orders {
+			orderIDs[i] = o.ID
+		}
+
+		items, err := m.orderRepo.GetOrderItemsByOrderIDsTX(ctx, tx, orderIDs)
+		if err != nil {
+			return err
+		}
+
+		if len(items) > 0 {
+			if err := m.productRepo.RestoreStockBatchTX(ctx, tx, items); err != nil {
 				return err
 			}
 		}
 	case domain.PaymentStatusSuccess:
-		orders, err := m.orderRepo.GetOrdersByPaymentIDForUpdateTX(ctx, tx, paymentID)
-		if err != nil {
+		if _, err := m.orderRepo.GetOrdersByPaymentIDForUpdateTX(ctx, tx, paymentID); err != nil {
 			return err
 		}
-		for _, o := range orders {
-			if err := m.orderRepo.UpdateOrderStatusTX(ctx, tx, o.ID, domain.OrderStatusProcessing); err != nil {
-				return err
-			}
+
+		if err := m.orderRepo.UpdateOrderStatusByPaymentIDTX(ctx, tx, paymentID, domain.OrderStatusProcessing); err != nil {
+			return err
 		}
 	default:
 		log.Printf("[orderManager] Unrecognized or unhandled payment status: %s", status)
