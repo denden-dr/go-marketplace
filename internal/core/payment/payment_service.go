@@ -37,7 +37,6 @@ type PaymentResponse struct {
 type PaymentService interface {
 	CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error)
 	ProcessWebhook(ctx context.Context, externalID string, status domain.PaymentStatus) error
-	SetOrderManager(OrderManager)
 }
 
 type PaymentProvider interface {
@@ -66,9 +65,6 @@ func NewPaymentService(paymentRepo PaymentRepository, walletService wallet.Walle
 	}
 }
 
-func (s *paymentService) SetOrderManager(om OrderManager) {
-	s.orderManager = om
-}
 
 func (s *paymentService) CreatePaymentTX(ctx context.Context, tx *sqlx.Tx, req CreatePaymentRequest) (*PaymentResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
