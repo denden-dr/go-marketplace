@@ -3,11 +3,12 @@ package payment
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"go-marketplace/internal/domain"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"fmt"
 )
 
 type PaymentRepository interface {
@@ -125,18 +126,19 @@ func (r *paymentRepository) CreateDistributionsBatchTX(ctx context.Context, tx *
 		return nil
 	}
 
-	query := `INSERT INTO payment_distributions (id, payment_id, recipient_id, amount, created_at) VALUES `
-	args := []interface{}{}
-	i := 1
+	var sb strings.Builder
+	sb.WriteString("INSERT INTO payment_distributions (id, payment_id, recipient_id, amount, created_at) VALUES ")
+
+	args := make([]interface{}, 0, len(dists)*5)
 	for idx, d := range dists {
 		if idx > 0 {
-			query += ", "
+			sb.WriteString(", ")
 		}
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i, i+1, i+2, i+3, i+4)
+		p := idx * 5
+		fmt.Fprintf(&sb, "($%d, $%d, $%d, $%d, $%d)", p+1, p+2, p+3, p+4, p+5)
 		args = append(args, d.ID, d.PaymentID, d.RecipientID, d.Amount, d.CreatedAt)
-		i += 5
 	}
 
-	_, err := tx.ExecContext(ctx, query, args...)
+	_, err := tx.ExecContext(ctx, sb.String(), args...)
 	return err
 }

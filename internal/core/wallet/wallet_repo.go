@@ -3,17 +3,20 @@ package wallet
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
+
 	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
-	"fmt"
 )
 
 type WalletRepository interface {
 	GetWalletByUserID(ctx context.Context, userID uuid.UUID) (*domain.Wallet, error)
 	GetWalletsByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]domain.Wallet, error)
+	GetWalletsByUserIDsTX(ctx context.Context, tx *sqlx.Tx, userIDs []uuid.UUID) ([]domain.Wallet, error)
 	GetWalletHistory(ctx context.Context, walletID uuid.UUID, limit, offset int) ([]domain.WalletTransaction, error)
 	Withdraw(ctx context.Context, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	DeductBalanceTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
@@ -306,59 +309,77 @@ func (r *walletRepository) GetWalletsByUserIDs(ctx context.Context, userIDs []uu
 	return wallets, err
 }
 
+func (r *walletRepository) GetWalletsByUserIDsTX(ctx context.Context, tx *sqlx.Tx, userIDs []uuid.UUID) ([]domain.Wallet, error) {
+	if len(userIDs) == 0 {
+		return nil, nil
+	}
+
+	query := `SELECT id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at
+	           FROM wallets WHERE user_id IN (?)`
+
+	query, args, err := sqlx.In(query, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	query = tx.Rebind(query)
+
+	var wallets []domain.Wallet
+	err = tx.SelectContext(ctx, &wallets, query, args...)
+	return wallets, err
+}
+
 func (r *walletRepository) AddPendingBalancesBatchTX(ctx context.Context, tx *sqlx.Tx, updates []domain.WalletBalanceUpdate) error {
 	if len(updates) == 0 {
 		return nil
 	}
 
-	// Update pending balances
-	query := "UPDATE wallets SET pending_balance = wallets.pending_balance + v.amount, updated_at = NOW() FROM (VALUES "
-	args := []interface{}{}
-	i := 1
+	var sb strings.Builder
+	sb.WriteString(`WITH updated AS (
+		UPDATE wallets SET pending_balance = wallets.pending_balance + v.amount, updated_at = NOW()
+		FROM (VALUES `)
+
+	args := make([]interface{}, 0, len(updates)*2+len(updates)*9)
 	for idx, u := range updates {
 		if idx > 0 {
-			query += ", "
+			sb.WriteString(", ")
 		}
-		query += fmt.Sprintf("($%d::uuid, $%d::numeric)", i, i+1)
+		p := idx * 2
+		fmt.Fprintf(&sb, "($%d::uuid, $%d::numeric)", p+1, p+2)
 		args = append(args, u.WalletID, u.Amount)
-		i += 2
-	}
-	query += ") AS v(wallet_id, amount) WHERE wallets.id = v.wallet_id"
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return err
 	}
 
-	// Create transaction records
-	// Note: We need to fetch balance_after/pending_balance_after if we want them to be accurate in history.
-	// For simplicity and performance, we might skip full accuracy in history for batch ops if not strictly required,
-	// or we can use a more complex query with RETURNING.
-	// Given the project's pattern, let's try to be consistent.
+	sb.WriteString(`) AS v(wallet_id, amount) 
+		WHERE wallets.id = v.wallet_id
+		RETURNING wallets.id, wallets.balance, wallets.pending_balance
+	)
+	INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at)
+	SELECT t.id, t.wallet_id, t.amount, t.direction, t.type, t.status, t.reference_id, updated.balance, updated.pending_balance, t.description, t.created_at
+	FROM (VALUES `)
 
-	insertQuery := `INSERT INTO wallets_transaction (id, wallet_id, amount, direction, type, status, reference_id, balance_after, pending_balance_after, description, created_at) VALUES `
-	insertArgs := []interface{}{}
-	j := 1
+	j := len(updates) * 2
 	for idx, u := range updates {
 		if idx > 0 {
-			insertQuery += ", "
+			sb.WriteString(", ")
 		}
-		insertQuery += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", j, j+1, j+2, j+3, j+4, j+5, j+6, j+7, j+8, j+9, j+10)
-		insertArgs = append(insertArgs, 
-			u.Transaction.ID, 
-			u.Transaction.WalletID, 
-			u.Transaction.Amount, 
-			u.Transaction.Direction, 
-			u.Transaction.Type, 
-			u.Transaction.Status, 
-			u.Transaction.ReferenceID, 
-			u.Transaction.BalanceAfter, 
-			u.Transaction.PendingBalanceAfter, 
-			u.Transaction.Description, 
+		p := j + idx*9
+		fmt.Fprintf(&sb, "($%d::uuid, $%d::uuid, $%d::numeric, $%d, $%d, $%d, $%d, $%d, $%d::timestamp)",
+			p+1, p+2, p+3, p+4, p+5, p+6, p+7, p+8, p+9)
+		args = append(args,
+			u.Transaction.ID,
+			u.Transaction.WalletID,
+			u.Transaction.Amount,
+			u.Transaction.Direction,
+			u.Transaction.Type,
+			u.Transaction.Status,
+			u.Transaction.ReferenceID,
+			u.Transaction.Description,
 			u.Transaction.CreatedAt,
 		)
-		j += 11
 	}
 
-	_, err := tx.ExecContext(ctx, insertQuery, insertArgs...)
+	sb.WriteString(`) AS t(id, wallet_id, amount, direction, type, status, reference_id, description, created_at)
+	JOIN updated ON updated.id = t.wallet_id`)
+
+	_, err := tx.ExecContext(ctx, sb.String(), args...)
 	return err
 }

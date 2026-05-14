@@ -597,6 +597,66 @@ func (_c *MockWalletRepository_GetWalletsByUserIDs_Call) RunAndReturn(run func(c
 	return _c
 }
 
+// GetWalletsByUserIDsTX provides a mock function with given fields: ctx, tx, userIDs
+func (_m *MockWalletRepository) GetWalletsByUserIDsTX(ctx context.Context, tx *sqlx.Tx, userIDs []uuid.UUID) ([]domain.Wallet, error) {
+	ret := _m.Called(ctx, tx, userIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetWalletsByUserIDsTX")
+	}
+
+	var r0 []domain.Wallet
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, []uuid.UUID) ([]domain.Wallet, error)); ok {
+		return rf(ctx, tx, userIDs)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, []uuid.UUID) []domain.Wallet); ok {
+		r0 = rf(ctx, tx, userIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Wallet)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *sqlx.Tx, []uuid.UUID) error); ok {
+		r1 = rf(ctx, tx, userIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockWalletRepository_GetWalletsByUserIDsTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetWalletsByUserIDsTX'
+type MockWalletRepository_GetWalletsByUserIDsTX_Call struct {
+	*mock.Call
+}
+
+// GetWalletsByUserIDsTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - userIDs []uuid.UUID
+func (_e *MockWalletRepository_Expecter) GetWalletsByUserIDsTX(ctx interface{}, tx interface{}, userIDs interface{}) *MockWalletRepository_GetWalletsByUserIDsTX_Call {
+	return &MockWalletRepository_GetWalletsByUserIDsTX_Call{Call: _e.mock.On("GetWalletsByUserIDsTX", ctx, tx, userIDs)}
+}
+
+func (_c *MockWalletRepository_GetWalletsByUserIDsTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, userIDs []uuid.UUID)) *MockWalletRepository_GetWalletsByUserIDsTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].([]uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockWalletRepository_GetWalletsByUserIDsTX_Call) Return(_a0 []domain.Wallet, _a1 error) *MockWalletRepository_GetWalletsByUserIDsTX_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockWalletRepository_GetWalletsByUserIDsTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, []uuid.UUID) ([]domain.Wallet, error)) *MockWalletRepository_GetWalletsByUserIDsTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RefundFromPendingTX provides a mock function with given fields: ctx, tx, walletID, amount, txData
 func (_m *MockWalletRepository) RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, walletID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error {
 	ret := _m.Called(ctx, tx, walletID, amount, txData)

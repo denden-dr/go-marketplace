@@ -126,6 +126,10 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		return nil, err
 	}
 
+	if len(merchants) != len(merchantIDs) {
+		return nil, domain.ErrMerchantNotFound
+	}
+
 	merchantMap := make(map[uuid.UUID]domain.Merchant)
 	for _, m := range merchants {
 		merchantMap[m.ID] = m

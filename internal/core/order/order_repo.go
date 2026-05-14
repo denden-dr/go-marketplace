@@ -4,11 +4,12 @@ import (
 	"context"
 	"database/sql"
 
+	"fmt"
 	"go-marketplace/internal/domain"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"fmt"
 )
 
 type OrderRepository interface {
@@ -147,8 +148,19 @@ func (r *orderRepository) GetOrdersByPaymentIDForUpdateTX(ctx context.Context, t
 
 func (r *orderRepository) UpdateOrderStatusByPaymentIDTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.OrderStatus) error {
 	query := `UPDATE orders SET status = $1, updated_at = NOW() WHERE payment_id = $2`
-	_, err := tx.ExecContext(ctx, query, status, paymentID)
-	return err
+	res, err := tx.ExecContext(ctx, query, status, paymentID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("no orders found for payment ID: %s", paymentID)
+	}
+	return nil
 }
 
 func (r *orderRepository) GetOrderItemsByOrderIDsTX(ctx context.Context, tx *sqlx.Tx, orderIDs []uuid.UUID) ([]domain.OrderItem, error) {
@@ -177,18 +189,19 @@ func (r *orderRepository) CreateOrderItemsBatchTX(ctx context.Context, tx *sqlx.
 		return nil
 	}
 
-	query := `INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at) VALUES `
-	args := []interface{}{}
-	i := 1
+	var sb strings.Builder
+	sb.WriteString("INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at) VALUES ")
+
+	args := make([]interface{}, 0, len(items)*6)
 	for idx, item := range items {
 		if idx > 0 {
-			query += ", "
+			sb.WriteString(", ")
 		}
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)", i, i+1, i+2, i+3, i+4, i+5)
+		p := idx * 6
+		fmt.Fprintf(&sb, "($%d, $%d, $%d, $%d, $%d, $%d)", p+1, p+2, p+3, p+4, p+5, p+6)
 		args = append(args, item.ID, item.OrderID, item.ProductID, item.Quantity, item.Price, item.CreatedAt)
-		i += 6
 	}
 
-	_, err := tx.ExecContext(ctx, query, args...)
+	_, err := tx.ExecContext(ctx, sb.String(), args...)
 	return err
 }

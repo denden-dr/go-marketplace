@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go-marketplace/internal/domain"
@@ -269,7 +270,11 @@ func (s *walletService) AddPendingBalancesBatchTX(ctx context.Context, tx *sqlx.
 		return nil
 	}
 
-	wallets, err := s.walletRepo.GetWalletsByUserIDs(ctx, userIDs)
+	if len(userIDs) != len(amounts) || len(userIDs) != len(txs) {
+		return fmt.Errorf("AddPendingBalancesBatchTX: mismatched slice lengths")
+	}
+
+	wallets, err := s.walletRepo.GetWalletsByUserIDsTX(ctx, tx, userIDs)
 	if err != nil {
 		return err
 	}
