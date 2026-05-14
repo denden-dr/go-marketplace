@@ -74,16 +74,16 @@ func TestOrderService_CreateUserCheckout(t *testing.T) {
 				mc.On("GetCartByUserID", mock.Anything, userID).Return(cartItems, nil)
 				mu.On("GetAddressesByUserID", mock.Anything, userID).Return([]domain.UserAddress{*addr}, nil)
 
-				mp.On("GetByIDForUpdateTX", mock.Anything, tx, productID).Return(cartItems[0].Product, nil)
-				mm.On("GetByID", mock.Anything, merchantID).Return(&domain.Merchant{ID: merchantID, UserID: uuid.New()}, nil)
+				mp.On("GetByIDsForUpdateTX", mock.Anything, tx, []uuid.UUID{productID}).Return([]domain.Product{*cartItems[0].Product}, nil)
+				mm.On("GetByIDs", mock.Anything, []uuid.UUID{merchantID}).Return([]domain.Merchant{{ID: merchantID, UserID: uuid.New()}}, nil)
 
 				mps.On("CreatePaymentTX", mock.Anything, tx, mock.Anything).Return(&payment.PaymentResponse{PaymentID: uuid.New(), Status: domain.PaymentStatusSuccess}, nil)
 
 				mr.On("CreateOrderTX", mock.Anything, tx, mock.MatchedBy(func(o *domain.Order) bool {
 					return o.ShippingRecipientName == "John Doe"
 				})).Return(nil)
-				mr.On("CreateOrderItemTX", mock.Anything, tx, mock.Anything).Return(nil)
-				mp.On("UpdateStockTX", mock.Anything, tx, productID, 8).Return(nil)
+				mr.On("CreateOrderItemsBatchTX", mock.Anything, tx, mock.Anything).Return(nil)
+				mp.On("DeductStockBatchTX", mock.Anything, tx, mock.Anything).Return(nil)
 				mc.On("ClearCartTX", mock.Anything, tx, userID).Return(nil)
 
 				sqlMock.ExpectCommit()
@@ -105,16 +105,16 @@ func TestOrderService_CreateUserCheckout(t *testing.T) {
 				mr.On("Begin", mock.Anything).Return(tx, nil)
 				mc.On("GetCartByUserID", mock.Anything, userID).Return(cartItems, nil)
 
-				mp.On("GetByIDForUpdateTX", mock.Anything, tx, productID).Return(cartItems[0].Product, nil)
-				mm.On("GetByID", mock.Anything, merchantID).Return(&domain.Merchant{ID: merchantID, UserID: uuid.New()}, nil)
+				mp.On("GetByIDsForUpdateTX", mock.Anything, tx, []uuid.UUID{productID}).Return([]domain.Product{*cartItems[0].Product}, nil)
+				mm.On("GetByIDs", mock.Anything, []uuid.UUID{merchantID}).Return([]domain.Merchant{{ID: merchantID, UserID: uuid.New()}}, nil)
 
 				mps.On("CreatePaymentTX", mock.Anything, tx, mock.Anything).Return(&payment.PaymentResponse{PaymentID: uuid.New(), Status: domain.PaymentStatusSuccess}, nil)
 
 				mr.On("CreateOrderTX", mock.Anything, tx, mock.MatchedBy(func(o *domain.Order) bool {
 					return o.ShippingRecipientName == "Jane Custom"
 				})).Return(nil)
-				mr.On("CreateOrderItemTX", mock.Anything, tx, mock.Anything).Return(nil)
-				mp.On("UpdateStockTX", mock.Anything, tx, productID, 8).Return(nil)
+				mr.On("CreateOrderItemsBatchTX", mock.Anything, tx, mock.Anything).Return(nil)
+				mp.On("DeductStockBatchTX", mock.Anything, tx, mock.Anything).Return(nil)
 				mc.On("ClearCartTX", mock.Anything, tx, userID).Return(nil)
 
 				sqlMock.ExpectCommit()
@@ -350,4 +350,3 @@ func TestOrderService_AppealUserOrder(t *testing.T) {
 		})
 	}
 }
-
