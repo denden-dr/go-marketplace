@@ -153,6 +153,92 @@ func (s *ProductRepoSuite) TestProductOperations() {
 	s.GreaterOrEqual(len(products), 1)
 }
 
+func (s *ProductRepoSuite) TestGetByIDsForUpdateTX() {
+	m := &domain.Merchant{
+		ID: uuid.New(), UserID: uuid.New(), Name: "Batch Lock Shop",
+		CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	// Need a real user first
+	u := &domain.User{
+		ID: m.UserID, FullName: "Owner", Username: "owner_batch", Email: "batch@example.com",
+		AuthProvider: domain.AuthProviderLocal, CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.userRepo.CreateUser(context.Background(), u))
+	s.NoError(s.merchantRepo.Create(context.Background(), m))
+
+	p1 := &domain.Product{
+		ID: uuid.New(), StoreID: m.ID, Name: "Product A",
+		Price: decimal.NewFromInt(10), Stock: 5,
+		CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	p2 := &domain.Product{
+		ID: uuid.New(), StoreID: m.ID, Name: "Product B",
+		Price: decimal.NewFromInt(20), Stock: 10,
+		CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.repo.Create(context.Background(), p1))
+	s.NoError(s.repo.Create(context.Background(), p2))
+
+	tx, err := s.DB.BeginTxx(context.Background(), nil)
+	s.NoError(err)
+	defer tx.Rollback()
+
+	products, err := s.repo.GetByIDsForUpdateTX(context.Background(), tx, []uuid.UUID{p1.ID, p2.ID})
+	s.NoError(err)
+	s.Len(products, 2)
+
+	// Edge case: empty slice
+	empty, err := s.repo.GetByIDsForUpdateTX(context.Background(), tx, []uuid.UUID{})
+	s.NoError(err)
+	s.Empty(empty)
+}
+
+func (s *ProductRepoSuite) TestDeductStockBatchTX() {
+	u := &domain.User{
+		ID: uuid.New(), FullName: "Owner Deduct", Username: "owner_deduct", Email: "deduct@example.com",
+		AuthProvider: domain.AuthProviderLocal, CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.userRepo.CreateUser(context.Background(), u))
+
+	m := &domain.Merchant{
+		ID: uuid.New(), UserID: u.ID, Name: "Stock Deduct Shop",
+		CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.merchantRepo.Create(context.Background(), m))
+
+	p1 := &domain.Product{
+		ID: uuid.New(), StoreID: m.ID, Name: "Deduct A",
+		Price: decimal.NewFromInt(10), Stock: 20,
+		CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	p2 := &domain.Product{
+		ID: uuid.New(), StoreID: m.ID, Name: "Deduct B",
+		Price: decimal.NewFromInt(20), Stock: 30,
+		CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.repo.Create(context.Background(), p1))
+	s.NoError(s.repo.Create(context.Background(), p2))
+
+	items := []domain.OrderItem{
+		{ProductID: p1.ID, Quantity: 3},
+		{ProductID: p2.ID, Quantity: 5},
+	}
+
+	tx, err := s.DB.BeginTxx(context.Background(), nil)
+	s.NoError(err)
+	defer tx.Rollback()
+
+	err = s.repo.DeductStockBatchTX(context.Background(), tx, items)
+	s.NoError(err)
+	s.NoError(tx.Commit())
+
+	// Verify stock was deducted
+	got1, _ := s.repo.GetByID(context.Background(), p1.ID)
+	got2, _ := s.repo.GetByID(context.Background(), p2.ID)
+	s.Equal(17, got1.Stock) // 20 - 3
+	s.Equal(25, got2.Stock) // 30 - 5
+}
+
 func TestProductRepoSuite(t *testing.T) {
 	suite.Run(t, new(ProductRepoSuite))
 }
