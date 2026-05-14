@@ -13,6 +13,7 @@ import (
 
 type WalletService interface {
 	GetWalletByUserID(ctx context.Context, userID uuid.UUID) (*WalletResponse, error)
+	GetWalletsByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]WalletResponse, error)
 	GetWalletHistory(ctx context.Context, userID uuid.UUID, page, limit int) ([]TransactionResponse, error)
 	Withdraw(ctx context.Context, userID uuid.UUID, req WithdrawRequest) error
 	CreateWallet(ctx context.Context, userID uuid.UUID) (*WalletResponse, error)
@@ -22,6 +23,7 @@ type WalletService interface {
 	SettlePendingBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	FreezeBalanceTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
 	RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, userID uuid.UUID, amount decimal.Decimal, txData domain.WalletTransaction) error
+	AddPendingBalancesBatchTX(ctx context.Context, tx *sqlx.Tx, userIDs []uuid.UUID, amounts []decimal.Decimal, txs []domain.WalletTransaction) error
 }
 
 type walletService struct {
@@ -52,6 +54,29 @@ func (s *walletService) GetWalletByUserID(ctx context.Context, userID uuid.UUID)
 		CreatedAt:      wallet.CreatedAt,
 		UpdatedAt:      wallet.UpdatedAt,
 	}, nil
+}
+
+func (s *walletService) GetWalletsByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]WalletResponse, error) {
+	wallets, err := s.walletRepo.GetWalletsByUserIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]WalletResponse, len(wallets))
+	for i, w := range wallets {
+		res[i] = WalletResponse{
+			ID:             w.ID,
+			UserID:         w.UserID,
+			WalletNumber:   w.WalletNumber,
+			Balance:        w.Balance,
+			PendingBalance: w.PendingBalance,
+			Currency:       w.Currency,
+			Status:         string(w.Status),
+			CreatedAt:      w.CreatedAt,
+			UpdatedAt:      w.UpdatedAt,
+		}
+	}
+	return res, nil
 }
 
 func (s *walletService) GetWalletHistory(ctx context.Context, userID uuid.UUID, page, limit int) ([]TransactionResponse, error) {
@@ -237,4 +262,37 @@ func (s *walletService) RefundFromPendingTX(ctx context.Context, tx *sqlx.Tx, us
 	}
 	txData.WalletID = w.ID
 	return s.walletRepo.RefundFromPendingTX(ctx, tx, w.ID, amount, txData)
+}
+
+func (s *walletService) AddPendingBalancesBatchTX(ctx context.Context, tx *sqlx.Tx, userIDs []uuid.UUID, amounts []decimal.Decimal, txs []domain.WalletTransaction) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	wallets, err := s.walletRepo.GetWalletsByUserIDs(ctx, userIDs)
+	if err != nil {
+		return err
+	}
+
+	walletMap := make(map[uuid.UUID]domain.Wallet)
+	for _, w := range wallets {
+		walletMap[w.UserID] = w
+	}
+
+	updates := make([]domain.WalletBalanceUpdate, len(userIDs))
+	for i, userID := range userIDs {
+		w, ok := walletMap[userID]
+		if !ok {
+			return domain.ErrWalletNotFound
+		}
+
+		txs[i].WalletID = w.ID
+		updates[i] = domain.WalletBalanceUpdate{
+			WalletID:    w.ID,
+			Amount:      amounts[i],
+			Transaction: txs[i],
+		}
+	}
+
+	return s.walletRepo.AddPendingBalancesBatchTX(ctx, tx, updates)
 }
