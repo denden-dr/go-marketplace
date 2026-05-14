@@ -14,7 +14,6 @@ import (
 	"go-marketplace/internal/domain"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
 )
 
@@ -25,7 +24,6 @@ type OrderService interface {
 	MerchantUpdateStatus(ctx context.Context, merchantID, orderID uuid.UUID, status domain.OrderStatus) error
 	MerchantCancelOrder(ctx context.Context, merchantID, orderID uuid.UUID) error
 	GetOrder(ctx context.Context, id uuid.UUID) (*OrderResponse, error)
-	HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error
 }
 
 type OrderPaymentResponse struct {
@@ -572,46 +570,4 @@ func (s *orderService) GetOrder(ctx context.Context, id uuid.UUID) (*OrderRespon
 		CreatedAt:             o.CreatedAt,
 		UpdatedAt:             o.UpdatedAt,
 	}, nil
-}
-
-func (s *orderService) HandlePaymentStatusChangeTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.PaymentStatus) error {
-	switch status {
-	case domain.PaymentStatusFailed, domain.PaymentStatusExpired:
-		orders, err := s.orderRepo.GetOrdersByPaymentIDForUpdateTX(ctx, tx, paymentID)
-		if err != nil {
-			return err
-		}
-
-		var allItems []domain.OrderItem
-		for _, o := range orders {
-			// Update Order Status
-			if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, o.ID, domain.OrderStatusCancelled); err != nil {
-				return err
-			}
-
-			// Collect Items
-			items, err := s.orderRepo.GetOrderItems(ctx, o.ID)
-			if err != nil {
-				return err
-			}
-			allItems = append(allItems, items...)
-		}
-
-		if len(allItems) > 0 {
-			if err := s.productRepo.RestoreStockBatchTX(ctx, tx, allItems); err != nil {
-				return err
-			}
-		}
-	case domain.PaymentStatusSuccess:
-		orders, err := s.orderRepo.GetOrdersByPaymentIDForUpdateTX(ctx, tx, paymentID)
-		if err != nil {
-			return err
-		}
-		for _, o := range orders {
-			if err := s.orderRepo.UpdateOrderStatusTX(ctx, tx, o.ID, domain.OrderStatusProcessing); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

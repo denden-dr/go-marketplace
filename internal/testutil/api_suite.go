@@ -73,9 +73,9 @@ func (s *ApiTestSuite) SetupTest() {
 	walletService := wallet.NewWalletService(walletRepo)
 	cartService := cart.NewCartService(cartRepo, productRepo)
 
-	paymentService := payment.NewPaymentService(paymentRepo, walletService, s.MockPaymentProvider, nil, s.DB)
+	orderManager := order.NewOrderManager(orderRepo, productRepo)
+	paymentService := payment.NewPaymentService(paymentRepo, walletService, s.MockPaymentProvider, orderManager, s.DB)
 	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletService, userRepo, merchantRepo, paymentService)
-	paymentService.SetOrderManager(orderService)
 
 	authHandler := auth.NewAuthHandler(authService, s.MockGoogleClient, "http://test-marketplace.local/login-success")
 	userHandler := user.NewUserHandler(userService)

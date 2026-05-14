@@ -132,39 +132,6 @@ func (_c *MockPaymentService_ProcessWebhook_Call) RunAndReturn(run func(context.
 	return _c
 }
 
-// SetOrderManager provides a mock function with given fields: _a0
-func (_m *MockPaymentService) SetOrderManager(_a0 OrderManager) {
-	_m.Called(_a0)
-}
-
-// MockPaymentService_SetOrderManager_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetOrderManager'
-type MockPaymentService_SetOrderManager_Call struct {
-	*mock.Call
-}
-
-// SetOrderManager is a helper method to define mock.On call
-//   - _a0 OrderManager
-func (_e *MockPaymentService_Expecter) SetOrderManager(_a0 interface{}) *MockPaymentService_SetOrderManager_Call {
-	return &MockPaymentService_SetOrderManager_Call{Call: _e.mock.On("SetOrderManager", _a0)}
-}
-
-func (_c *MockPaymentService_SetOrderManager_Call) Run(run func(_a0 OrderManager)) *MockPaymentService_SetOrderManager_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(OrderManager))
-	})
-	return _c
-}
-
-func (_c *MockPaymentService_SetOrderManager_Call) Return() *MockPaymentService_SetOrderManager_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *MockPaymentService_SetOrderManager_Call) RunAndReturn(run func(OrderManager)) *MockPaymentService_SetOrderManager_Call {
-	_c.Run(run)
-	return _c
-}
-
 // NewMockPaymentService creates a new instance of MockPaymentService. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockPaymentService(t interface {

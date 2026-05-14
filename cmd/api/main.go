@@ -111,15 +111,12 @@ func main() {
 	walletService := wallet.NewWalletService(walletRepo)
 	cartService := cart.NewCartService(cartRepo, productRepo)
 
-	// Payment Service setup with circular dependency handling
+	// Payment & Order setup — orderManager breaks the circular dependency
+	// by depending only on repositories, not on PaymentService.
 	mockPaymentProvider := payment.NewMockProvider()
-	paymentService := payment.NewPaymentService(paymentRepo, walletService, mockPaymentProvider, nil, db)
-
+	orderManager := order.NewOrderManager(orderRepo, productRepo)
+	paymentService := payment.NewPaymentService(paymentRepo, walletService, mockPaymentProvider, orderManager, db)
 	orderService := order.NewOrderService(orderRepo, cartRepo, productRepo, walletService, userRepo, merchantRepo, paymentService)
-	// SetOrderManager injects the order manager dependency. Required because
-	// order ↔ payment have a circular dependency that cannot be resolved via
-	// constructor injection. Call this immediately after construction in routes.go.
-	paymentService.SetOrderManager(orderService)
 
 	authHandler := auth.NewAuthHandler(authService, googleClient, cfg.Google.LoginRedirectURL)
 	userHandler := user.NewUserHandler(userService)
