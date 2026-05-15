@@ -59,6 +59,7 @@ The project follows a **Feature-Based Architecture** with a **Rich Domain Model*
 | Auth | JWT (RS256/HS256) + Google OAuth2 |
 | Migrations | golang-migrate |
 | Testing | testify, sqlmock, mockery, **testcontainers-go** |
+| Observability | Structured logging (`slog`) + Request Tracing (`X-Request-ID`) |
 
 ## 🔑 Key Features & Logic
 
@@ -114,6 +115,10 @@ make docker-down    # Stop docker-compose services
 - Use `NamedExecContext` for inserts/updates with named parameters.
 - Use `GetContext` (single row) / `SelectContext` (multiple rows) for queries.
 - Always propagate `context.Context`.
+
+### Observability
+- **Structured Logging**: Use `log/slog` for all logging. Avoid using the standard `log` package.
+- **Request Tracing**: All API responses (success and error) include a `trace_id` field corresponding to the `X-Request-ID` header. This ID is also included in all related log entries.
 
 ## 📂 Directory Structure
 
