@@ -74,6 +74,54 @@ func (_c *MockPaymentRepository_CreateDistributionTX_Call) RunAndReturn(run func
 	return _c
 }
 
+// CreateDistributionsBatchTX provides a mock function with given fields: ctx, tx, dists
+func (_m *MockPaymentRepository) CreateDistributionsBatchTX(ctx context.Context, tx *sqlx.Tx, dists []domain.PaymentDistribution) error {
+	ret := _m.Called(ctx, tx, dists)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateDistributionsBatchTX")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, []domain.PaymentDistribution) error); ok {
+		r0 = rf(ctx, tx, dists)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockPaymentRepository_CreateDistributionsBatchTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateDistributionsBatchTX'
+type MockPaymentRepository_CreateDistributionsBatchTX_Call struct {
+	*mock.Call
+}
+
+// CreateDistributionsBatchTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - dists []domain.PaymentDistribution
+func (_e *MockPaymentRepository_Expecter) CreateDistributionsBatchTX(ctx interface{}, tx interface{}, dists interface{}) *MockPaymentRepository_CreateDistributionsBatchTX_Call {
+	return &MockPaymentRepository_CreateDistributionsBatchTX_Call{Call: _e.mock.On("CreateDistributionsBatchTX", ctx, tx, dists)}
+}
+
+func (_c *MockPaymentRepository_CreateDistributionsBatchTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, dists []domain.PaymentDistribution)) *MockPaymentRepository_CreateDistributionsBatchTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].([]domain.PaymentDistribution))
+	})
+	return _c
+}
+
+func (_c *MockPaymentRepository_CreateDistributionsBatchTX_Call) Return(_a0 error) *MockPaymentRepository_CreateDistributionsBatchTX_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockPaymentRepository_CreateDistributionsBatchTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, []domain.PaymentDistribution) error) *MockPaymentRepository_CreateDistributionsBatchTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateTX provides a mock function with given fields: ctx, tx, p
 func (_m *MockPaymentRepository) CreateTX(ctx context.Context, tx *sqlx.Tx, p *domain.Payment) error {
 	ret := _m.Called(ctx, tx, p)

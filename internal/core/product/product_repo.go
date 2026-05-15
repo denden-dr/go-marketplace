@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strings"
 
 	"go-marketplace/internal/domain"
 
@@ -19,7 +20,9 @@ type ProductRepository interface {
 	GetByIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*domain.Product, error)
 	UpdateStockTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, stock int) error
 	RestoreStockBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error
+	DeductStockBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error
 	Search(ctx context.Context, query string, limit, offset int) ([]domain.Product, error)
+	GetByIDsForUpdateTX(ctx context.Context, tx *sqlx.Tx, ids []uuid.UUID) ([]domain.Product, error)
 }
 
 type productRepository struct {
@@ -94,12 +97,12 @@ func (r *productRepository) Search(ctx context.Context, query string, limit, off
 
 	return products, nil
 }
+
 func (r *productRepository) RestoreStockBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error {
 	if len(items) == 0 {
 		return nil
 	}
 
-	// Aggregate quantities to handle duplicate products across items
 	quantities := make(map[uuid.UUID]int)
 	var productIDs []string
 	for _, item := range items {
@@ -109,25 +112,79 @@ func (r *productRepository) RestoreStockBatchTX(ctx context.Context, tx *sqlx.Tx
 		quantities[item.ProductID] += item.Quantity
 	}
 
-	// Sort IDs to prevent deadlocks when updating multiple rows
 	sort.Strings(productIDs)
 
-	// Update stock using a bulk UPDATE query to avoid N+1 and deadlocks
-	query := "UPDATE products SET stock = stock + v.quantity FROM (VALUES "
-	args := []interface{}{}
-	i := 1
+	var sb strings.Builder
+	sb.WriteString("UPDATE products SET stock = stock + v.quantity FROM (VALUES ")
+
+	args := make([]interface{}, 0, len(productIDs)*2)
 	for idx, idStr := range productIDs {
 		id := uuid.MustParse(idStr)
 		qty := quantities[id]
 		if idx > 0 {
-			query += ", "
+			sb.WriteString(", ")
 		}
-		query += fmt.Sprintf("($%d::uuid, $%d::int)", i, i+1)
+		p := idx * 2
+		fmt.Fprintf(&sb, "($%d::uuid, $%d::int)", p+1, p+2)
 		args = append(args, id, qty)
-		i += 2
 	}
-	query += ") AS v(id, quantity) WHERE products.id = v.id"
+	sb.WriteString(") AS v(id, quantity) WHERE products.id = v.id")
 
-	_, err := tx.ExecContext(ctx, query, args...)
+	_, err := tx.ExecContext(ctx, sb.String(), args...)
 	return err
+}
+
+func (r *productRepository) DeductStockBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	quantities := make(map[uuid.UUID]int)
+	var productIDs []string
+	for _, item := range items {
+		if _, exists := quantities[item.ProductID]; !exists {
+			productIDs = append(productIDs, item.ProductID.String())
+		}
+		quantities[item.ProductID] += item.Quantity
+	}
+
+	sort.Strings(productIDs)
+
+	var sb strings.Builder
+	sb.WriteString("UPDATE products SET stock = stock - v.quantity FROM (VALUES ")
+
+	args := make([]interface{}, 0, len(productIDs)*2)
+	for idx, idStr := range productIDs {
+		id := uuid.MustParse(idStr)
+		qty := quantities[id]
+		if idx > 0 {
+			sb.WriteString(", ")
+		}
+		p := idx * 2
+		fmt.Fprintf(&sb, "($%d::uuid, $%d::int)", p+1, p+2)
+		args = append(args, id, qty)
+	}
+	sb.WriteString(") AS v(id, quantity) WHERE products.id = v.id")
+
+	_, err := tx.ExecContext(ctx, sb.String(), args...)
+	return err
+}
+
+func (r *productRepository) GetByIDsForUpdateTX(ctx context.Context, tx *sqlx.Tx, ids []uuid.UUID) ([]domain.Product, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	query := `SELECT id, store_id, name, description, price, stock, height_cm, width_cm, depth_cm, weight_kg, is_onsale, created_at
+	           FROM products WHERE id IN (?) ORDER BY id FOR UPDATE`
+
+	query, args, err := sqlx.In(query, ids)
+	if err != nil {
+		return nil, err
+	}
+	query = tx.Rebind(query)
+
+	var products []domain.Product
+	err = tx.SelectContext(ctx, &products, query, args...)
+	return products, err
 }

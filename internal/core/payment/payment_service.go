@@ -120,19 +120,28 @@ func (s *paymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 			return nil, err
 		}
 
-		// 2. Add to Merchants' Pending Balance (if applicable)
-		for _, dist := range req.Distributions {
-			distTxData := domain.WalletTransaction{
-				ID:          uuid.New(),
-				Amount:      dist.Amount,
-				Direction:   domain.TransactionDirectionIn,
-				Type:        domain.TransactionTypePayment,
-				Status:      domain.TransactionStatusSuccess,
-				ReferenceID: payment.ID.String(),
-				Description: fmt.Sprintf("Incoming payment for order %s", req.ReferenceID),
-				CreatedAt:   time.Now(),
+		// 2. Add to Merchants' Pending Balance (Batch)
+		if len(req.Distributions) > 0 {
+			userIDs := make([]uuid.UUID, len(req.Distributions))
+			amounts := make([]decimal.Decimal, len(req.Distributions))
+			txs := make([]domain.WalletTransaction, len(req.Distributions))
+
+			for i, dist := range req.Distributions {
+				userIDs[i] = dist.RecipientID
+				amounts[i] = dist.Amount
+				txs[i] = domain.WalletTransaction{
+					ID:          uuid.New(),
+					Amount:      dist.Amount,
+					Direction:   domain.TransactionDirectionIn,
+					Type:        domain.TransactionTypePayment,
+					Status:      domain.TransactionStatusSuccess,
+					ReferenceID: payment.ID.String(),
+					Description: fmt.Sprintf("Incoming payment for order %s", req.ReferenceID),
+					CreatedAt:   time.Now(),
+				}
 			}
-			if err := s.walletService.AddPendingBalanceTX(ctx, tx, dist.RecipientID, dist.Amount, distTxData); err != nil {
+
+			if err := s.walletService.AddPendingBalancesBatchTX(ctx, tx, userIDs, amounts, txs); err != nil {
 				return nil, err
 			}
 		}
@@ -143,16 +152,19 @@ func (s *paymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 			return nil, err
 		}
 
-		// Persist distributions
-		for _, dist := range req.Distributions {
-			d := &domain.PaymentDistribution{
-				ID:          uuid.New(),
-				PaymentID:   payment.ID,
-				RecipientID: dist.RecipientID,
-				Amount:      dist.Amount,
-				CreatedAt:   time.Now(),
+		// Persist distributions (Batch)
+		if len(req.Distributions) > 0 {
+			dists := make([]domain.PaymentDistribution, len(req.Distributions))
+			for i, dist := range req.Distributions {
+				dists[i] = domain.PaymentDistribution{
+					ID:          uuid.New(),
+					PaymentID:   payment.ID,
+					RecipientID: dist.RecipientID,
+					Amount:      dist.Amount,
+					CreatedAt:   time.Now(),
+				}
 			}
-			if err := s.paymentRepo.CreateDistributionTX(ctx, tx, d); err != nil {
+			if err := s.paymentRepo.CreateDistributionsBatchTX(ctx, tx, dists); err != nil {
 				return nil, err
 			}
 		}
@@ -164,25 +176,27 @@ func (s *paymentService) createPaymentInternal(ctx context.Context, tx *sqlx.Tx,
 		}, nil
 	}
 
-	// Handle External Provider (Midtrans) - Atomic with caller's tx
+	// Handle External Provider (Midtrans)
 	if err := s.paymentRepo.CreateTX(ctx, tx, payment); err != nil {
 		return nil, err
 	}
 
-	for _, dist := range req.Distributions {
-		d := &domain.PaymentDistribution{
-			ID:          uuid.New(),
-			PaymentID:   payment.ID,
-			RecipientID: dist.RecipientID,
-			Amount:      dist.Amount,
-			CreatedAt:   time.Now(),
+	if len(req.Distributions) > 0 {
+		dists := make([]domain.PaymentDistribution, len(req.Distributions))
+		for i, dist := range req.Distributions {
+			dists[i] = domain.PaymentDistribution{
+				ID:          uuid.New(),
+				PaymentID:   payment.ID,
+				RecipientID: dist.RecipientID,
+				Amount:      dist.Amount,
+				CreatedAt:   time.Now(),
+			}
 		}
-		if err := s.paymentRepo.CreateDistributionTX(ctx, tx, d); err != nil {
+		if err := s.paymentRepo.CreateDistributionsBatchTX(ctx, tx, dists); err != nil {
 			return nil, err
 		}
 	}
 
-	// Call External Provider (Holding the transaction, but ensures atomicity)
 	snapToken, err := s.provider.CreateTransaction(ctx, payment)
 	if err != nil {
 		return nil, err
@@ -241,18 +255,28 @@ func (s *paymentService) ProcessWebhook(ctx context.Context, externalID string, 
 			if err != nil {
 				return err
 			}
-			for _, dist := range distributions {
-				txData := domain.WalletTransaction{
-					ID:          uuid.New(),
-					Amount:      dist.Amount,
-					Direction:   domain.TransactionDirectionIn,
-					Type:        domain.TransactionTypePayment,
-					Status:      domain.TransactionStatusSuccess,
-					ReferenceID: p.ID.String(),
-					Description: fmt.Sprintf("Incoming payment for order %s", p.ReferenceID),
-					CreatedAt:   time.Now(),
+
+			if len(distributions) > 0 {
+				userIDs := make([]uuid.UUID, len(distributions))
+				amounts := make([]decimal.Decimal, len(distributions))
+				txs := make([]domain.WalletTransaction, len(distributions))
+
+				for i, dist := range distributions {
+					userIDs[i] = dist.RecipientID
+					amounts[i] = dist.Amount
+					txs[i] = domain.WalletTransaction{
+						ID:          uuid.New(),
+						Amount:      dist.Amount,
+						Direction:   domain.TransactionDirectionIn,
+						Type:        domain.TransactionTypePayment,
+						Status:      domain.TransactionStatusSuccess,
+						ReferenceID: p.ID.String(),
+						Description: fmt.Sprintf("Incoming payment for order %s", p.ReferenceID),
+						CreatedAt:   time.Now(),
+					}
 				}
-				if err := s.walletService.AddPendingBalanceTX(ctx, tx, dist.RecipientID, dist.Amount, txData); err != nil {
+
+				if err := s.walletService.AddPendingBalancesBatchTX(ctx, tx, userIDs, amounts, txs); err != nil {
 					return err
 				}
 			}

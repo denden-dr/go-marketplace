@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -19,9 +20,11 @@ import (
 
 	"go-marketplace/internal/common"
 	"go-marketplace/internal/config"
+	"go-marketplace/internal/middleware"
 	"go-marketplace/internal/server"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/joho/godotenv"
 )
 
@@ -52,6 +55,15 @@ func main() {
 	}
 
 	cfg := config.Load()
+
+	// Initialize Structured Logging
+	var handler slog.Handler
+	if cfg.AppEnv == "production" {
+		handler = slog.NewJSONHandler(os.Stdout, nil)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+	}
+	slog.SetDefault(slog.New(handler))
 
 	// Initialize Database
 	db, err := database.ConnectDB(cfg.DB)
@@ -139,6 +151,10 @@ func main() {
 		Immutable:    true,
 		ErrorHandler: common.ErrorHandler,
 	})
+
+	// Global Middlewares
+	app.Use(requestid.New())
+	app.Use(middleware.Logger())
 
 	// Setup Routes
 	server.SetupRoutes(

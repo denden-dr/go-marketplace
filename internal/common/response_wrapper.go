@@ -3,7 +3,7 @@ package common
 import (
 	"errors"
 	"go-marketplace/internal/domain"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,16 +14,18 @@ type SuccessResponse struct {
 	Message string      `json:"message"`
 	Status  int         `json:"status"`
 	Data    interface{} `json:"data,omitempty"`
+	TraceID string      `json:"trace_id,omitempty"`
 }
 
 // ProblemDetails follows RFC 7807 for error responses
 type ProblemDetails struct {
-	Type     string            `json:"type"`             // Error category URI
-	Title    string            `json:"title"`            // Short summary
-	Status   int               `json:"status"`           // HTTP status
-	Detail   string            `json:"detail"`           // Specific explanation
-	Instance string            `json:"instance"`         // Request URI
-	Errors   map[string]string `json:"errors,omitempty"` // Field-specific issues
+	Type     string            `json:"type"`               // Error category URI
+	Title    string            `json:"title"`              // Short summary
+	Status   int               `json:"status"`             // HTTP status
+	Detail   string            `json:"detail"`             // Specific explanation
+	Instance string            `json:"instance"`           // Request URI
+	Errors   map[string]string `json:"errors,omitempty"`   // Field-specific issues
+	TraceID  string            `json:"trace_id,omitempty"` // Request ID for tracing
 }
 
 // NewSuccessResponse creates a new standardized success response
@@ -32,6 +34,7 @@ func NewSuccessResponse(c *fiber.Ctx, status int, message string, data interface
 		Message: message,
 		Status:  status,
 		Data:    data,
+		TraceID: c.GetRespHeader(fiber.HeaderXRequestID),
 	})
 }
 
@@ -45,6 +48,7 @@ func NewProblemResponse(c *fiber.Ctx, status int, title, detail, typeURI string,
 		Detail:   detail,
 		Instance: c.Path(),
 		Errors:   validationErrors,
+		TraceID:  c.GetRespHeader(fiber.HeaderXRequestID),
 	})
 }
 
@@ -81,8 +85,13 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 
 	// Log internal errors
 	if status == fiber.StatusInternalServerError {
-		requestID := c.Get("X-Request-Id")
-		log.Printf("[ERROR] Internal Server Error: %v | Path: %s | RequestID: %s", err, c.Path(), requestID)
+		requestID := c.GetRespHeader(fiber.HeaderXRequestID)
+		slog.Error("Internal Server Error",
+			"error", err,
+			"path", c.Path(),
+			"method", c.Method(),
+			"trace_id", requestID,
+		)
 		detail = "An unexpected error occurred. Please contact support."
 	}
 

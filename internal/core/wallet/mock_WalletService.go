@@ -128,6 +128,56 @@ func (_c *MockWalletService_AddPendingBalanceTX_Call) RunAndReturn(run func(cont
 	return _c
 }
 
+// AddPendingBalancesBatchTX provides a mock function with given fields: ctx, tx, userIDs, amounts, txs
+func (_m *MockWalletService) AddPendingBalancesBatchTX(ctx context.Context, tx *sqlx.Tx, userIDs []uuid.UUID, amounts []decimal.Decimal, txs []domain.WalletTransaction) error {
+	ret := _m.Called(ctx, tx, userIDs, amounts, txs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddPendingBalancesBatchTX")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, []uuid.UUID, []decimal.Decimal, []domain.WalletTransaction) error); ok {
+		r0 = rf(ctx, tx, userIDs, amounts, txs)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockWalletService_AddPendingBalancesBatchTX_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddPendingBalancesBatchTX'
+type MockWalletService_AddPendingBalancesBatchTX_Call struct {
+	*mock.Call
+}
+
+// AddPendingBalancesBatchTX is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - userIDs []uuid.UUID
+//   - amounts []decimal.Decimal
+//   - txs []domain.WalletTransaction
+func (_e *MockWalletService_Expecter) AddPendingBalancesBatchTX(ctx interface{}, tx interface{}, userIDs interface{}, amounts interface{}, txs interface{}) *MockWalletService_AddPendingBalancesBatchTX_Call {
+	return &MockWalletService_AddPendingBalancesBatchTX_Call{Call: _e.mock.On("AddPendingBalancesBatchTX", ctx, tx, userIDs, amounts, txs)}
+}
+
+func (_c *MockWalletService_AddPendingBalancesBatchTX_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, userIDs []uuid.UUID, amounts []decimal.Decimal, txs []domain.WalletTransaction)) *MockWalletService_AddPendingBalancesBatchTX_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].([]uuid.UUID), args[3].([]decimal.Decimal), args[4].([]domain.WalletTransaction))
+	})
+	return _c
+}
+
+func (_c *MockWalletService_AddPendingBalancesBatchTX_Call) Return(_a0 error) *MockWalletService_AddPendingBalancesBatchTX_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockWalletService_AddPendingBalancesBatchTX_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, []uuid.UUID, []decimal.Decimal, []domain.WalletTransaction) error) *MockWalletService_AddPendingBalancesBatchTX_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateWallet provides a mock function with given fields: ctx, userID
 func (_m *MockWalletService) CreateWallet(ctx context.Context, userID uuid.UUID) (*WalletResponse, error) {
 	ret := _m.Called(ctx, userID)
@@ -403,6 +453,65 @@ func (_c *MockWalletService_GetWalletHistory_Call) Return(_a0 []TransactionRespo
 }
 
 func (_c *MockWalletService_GetWalletHistory_Call) RunAndReturn(run func(context.Context, uuid.UUID, int, int) ([]TransactionResponse, error)) *MockWalletService_GetWalletHistory_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetWalletsByUserIDs provides a mock function with given fields: ctx, userIDs
+func (_m *MockWalletService) GetWalletsByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]WalletResponse, error) {
+	ret := _m.Called(ctx, userIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetWalletsByUserIDs")
+	}
+
+	var r0 []WalletResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, []uuid.UUID) ([]WalletResponse, error)); ok {
+		return rf(ctx, userIDs)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, []uuid.UUID) []WalletResponse); ok {
+		r0 = rf(ctx, userIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]WalletResponse)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, []uuid.UUID) error); ok {
+		r1 = rf(ctx, userIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockWalletService_GetWalletsByUserIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetWalletsByUserIDs'
+type MockWalletService_GetWalletsByUserIDs_Call struct {
+	*mock.Call
+}
+
+// GetWalletsByUserIDs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userIDs []uuid.UUID
+func (_e *MockWalletService_Expecter) GetWalletsByUserIDs(ctx interface{}, userIDs interface{}) *MockWalletService_GetWalletsByUserIDs_Call {
+	return &MockWalletService_GetWalletsByUserIDs_Call{Call: _e.mock.On("GetWalletsByUserIDs", ctx, userIDs)}
+}
+
+func (_c *MockWalletService_GetWalletsByUserIDs_Call) Run(run func(ctx context.Context, userIDs []uuid.UUID)) *MockWalletService_GetWalletsByUserIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockWalletService_GetWalletsByUserIDs_Call) Return(_a0 []WalletResponse, _a1 error) *MockWalletService_GetWalletsByUserIDs_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockWalletService_GetWalletsByUserIDs_Call) RunAndReturn(run func(context.Context, []uuid.UUID) ([]WalletResponse, error)) *MockWalletService_GetWalletsByUserIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }

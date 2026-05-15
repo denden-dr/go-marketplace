@@ -82,17 +82,28 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 	}
 
 	// 2. Lock and Validate Stock, Calculate Total
+	productIDs := make([]uuid.UUID, len(cartItems))
+	cartItemsMap := make(map[uuid.UUID]domain.CartItem)
+	for i, ci := range cartItems {
+		productIDs[i] = ci.ProductID
+		cartItemsMap[ci.ProductID] = ci
+	}
+
+	products, err := s.productRepo.GetByIDsForUpdateTX(ctx, tx, productIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(products) != len(productIDs) {
+		return nil, domain.ErrProductNotFound
+	}
+
 	totalAmount := decimal.Zero
 	merchantItems := make(map[uuid.UUID][]domain.CartItem)
+	productMap := make(map[uuid.UUID]domain.Product)
 
-	for _, ci := range cartItems {
-		p, err := s.productRepo.GetByIDForUpdateTX(ctx, tx, ci.ProductID)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			return nil, domain.ErrProductNotFound
-		}
+	for _, p := range products {
+		ci := cartItemsMap[p.ID]
 		if p.Stock < ci.Quantity {
 			return nil, domain.ErrInsufficientStock
 		}
@@ -101,21 +112,39 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		totalAmount = totalAmount.Add(itemTotal)
 
 		merchantItems[p.StoreID] = append(merchantItems[p.StoreID], ci)
+		productMap[p.ID] = p
 	}
 
 	// 3. Prepare Payment Distributions (for escrow)
-	distributions := []payment.PaymentDistribution{}
+	merchantIDs := make([]uuid.UUID, 0, len(merchantItems))
+	for mid := range merchantItems {
+		merchantIDs = append(merchantIDs, mid)
+	}
+
+	merchants, err := s.merchantRepo.GetByIDs(ctx, merchantIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(merchants) != len(merchantIDs) {
+		return nil, domain.ErrMerchantNotFound
+	}
+
+	merchantMap := make(map[uuid.UUID]domain.Merchant)
+	for _, m := range merchants {
+		merchantMap[m.ID] = m
+	}
+
+	distributions := make([]payment.PaymentDistribution, 0, len(merchantItems))
 	for merchantID, items := range merchantItems {
 		merchantAmount := decimal.Zero
 		for _, item := range items {
-			merchantAmount = merchantAmount.Add(item.Product.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
+			p := productMap[item.ProductID]
+			merchantAmount = merchantAmount.Add(p.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 		}
 
-		m, err := s.merchantRepo.GetByID(ctx, merchantID)
-		if err != nil {
-			return nil, err
-		}
-		if m == nil {
+		m, ok := merchantMap[merchantID]
+		if !ok {
 			return nil, domain.ErrMerchantNotFound
 		}
 		distributions = append(distributions, payment.PaymentDistribution{RecipientID: m.UserID, Amount: merchantAmount})
@@ -127,7 +156,7 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		Amount:        totalAmount,
 		Type:          domain.PaymentTypeOrder,
 		Method:        req.PaymentMethod,
-		ReferenceID:   uuid.New(), // Placeholder OrderID group or just a random ID for the payment session
+		ReferenceID:   uuid.New(),
 		Distributions: distributions,
 	}
 
@@ -136,7 +165,7 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		return nil, err
 	}
 
-	// 4. Resolve Shipping Address snapshot
+	// 5. Resolve Shipping Address snapshot
 	var addrRecipientName, addrPhone, addrStreet, addrCity, addrProvince, addrPostal string
 
 	if req.AddressID != nil {
@@ -154,7 +183,6 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		addrProvince = addr.Province
 		addrPostal = addr.PostalCode
 	} else if req.ShippingRecipientName != "" {
-		// Mandatory fields for custom address
 		if req.ShippingPhoneNumber == "" || req.ShippingStreetAddress == "" || req.ShippingCity == "" || req.ShippingProvince == "" || req.ShippingPostalCode == "" {
 			return nil, fmt.Errorf("incomplete custom shipping address")
 		}
@@ -165,7 +193,6 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 		addrProvince = req.ShippingProvince
 		addrPostal = req.ShippingPostalCode
 	} else {
-		// Try to get default address
 		addresses, err := s.userRepo.GetAddressesByUserID(ctx, userID)
 		if err != nil {
 			return nil, err
@@ -187,17 +214,20 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 	}
 
 	// 6. Create Orders and Items
-	orderIDs := []uuid.UUID{}
+	orderIDs := make([]uuid.UUID, 0, len(merchantItems))
+	allOrderItems := []domain.OrderItem{}
 	orderStatus := domain.OrderStatusPending
 	if payRes.Status == domain.PaymentStatusSuccess {
 		orderStatus = domain.OrderStatusProcessing
 	}
 
+	now := time.Now()
 	for merchantID, items := range merchantItems {
 		orderID := uuid.New()
 		orderAmount := decimal.Zero
 		for _, item := range items {
-			orderAmount = orderAmount.Add(item.Product.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
+			p := productMap[item.ProductID]
+			orderAmount = orderAmount.Add(p.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 		}
 
 		order := &domain.Order{
@@ -214,36 +244,38 @@ func (s *orderService) CreateUserCheckout(ctx context.Context, userID uuid.UUID,
 			ShippingProvince:      addrProvince,
 			ShippingPostalCode:    addrPostal,
 			IsAppealed:            false,
-			CreatedAt:             time.Now(),
-			UpdatedAt:             time.Now(),
+			CreatedAt:             now,
+			UpdatedAt:             now,
 		}
 		if err := s.orderRepo.CreateOrderTX(ctx, tx, order); err != nil {
 			return nil, err
 		}
 
 		for _, ci := range items {
-			orderItem := &domain.OrderItem{
+			p := productMap[ci.ProductID]
+			allOrderItems = append(allOrderItems, domain.OrderItem{
 				ID:        uuid.New(),
 				OrderID:   orderID,
 				ProductID: ci.ProductID,
 				Quantity:  ci.Quantity,
-				Price:     ci.Product.Price,
-				CreatedAt: time.Now(),
-			}
-			if err := s.orderRepo.CreateOrderItemTX(ctx, tx, orderItem); err != nil {
-				return nil, err
-			}
-
-			// Update Product Stock
-			newStock := ci.Product.Stock - ci.Quantity
-			if err := s.productRepo.UpdateStockTX(ctx, tx, ci.ProductID, newStock); err != nil {
-				return nil, err
-			}
+				Price:     p.Price,
+				CreatedAt: now,
+			})
 		}
 		orderIDs = append(orderIDs, orderID)
 	}
 
-	// 6. Clear Cart
+	// Batch Create Order Items
+	if err := s.orderRepo.CreateOrderItemsBatchTX(ctx, tx, allOrderItems); err != nil {
+		return nil, err
+	}
+
+	// Batch Deduct Stock
+	if err := s.productRepo.DeductStockBatchTX(ctx, tx, allOrderItems); err != nil {
+		return nil, err
+	}
+
+	// 7. Clear Cart
 	if err := s.cartRepo.ClearCartTX(ctx, tx, userID); err != nil {
 		return nil, err
 	}

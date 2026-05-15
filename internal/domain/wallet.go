@@ -65,3 +65,9 @@ type WalletTransaction struct {
 	Description         string               `json:"description" db:"description"`
 	CreatedAt           time.Time            `json:"created_at" db:"created_at"`
 }
+
+type WalletBalanceUpdate struct {
+	WalletID    uuid.UUID
+	Amount      decimal.Decimal
+	Transaction WalletTransaction
+}

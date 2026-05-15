@@ -110,6 +110,27 @@ func (s *MerchantRepoSuite) TestGetPool() {
 	s.Equal(s.DB, pool)
 }
 
+func (s *MerchantRepoSuite) TestGetByIDs() {
+	u := &domain.User{
+		ID: uuid.New(), FullName: "Owner", Username: "owner_merch", Email: "merch@example.com",
+		AuthProvider: domain.AuthProviderLocal, CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.userRepo.CreateUser(context.Background(), u))
+
+	m1 := &domain.Merchant{
+		ID: uuid.New(), UserID: u.ID, Name: "Shop A", CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	m2 := &domain.Merchant{
+		ID: uuid.New(), UserID: u.ID, Name: "Shop B", CreatedAt: time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.repo.Create(context.Background(), m1))
+	s.NoError(s.repo.Create(context.Background(), m2))
+
+	merchants, err := s.repo.GetByIDs(context.Background(), []uuid.UUID{m1.ID, m2.ID})
+	s.NoError(err)
+	s.Len(merchants, 2)
+}
+
 func TestMerchantRepoSuite(t *testing.T) {
 	suite.Run(t, new(MerchantRepoSuite))
 }

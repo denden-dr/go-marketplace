@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 
+	"fmt"
 	"go-marketplace/internal/domain"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -23,6 +25,9 @@ type OrderRepository interface {
 	GetOrderItems(ctx context.Context, orderID uuid.UUID) ([]domain.OrderItem, error)
 	GetOrdersByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.Order, error)
 	GetOrdersByPaymentIDForUpdateTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID) ([]domain.Order, error)
+	UpdateOrderStatusByPaymentIDTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.OrderStatus) error
+	GetOrderItemsByOrderIDsTX(ctx context.Context, tx *sqlx.Tx, orderIDs []uuid.UUID) ([]domain.OrderItem, error)
+	CreateOrderItemsBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error
 }
 
 type orderRepository struct {
@@ -139,4 +144,64 @@ func (r *orderRepository) GetOrdersByPaymentIDForUpdateTX(ctx context.Context, t
 	var orders []domain.Order
 	err := tx.SelectContext(ctx, &orders, query, paymentID)
 	return orders, err
+}
+
+func (r *orderRepository) UpdateOrderStatusByPaymentIDTX(ctx context.Context, tx *sqlx.Tx, paymentID uuid.UUID, status domain.OrderStatus) error {
+	query := `UPDATE orders SET status = $1, updated_at = NOW() WHERE payment_id = $2`
+	res, err := tx.ExecContext(ctx, query, status, paymentID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("no orders found for payment ID: %s", paymentID)
+	}
+	return nil
+}
+
+func (r *orderRepository) GetOrderItemsByOrderIDsTX(ctx context.Context, tx *sqlx.Tx, orderIDs []uuid.UUID) ([]domain.OrderItem, error) {
+	if len(orderIDs) == 0 {
+		return nil, nil
+	}
+
+	query := `SELECT id, order_id, product_id, quantity, price, created_at
+	           FROM order_items WHERE order_id IN (?)`
+
+	// sqlx.In expands the slice into individual placeholders
+	query, args, err := sqlx.In(query, orderIDs)
+	if err != nil {
+		return nil, err
+	}
+	// Rebind to PostgreSQL placeholder style ($1, $2, ...)
+	query = tx.Rebind(query)
+
+	var items []domain.OrderItem
+	err = tx.SelectContext(ctx, &items, query, args...)
+	return items, err
+}
+
+func (r *orderRepository) CreateOrderItemsBatchTX(ctx context.Context, tx *sqlx.Tx, items []domain.OrderItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString("INSERT INTO order_items (id, order_id, product_id, quantity, price, created_at) VALUES ")
+
+	args := make([]interface{}, 0, len(items)*6)
+	for idx, item := range items {
+		if idx > 0 {
+			sb.WriteString(", ")
+		}
+		p := idx * 6
+		fmt.Fprintf(&sb, "($%d, $%d, $%d, $%d, $%d, $%d)", p+1, p+2, p+3, p+4, p+5, p+6)
+		args = append(args, item.ID, item.OrderID, item.ProductID, item.Quantity, item.Price, item.CreatedAt)
+	}
+
+	_, err := tx.ExecContext(ctx, sb.String(), args...)
+	return err
 }

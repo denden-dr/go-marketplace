@@ -15,12 +15,14 @@ import (
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/core/wallet"
 	"go-marketplace/internal/domain"
+	"go-marketplace/internal/middleware"
 	"go-marketplace/internal/server"
 	"net/http"
 	"net/http/httptest"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
@@ -47,6 +49,10 @@ func (s *ApiTestSuite) SetupTest() {
 		Immutable:    true,
 		ErrorHandler: common.ErrorHandler,
 	})
+
+	// Apply global middlewares
+	s.App.Use(requestid.New())
+	s.App.Use(middleware.Logger())
 
 	// Initialize Layers
 	userRepo := user.NewUserRepository(s.DB)

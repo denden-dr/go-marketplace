@@ -86,14 +86,16 @@ func (s *AuthApiTestSuite) TestRegister() {
 			s.Equal(tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus < 400 {
+				var result common.SuccessResponse
+				json.NewDecoder(resp.Body).Decode(&result)
+				s.NotEmpty(result.TraceID, "TraceID should not be empty")
 				if tt.expectedMsg != "" {
-					var result common.SuccessResponse
-					json.NewDecoder(resp.Body).Decode(&result)
 					s.Equal(tt.expectedMsg, result.Message)
 				}
 			} else {
 				var pd common.ProblemDetails
 				json.NewDecoder(resp.Body).Decode(&pd)
+				s.NotEmpty(pd.TraceID, "TraceID should not be empty in error response")
 				s.Equal(tt.expectedStatus, pd.Status)
 				s.NotEmpty(pd.Title)
 				s.Contains(pd.Type, "/errors/")

@@ -3,7 +3,9 @@ package payment
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"go-marketplace/internal/domain"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -18,6 +20,7 @@ type PaymentRepository interface {
 	UpdateStatusTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, status domain.PaymentStatus, externalID *string) error
 	UpdateSnapTokenTX(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, snapToken string) error
 	CreateDistributionTX(ctx context.Context, tx *sqlx.Tx, d *domain.PaymentDistribution) error
+	CreateDistributionsBatchTX(ctx context.Context, tx *sqlx.Tx, dists []domain.PaymentDistribution) error
 	GetDistributionsByPaymentID(ctx context.Context, paymentID uuid.UUID) ([]domain.PaymentDistribution, error)
 }
 
@@ -116,4 +119,26 @@ func (r *paymentRepository) GetDistributionsByPaymentID(ctx context.Context, pay
 	var distributions []domain.PaymentDistribution
 	err := r.db.SelectContext(ctx, &distributions, query, paymentID)
 	return distributions, err
+}
+
+func (r *paymentRepository) CreateDistributionsBatchTX(ctx context.Context, tx *sqlx.Tx, dists []domain.PaymentDistribution) error {
+	if len(dists) == 0 {
+		return nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString("INSERT INTO payment_distributions (id, payment_id, recipient_id, amount, created_at) VALUES ")
+
+	args := make([]interface{}, 0, len(dists)*5)
+	for idx, d := range dists {
+		if idx > 0 {
+			sb.WriteString(", ")
+		}
+		p := idx * 5
+		fmt.Fprintf(&sb, "($%d, $%d, $%d, $%d, $%d)", p+1, p+2, p+3, p+4, p+5)
+		args = append(args, d.ID, d.PaymentID, d.RecipientID, d.Amount, d.CreatedAt)
+	}
+
+	_, err := tx.ExecContext(ctx, sb.String(), args...)
+	return err
 }

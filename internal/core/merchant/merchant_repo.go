@@ -14,6 +14,7 @@ type MerchantRepository interface {
 	Create(ctx context.Context, m *domain.Merchant) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Merchant, error)
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Merchant, error)
+	GetByIDs(ctx context.Context, ids []uuid.UUID) ([]domain.Merchant, error)
 	CreateTx(ctx context.Context, tx *sqlx.Tx, m *domain.Merchant) error
 	GetPool() domain.Pool
 }
@@ -68,4 +69,21 @@ func (r *merchantRepository) CreateTx(ctx context.Context, tx *sqlx.Tx, m *domai
 
 func (r *merchantRepository) GetPool() domain.Pool {
 	return r.db
+}
+
+func (r *merchantRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]domain.Merchant, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	query := `SELECT id, user_id, name, about, tax_id, created_at FROM merchants WHERE id IN (?)`
+	query, args, err := sqlx.In(query, ids)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+
+	var merchants []domain.Merchant
+	err = r.db.SelectContext(ctx, &merchants, query, args...)
+	return merchants, err
 }
