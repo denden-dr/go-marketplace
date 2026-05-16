@@ -35,6 +35,7 @@ func (s *MerchantRepoSuite) TestCreateAndGet() {
 		Username:     "owner",
 		Email:        "owner@example.com",
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u))
@@ -77,6 +78,7 @@ func (s *MerchantRepoSuite) TestCreateTx() {
 		Username:     "txowner",
 		Email:        "tx@example.com",
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u))
@@ -113,7 +115,7 @@ func (s *MerchantRepoSuite) TestGetPool() {
 func (s *MerchantRepoSuite) TestGetByIDs() {
 	u := &domain.User{
 		ID: uuid.New(), FullName: "Owner", Username: "owner_merch", Email: "merch@example.com",
-		AuthProvider: domain.AuthProviderLocal, CreatedAt: time.Now().Truncate(time.Microsecond),
+		AuthProvider: domain.AuthProviderLocal, Role: domain.RoleUser, CreatedAt: time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u))
 
