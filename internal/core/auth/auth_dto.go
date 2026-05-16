@@ -38,13 +38,14 @@ func (r RegisterRequest) Validate() error {
 }
 
 type AuthResponse struct {
-	ID           uuid.UUID `json:"id"`
-	FullName     string    `json:"full_name"`
-	Username     string    `json:"username"`
-	Email        string    `json:"email"`
-	CreatedAt    time.Time `json:"created_at"`
-	AccessToken  string    `json:"-"`
-	RefreshToken string    `json:"-"`
+	ID           uuid.UUID       `json:"id"`
+	FullName     string          `json:"full_name"`
+	Username     string          `json:"username"`
+	Email        string          `json:"email"`
+	Role         domain.UserRole `json:"role"`
+	CreatedAt    time.Time       `json:"created_at"`
+	AccessToken  string          `json:"-"`
+	RefreshToken string          `json:"-"`
 }
 
 type RefreshRequest struct{}

@@ -177,6 +177,7 @@ func TestAuthService_Login(t *testing.T) {
 		IsVerified:   true,
 		Password:     &hashedStr,
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 	}
 
 	tests := []struct {
@@ -247,7 +248,7 @@ func TestAuthService_RefreshTokens(t *testing.T) {
 	rawToken := "old-refresh-token"
 	userID := uuid.New()
 	familyID := uuid.New()
-	u := &domain.User{ID: userID, FullName: "Test User", Email: "test@example.com", AuthProvider: domain.AuthProviderLocal}
+	u := &domain.User{ID: userID, FullName: "Test User", Email: "test@example.com", AuthProvider: domain.AuthProviderLocal, Role: domain.RoleUser}
 
 	tests := []struct {
 		name      string

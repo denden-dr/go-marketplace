@@ -75,6 +75,7 @@ func (s *authService) Register(ctx context.Context, fullName, email, password, u
 		Password:     &hashedPasswordStr,
 		AuthProvider: domain.AuthProviderLocal,
 		IsVerified:   false,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now(),
 	}
 
@@ -166,7 +167,7 @@ func (s *authService) Login(ctx context.Context, email, password, ipAddress, use
 }
 
 func (s *authService) generateAuthResponse(ctx context.Context, u *domain.User, ipAddress, userAgent string) (*AuthResponse, error) {
-	accessToken, err := GenerateAccessToken(u.ID, s.jwtSecret)
+	accessToken, err := GenerateAccessToken(u.ID, u.Role, s.jwtSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -199,6 +200,7 @@ func (s *authService) generateAuthResponse(ctx context.Context, u *domain.User, 
 		FullName:     u.FullName,
 		Username:     u.Username,
 		Email:        u.Email,
+		Role:         u.Role,
 		CreatedAt:    u.CreatedAt,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -233,7 +235,15 @@ func (s *authService) RefreshTokens(ctx context.Context, rawToken, ipAddress, us
 	}
 
 	// Generate new tokens
-	accessToken, err := GenerateAccessToken(session.UserID, s.jwtSecret)
+	user, err := s.userRepo.GetUserByID(ctx, session.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
+
+	accessToken, err := GenerateAccessToken(session.UserID, user.Role, s.jwtSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -261,19 +271,12 @@ func (s *authService) RefreshTokens(ctx context.Context, rawToken, ipAddress, us
 		return nil, err
 	}
 
-	user, err := s.userRepo.GetUserByID(ctx, session.UserID)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		return nil, domain.ErrUserNotFound
-	}
-
 	return &AuthResponse{
 		ID:           session.UserID,
 		FullName:     user.FullName,
 		Username:     user.Username,
 		Email:        user.Email,
+		Role:         user.Role,
 		CreatedAt:    user.CreatedAt,
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
@@ -349,6 +352,7 @@ func (s *authService) HandleGoogleLogin(ctx context.Context, code, state, expect
 		AuthProvider: domain.AuthProviderGoogle,
 		ProviderID:   &userInfo.Sub,
 		IsVerified:   true, // Google emails are already verified
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now(),
 	}
 
