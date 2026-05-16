@@ -6,6 +6,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type UserRole string
+
+const (
+	RoleUser          UserRole = "user"
+	RoleMerchant      UserRole = "merchant"
+	RoleAdministrator UserRole = "administrator"
+)
+
 type User struct {
 	ID           uuid.UUID `json:"id" db:"id"`
 	FullName     string    `json:"full_name" db:"full_name"`
@@ -15,6 +23,7 @@ type User struct {
 	AuthProvider string    `json:"auth_provider" db:"auth_provider"`
 	ProviderID   *string   `json:"provider_id" db:"provider_id"`
 	IsVerified   bool      `json:"is_verified" db:"is_verified"`
+	Role         UserRole  `json:"role" db:"role"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 
