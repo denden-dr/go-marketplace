@@ -3,7 +3,6 @@
 package api
 
 import (
-	"encoding/json"
 	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/cart"
 	"go-marketplace/internal/core/product"
@@ -48,8 +47,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 				return token, prodID
 			},
@@ -76,8 +74,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 
 				addReq := cart.AddToCartRequest{ProductID: uuid.MustParse(prodID), Quantity: 1}
@@ -88,8 +85,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			},
 			expectedStatus: http.StatusOK,
 			verify: func(resp *http.Response) {
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				cartData := result.Data.(map[string]interface{})
 				items := cartData["items"].([]interface{})
 				s.Len(items, 1)
@@ -110,8 +106,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 
 				addReq := cart.AddToCartRequest{ProductID: uuid.MustParse(prodID), Quantity: 1}
@@ -140,8 +135,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 
 				addReq := cart.AddToCartRequest{ProductID: uuid.MustParse(prodID), Quantity: 1}
@@ -179,7 +173,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 
 			if tt.expectedStatus >= 400 {
 				var pd common.ProblemDetails
-				json.NewDecoder(resp.Body).Decode(&pd)
+				s.DecodeResponse(resp, &pd)
 				s.Equal(tt.expectedStatus, pd.Status)
 				s.NotEmpty(pd.Title)
 				s.Contains(pd.Type, "/errors/")

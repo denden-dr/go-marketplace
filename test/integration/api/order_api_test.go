@@ -4,7 +4,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/cart"
 	"go-marketplace/internal/core/order"
@@ -54,8 +53,7 @@ func (s *OrderApiTestSuite) TestCheckout() {
 				req.Header.Set("Authorization", merchantToken)
 				resp, _ := s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 
 				// Create Address
@@ -67,8 +65,8 @@ func (s *OrderApiTestSuite) TestCheckout() {
 				req.Header.Set("Authorization", buyerToken)
 				resp, _ = s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-				json.NewDecoder(resp.Body).Decode(&result)
-				addrID := result.Data.(map[string]interface{})["id"].(string)
+				addrResult := s.DecodeSuccess(resp)
+				addrID := addrResult.Data.(map[string]interface{})["id"].(string)
 
 				// Buyer Wallet Balance
 				s.DB.ExecContext(context.Background(), `
@@ -104,8 +102,7 @@ func (s *OrderApiTestSuite) TestCheckout() {
 				req.Header.Set("Authorization", merchantToken)
 				resp, _ := s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 
 				// Create Address
@@ -117,8 +114,8 @@ func (s *OrderApiTestSuite) TestCheckout() {
 				req.Header.Set("Authorization", buyerToken)
 				resp, _ = s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-				json.NewDecoder(resp.Body).Decode(&result)
-				addrID := result.Data.(map[string]interface{})["id"].(string)
+				addrResult := s.DecodeSuccess(resp)
+				addrID := addrResult.Data.(map[string]interface{})["id"].(string)
 
 				// Buyer Wallet Balance (0 balance)
 				s.DB.ExecContext(context.Background(), `
@@ -155,14 +152,13 @@ func (s *OrderApiTestSuite) TestCheckout() {
 			s.Equal(tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusCreated {
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				payRes := result.Data.(map[string]interface{})
 				orders := payRes["order_ids"].([]interface{})
 				s.Len(orders, 1)
 			} else if tt.expectedStatus >= 400 {
 				var pd common.ProblemDetails
-				json.NewDecoder(resp.Body).Decode(&pd)
+				s.DecodeResponse(resp, &pd)
 				s.Equal(tt.expectedStatus, pd.Status)
 				s.NotEmpty(pd.Title)
 				s.Contains(pd.Type, "/errors/")

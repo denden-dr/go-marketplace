@@ -3,7 +3,6 @@
 package api
 
 import (
-	"encoding/json"
 	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/testutil"
@@ -70,8 +69,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 			query:          "q=Searchable",
 			expectedStatus: http.StatusOK,
 			verify: func(resp *http.Response) {
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				products := result.Data.([]interface{})
 				s.NotEmpty(products)
 			},
@@ -91,8 +89,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", token)
 				resp, _ := s.App.Test(req)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 				return token, merchID, prodID
 			},
@@ -134,7 +131,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 
 			if tt.expectedStatus >= 400 {
 				var pd common.ProblemDetails
-				json.NewDecoder(resp.Body).Decode(&pd)
+				s.DecodeResponse(resp, &pd)
 				s.Equal(tt.expectedStatus, pd.Status)
 				s.NotEmpty(pd.Title)
 				s.Contains(pd.Type, "/errors/")

@@ -3,7 +3,6 @@
 package api
 
 import (
-	"encoding/json"
 	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/cart"
 	"go-marketplace/internal/core/order"
@@ -68,8 +67,7 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			req.Header.Set("Authorization", merchantToken)
 			resp, _ := s.App.Test(req)
 			s.Require().Equal(http.StatusCreated, resp.StatusCode)
-			var result common.SuccessResponse
-			json.NewDecoder(resp.Body).Decode(&result)
+			result := s.DecodeSuccess(resp)
 			prodID := result.Data.(map[string]interface{})["id"].(string)
 
 			addrReq := user.AddressRequest{
@@ -80,8 +78,8 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			req.Header.Set("Authorization", buyerToken)
 			resp, _ = s.App.Test(req)
 			s.Require().Equal(http.StatusCreated, resp.StatusCode)
-			json.NewDecoder(resp.Body).Decode(&result)
-			addrID := result.Data.(map[string]interface{})["id"].(string)
+			addrResult := s.DecodeSuccess(resp)
+			addrID := addrResult.Data.(map[string]interface{})["id"].(string)
 
 			// Add to Cart
 			addReq := cart.AddToCartRequest{ProductID: uuid.MustParse(prodID), Quantity: 1}
@@ -101,8 +99,8 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			resp, _ = s.App.Test(req)
 			s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-			json.NewDecoder(resp.Body).Decode(&result)
-			payRes := result.Data.(map[string]interface{})
+			payResult := s.DecodeSuccess(resp)
+			payRes := payResult.Data.(map[string]interface{})
 			paymentID := payRes["payment_id"].(string)
 			orderID := payRes["order_ids"].([]interface{})[0].(string)
 
@@ -118,7 +116,7 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 
 			if tt.expectedStatus >= 400 {
 				var pd common.ProblemDetails
-				json.NewDecoder(resp.Body).Decode(&pd)
+				s.DecodeResponse(resp, &pd)
 				s.Equal(tt.expectedStatus, pd.Status)
 				s.NotEmpty(pd.Title)
 				s.Contains(pd.Type, "/errors/")
@@ -133,8 +131,8 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			resp, _ = s.App.Test(req)
 			s.Require().Equal(http.StatusOK, resp.StatusCode)
 
-			json.NewDecoder(resp.Body).Decode(&result)
-			orderData := result.Data.(map[string]interface{})
+			orderResult := s.DecodeSuccess(resp)
+			orderData := orderResult.Data.(map[string]interface{})
 			s.Equal(string(tt.expectedOrder), orderData["status"])
 		})
 	}

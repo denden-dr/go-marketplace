@@ -170,8 +170,7 @@ func (s *ApiTestSuite) CreateSeedMerchant() (*domain.User, string, string) {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-	var result common.SuccessResponse
-	json.NewDecoder(resp.Body).Decode(&result)
+	result := s.DecodeSuccess(resp)
 	merchID := result.Data.(map[string]interface{})["id"].(string)
 
 	// Refresh token to get the Merchant role
@@ -179,4 +178,14 @@ func (s *ApiTestSuite) CreateSeedMerchant() (*domain.User, string, string) {
 	token = s.GetAuthHeader(u)
 
 	return u, token, merchID
+}
+
+func (s *ApiTestSuite) DecodeResponse(resp *http.Response, target interface{}) {
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(target))
+}
+
+func (s *ApiTestSuite) DecodeSuccess(resp *http.Response) *common.SuccessResponse {
+	var result common.SuccessResponse
+	s.DecodeResponse(resp, &result)
+	return &result
 }
