@@ -11,6 +11,7 @@ import (
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/core/user"
 	"go-marketplace/internal/core/wallet"
+	"go-marketplace/internal/domain"
 	"go-marketplace/internal/middleware"
 
 	_ "go-marketplace/docs"
@@ -86,8 +87,8 @@ func SetupRoutes(
 	users.Delete("/addresses/:id", userHandler.DeleteAddress)
 	users.Get("/me", userHandler.GetProfile)
 
-	// Product routes
-	products := api.Group("/products")
+	// Product routes (Merchant only)
+	products := api.Group("/products", middleware.RequireRole(domain.RoleMerchant))
 	products.Post("/", productHandler.CreateProduct)
 	products.Put("/:id", productHandler.UpdateProduct)
 
@@ -114,8 +115,8 @@ func SetupRoutes(
 	orderRoutes.Put("/:id/cancel", orderHandler.UserCancelOrder)
 	orderRoutes.Post("/:id/appeal", orderHandler.UserAppealOrder)
 
-	// Merchant features (Orders)
-	merchants := api.Group("/merchants")
+	// Merchant features (Orders) (Merchant only)
+	merchants := api.Group("/merchants", middleware.RequireRole(domain.RoleMerchant))
 	merchantOrders := merchants.Group("/orders", order.MerchantMiddleware(orderHandler.MerchantRepo))
 	merchantOrders.Put("/:id/cancel", orderHandler.MerchantCancelOrder)
 	merchantOrders.Put("/:id/status", orderHandler.MerchantUpdateStatus)
