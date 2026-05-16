@@ -10,7 +10,7 @@ INSERT INTO public.users (id, username, email, password, full_name, is_verified,
 ('00000000-0000-0000-0000-000000000001', 'verified_user', 'verified@example.com', '$2a$10$SggTvHmzKlwarEm46g4vq.vDpEJZOw6ddp8BCfqwRmxu4JcktHIGO', 'Verified User', true, 'user'),
 ('00000000-0000-0000-0000-000000000002', 'unverified_user', 'unverified@example.com', '$2a$10$SggTvHmzKlwarEm46g4vq.vDpEJZOw6ddp8BCfqwRmxu4JcktHIGO', 'Unverified User', false, 'user'),
 ('00000000-0000-0000-0000-000000000003', 'merchant_user', 'merchant@example.com', '$2a$10$SggTvHmzKlwarEm46g4vq.vDpEJZOw6ddp8BCfqwRmxu4JcktHIGO', 'Merchant User', true, 'merchant'),
-('00000000-0000-0000-0000-000000000000', 'admin_user', 'admin@example.com', '$2a$10$SggTvHmzKlwarEm46g4vq.vDpEJZOw6ddp8BCfqwRmxu4JcktHIGO', 'Admin User', true, 'administrator')
+('00000000-0000-0000-0000-000000000004', 'admin_user', 'admin@example.com', '$2a$10$SggTvHmzKlwarEm46g4vq.vDpEJZOw6ddp8BCfqwRmxu4JcktHIGO', 'Admin User', true, 'administrator')
 ON CONFLICT (email) DO NOTHING;
 
 -- 2. Merchants

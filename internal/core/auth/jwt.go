@@ -66,7 +66,10 @@ func ValidateAccessToken(tokenString string, secret string) (*TokenClaims, error
 			return nil, fmt.Errorf("invalid userID format")
 		}
 
-		role, _ := claims["role"].(string)
+		role, ok := claims["role"].(string)
+		if !ok || role == "" {
+			return nil, fmt.Errorf("missing or invalid role claim")
+		}
 
 		return &TokenClaims{
 			UserID: userID,

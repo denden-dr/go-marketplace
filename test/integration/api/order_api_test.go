@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/cart"
-	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/core/order"
 	"go-marketplace/internal/core/product"
 	userPkg "go-marketplace/internal/core/user"
@@ -42,28 +41,7 @@ func (s *OrderApiTestSuite) TestCheckout() {
 			paymentMethod: domain.PaymentMethodWallet,
 			setup: func() (string, uuid.UUID) {
 				buyer, buyerToken := s.CreateSeedUser()
-				merchantUser, merchantToken := s.CreateSeedUser()
-
-				// Register Merchant
-				merchReq := merchant.MerchantRegisterRequest{Name: "Order Shop", TaxID: "111"}
-				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
-				req.Header.Set("Authorization", merchantToken)
-				resp, _ := s.App.Test(req)
-				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
-				merchID := result.Data.(map[string]interface{})["id"].(string)
-
-				// Get new token with merchant role
-				merchantUser.Role = domain.RoleMerchant
-				merchantToken = s.GetAuthHeader(merchantUser)
-
-				// Merchant wallet
-				s.DB.ExecContext(context.Background(), `
-					INSERT INTO wallets (id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-				`, uuid.New(), merchantUser.ID, "W-MERCH", 0, 0, "IDR", "active", time.Now(), time.Now())
+				_, merchantToken, merchID := s.CreateSeedMerchant()
 
 				// Create Product
 				prodReq := product.ProductCreateRequest{
@@ -72,10 +50,11 @@ func (s *OrderApiTestSuite) TestCheckout() {
 					Price:   decimal.NewFromInt(100),
 					Stock:   100,
 				}
-				req = s.JSONRequest("POST", "/api/products", prodReq)
+				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", merchantToken)
-				resp, _ = s.App.Test(req)
+				resp, _ := s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 
@@ -112,28 +91,7 @@ func (s *OrderApiTestSuite) TestCheckout() {
 			paymentMethod: domain.PaymentMethodWallet,
 			setup: func() (string, uuid.UUID) {
 				buyer, buyerToken := s.CreateSeedUser()
-				merchantUser, merchantToken := s.CreateSeedUser()
-
-				// Register Merchant
-				merchReq := merchant.MerchantRegisterRequest{Name: "Order Shop", TaxID: "111"}
-				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
-				req.Header.Set("Authorization", merchantToken)
-				resp, _ := s.App.Test(req)
-				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
-				merchID := result.Data.(map[string]interface{})["id"].(string)
-
-				// Get new token with merchant role
-				merchantUser.Role = domain.RoleMerchant
-				merchantToken = s.GetAuthHeader(merchantUser)
-
-				// Merchant wallet
-				s.DB.ExecContext(context.Background(), `
-					INSERT INTO wallets (id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-				`, uuid.New(), merchantUser.ID, "W-MERCH-FLOW", 0, 0, "IDR", "active", time.Now(), time.Now())
+				_, merchantToken, merchID := s.CreateSeedMerchant()
 
 				// Create Product
 				prodReq := product.ProductCreateRequest{
@@ -142,10 +100,11 @@ func (s *OrderApiTestSuite) TestCheckout() {
 					Price:   decimal.NewFromInt(100),
 					Stock:   100,
 				}
-				req = s.JSONRequest("POST", "/api/products", prodReq)
+				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", merchantToken)
-				resp, _ = s.App.Test(req)
+				resp, _ := s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
+				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 

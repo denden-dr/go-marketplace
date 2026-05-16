@@ -156,31 +156,27 @@ func (s *ApiTestSuite) CreateSeedUser() (*domain.User, string) {
 	return u, "Bearer " + token
 }
 
-func (s *ApiTestSuite) CreateSeedMerchant() (*domain.User, string) {
-	pass := "password123"
-	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
-	hashedPassStr := string(hashedPass)
+func (s *ApiTestSuite) CreateSeedMerchant() (*domain.User, string, string) {
+	u, token := s.CreateSeedUser()
 
-	u := &domain.User{
-		ID:           uuid.New(),
-		FullName:     "Test Merchant",
-		Username:     "merch_" + uuid.New().String()[:8],
-		Email:        "merch_" + uuid.New().String()[:8] + "@example.com",
-		Password:     &hashedPassStr,
-		AuthProvider: domain.AuthProviderLocal,
-		IsVerified:   true,
-		Role:         domain.RoleMerchant,
-		CreatedAt:    time.Now(),
+	// Register merchant via API to trigger all logic (role promotion, wallet, etc)
+	merchReq := merchant.MerchantRegisterRequest{
+		Name:  "Test Shop " + uuid.New().String()[:8],
+		TaxID: "123456789",
 	}
-
-	_, err := s.DB.NamedExecContext(context.Background(), `
-		INSERT INTO users (id, full_name, username, email, password, auth_provider, is_verified, role, created_at)
-		VALUES (:id, :full_name, :username, :email, :password, :auth_provider, :is_verified, :role, :created_at)
-	`, u)
+	req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
+	req.Header.Set("Authorization", token)
+	resp, err := s.App.Test(req)
 	s.Require().NoError(err)
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
 
-	token, err := auth.GenerateAccessToken(u.ID, u.Role, s.JwtSecret)
-	s.Require().NoError(err)
+	var result common.SuccessResponse
+	json.NewDecoder(resp.Body).Decode(&result)
+	merchID := result.Data.(map[string]interface{})["id"].(string)
 
-	return u, "Bearer " + token
+	// Refresh token to get the Merchant role
+	u.Role = domain.RoleMerchant
+	token = s.GetAuthHeader(u)
+
+	return u, token, merchID
 }

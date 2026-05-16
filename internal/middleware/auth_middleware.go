@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -31,7 +31,10 @@ func AuthMiddleware(jwtSecret string) fiber.Handler {
 
 		claims, err := auth.ValidateAccessToken(token, jwtSecret)
 		if err != nil {
-			log.Printf("Token validation failed: %v", err)
+			slog.Warn("Token validation failed",
+				slog.String("error", err.Error()),
+				slog.String("trace_id", c.Locals("requestid").(string)),
+			)
 			return fiber.NewError(http.StatusUnauthorized, "Unauthorized: "+err.Error())
 		}
 
@@ -46,6 +49,11 @@ func RequireRole(roles ...domain.UserRole) fiber.Handler {
 		userRole, ok := c.Locals("role").(domain.UserRole)
 		if !ok {
 			return fiber.NewError(http.StatusForbidden, "Forbidden: role not found")
+		}
+
+		// Administrators bypass all role checks
+		if userRole == domain.RoleAdministrator {
+			return c.Next()
 		}
 
 		for _, r := range roles {
