@@ -70,6 +70,10 @@ func (s *PaymentApiTestSuite) TestMidtransWebhook() {
 			json.NewDecoder(resp.Body).Decode(&result)
 			merchID := result.Data.(map[string]interface{})["id"].(string)
 
+			// Get new token with merchant role
+			merchantUser.Role = domain.RoleMerchant
+			merchantToken = s.GetAuthHeader(merchantUser)
+
 			// Merchant wallet
 			s.DB.ExecContext(context.Background(), `
 				INSERT INTO wallets (id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at)

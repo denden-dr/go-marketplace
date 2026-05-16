@@ -8,6 +8,7 @@ import (
 	"go-marketplace/internal/core/cart"
 	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/core/product"
+	"go-marketplace/internal/domain"
 	"go-marketplace/internal/testutil"
 	"net/http"
 	"testing"
@@ -38,7 +39,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			name:   "Add_To_Cart_Success",
 			method: "POST",
 			setup: func() (string, string) {
-				_, token := s.CreateSeedUser()
+				u, token := s.CreateSeedUser()
 				// Register merchant and product
 				merchReq := merchant.MerchantRegisterRequest{Name: "Shop", TaxID: "123"}
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
@@ -47,6 +48,10 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
+
+				// Get new token with merchant role
+				u.Role = domain.RoleMerchant
+				token = s.GetAuthHeader(u)
 
 				prodReq := product.ProductCreateRequest{
 					StoreID: uuid.MustParse(merchID),
@@ -73,7 +78,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			name:   "Get_Cart_Success",
 			method: "GET",
 			setup: func() (string, string) {
-				_, token := s.CreateSeedUser()
+				u, token := s.CreateSeedUser()
 				// Setup merchant, product, and add to cart
 				merchReq := merchant.MerchantRegisterRequest{Name: "Shop", TaxID: "123"}
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
@@ -82,6 +87,10 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
+
+				// Get new token with merchant role
+				u.Role = domain.RoleMerchant
+				token = s.GetAuthHeader(u)
 
 				prodReq := product.ProductCreateRequest{
 					StoreID: uuid.MustParse(merchID),
@@ -114,7 +123,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			name:   "Update_Cart_Item_Success",
 			method: "PUT",
 			setup: func() (string, string) {
-				_, token := s.CreateSeedUser()
+				u, token := s.CreateSeedUser()
 				merchReq := merchant.MerchantRegisterRequest{Name: "Shop", TaxID: "123"}
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
@@ -122,6 +131,10 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
+
+				// Get new token with merchant role
+				u.Role = domain.RoleMerchant
+				token = s.GetAuthHeader(u)
 
 				prodReq := product.ProductCreateRequest{
 					StoreID: uuid.MustParse(merchID),
@@ -150,7 +163,7 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 			name:   "Remove_From_Cart_Success",
 			method: "DELETE",
 			setup: func() (string, string) {
-				_, token := s.CreateSeedUser()
+				u, token := s.CreateSeedUser()
 				merchReq := merchant.MerchantRegisterRequest{Name: "Shop", TaxID: "123"}
 				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
 				req.Header.Set("Authorization", token)
@@ -158,6 +171,10 @@ func (s *CartApiTestSuite) TestCartEndpoints() {
 				var result common.SuccessResponse
 				json.NewDecoder(resp.Body).Decode(&result)
 				merchID := result.Data.(map[string]interface{})["id"].(string)
+
+				// Get new token with merchant role
+				u.Role = domain.RoleMerchant
+				token = s.GetAuthHeader(u)
 
 				prodReq := product.ProductCreateRequest{
 					StoreID: uuid.MustParse(merchID),
