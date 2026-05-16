@@ -51,6 +51,7 @@ func TestMerchantService_RegisterMerchant(t *testing.T) {
 				mp.On("BeginTxx", mock.Anything, mock.Anything).Return(tx, nil)
 				mr.On("CreateTx", mock.Anything, tx, mock.Anything).Return(nil)
 				mwr.On("CreateTx", mock.Anything, tx, mock.Anything).Return(nil)
+				mur.On("UpdateRoleTx", mock.Anything, tx, userID, domain.RoleMerchant).Return(nil)
 				sqlMock.ExpectCommit()
 			},
 			wantErr: false,

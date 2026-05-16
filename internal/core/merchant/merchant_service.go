@@ -84,6 +84,11 @@ func (s *merchantService) RegisterMerchant(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 
+	// Update User Role to Merchant
+	if err := s.userRepo.UpdateRoleTx(ctx, tx, userID, domain.RoleMerchant); err != nil {
+		return nil, err
+	}
+
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
 		return nil, err
