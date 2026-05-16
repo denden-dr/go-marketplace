@@ -34,6 +34,7 @@ func (s *UserRepoSuite) TestCreateUser() {
 		Email:        "test@example.com",
 		Password:     common.Ptr("hashed_password"),
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 
@@ -60,6 +61,7 @@ func (s *UserRepoSuite) TestGetUserByEmail() {
 		Username:     "emailuser",
 		Email:        "email@example.com",
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.repo.CreateUser(context.Background(), u))
@@ -84,6 +86,7 @@ func (s *UserRepoSuite) TestGetUserByProviderID() {
 		Email:        "oauth@example.com",
 		AuthProvider: domain.AuthProviderGoogle,
 		ProviderID:   &providerID,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.repo.CreateUser(context.Background(), u))
@@ -102,6 +105,7 @@ func (s *UserRepoSuite) TestGetUserByUsername() {
 		Username:     "user123",
 		Email:        "user123@example.com",
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.repo.CreateUser(context.Background(), u))
@@ -120,6 +124,7 @@ func (s *UserRepoSuite) TestAddressOperations() {
 		Username:     "addruser",
 		Email:        "addr@example.com",
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.repo.CreateUser(context.Background(), u))
@@ -184,6 +189,33 @@ func (s *UserRepoSuite) TestAddressOperations() {
 	dbAddr, err = s.repo.GetAddressByID(context.Background(), addr.ID)
 	s.NoError(err)
 	s.Nil(dbAddr)
+}
+
+func (s *UserRepoSuite) TestUpdateRoleTx() {
+	u := &domain.User{
+		ID:           uuid.New(),
+		FullName:     "Role User",
+		Username:     "roleuser",
+		Email:        "role@example.com",
+		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
+		CreatedAt:    time.Now().Truncate(time.Microsecond),
+	}
+	s.NoError(s.repo.CreateUser(context.Background(), u))
+
+	// Start transaction
+	tx, err := s.DB.BeginTxx(context.Background(), nil)
+	s.NoError(err)
+
+	err = s.repo.UpdateRoleTx(context.Background(), tx, u.ID, domain.RoleMerchant)
+	s.NoError(err)
+
+	s.NoError(tx.Commit())
+
+	// Verify
+	dbUser, err := s.repo.GetUserByID(context.Background(), u.ID)
+	s.NoError(err)
+	s.Equal(domain.RoleMerchant, dbUser.Role)
 }
 
 func TestUserRepoSuite(t *testing.T) {

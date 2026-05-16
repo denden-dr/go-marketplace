@@ -37,6 +37,7 @@ func (s *WalletRepoSuite) TestWalletOperations() {
 		Username:     "walletuser",
 		Email:        "wallet@example.com",
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u))
@@ -124,11 +125,11 @@ func (s *WalletRepoSuite) TestWalletOperations() {
 func (s *WalletRepoSuite) TestGetWalletsByUserIDs() {
 	u1 := &domain.User{
 		ID: uuid.New(), FullName: "U1", Username: "u1_batch", Email: "u1@example.com",
-		AuthProvider: domain.AuthProviderLocal, CreatedAt: time.Now().Truncate(time.Microsecond),
+		AuthProvider: domain.AuthProviderLocal, Role: domain.RoleUser, CreatedAt: time.Now().Truncate(time.Microsecond),
 	}
 	u2 := &domain.User{
 		ID: uuid.New(), FullName: "U2", Username: "u2_batch", Email: "u2@example.com",
-		AuthProvider: domain.AuthProviderLocal, CreatedAt: time.Now().Truncate(time.Microsecond),
+		AuthProvider: domain.AuthProviderLocal, Role: domain.RoleUser, CreatedAt: time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u1))
 	s.NoError(s.userRepo.CreateUser(context.Background(), u2))
@@ -156,11 +157,11 @@ func (s *WalletRepoSuite) TestGetWalletsByUserIDs() {
 func (s *WalletRepoSuite) TestAddPendingBalancesBatchTX() {
 	u1 := &domain.User{
 		ID: uuid.New(), FullName: "U1", Username: "u1_pb", Email: "u1pb@example.com",
-		AuthProvider: domain.AuthProviderLocal, CreatedAt: time.Now().Truncate(time.Microsecond),
+		AuthProvider: domain.AuthProviderLocal, Role: domain.RoleUser, CreatedAt: time.Now().Truncate(time.Microsecond),
 	}
 	u2 := &domain.User{
 		ID: uuid.New(), FullName: "U2", Username: "u2_pb", Email: "u2pb@example.com",
-		AuthProvider: domain.AuthProviderLocal, CreatedAt: time.Now().Truncate(time.Microsecond),
+		AuthProvider: domain.AuthProviderLocal, Role: domain.RoleUser, CreatedAt: time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u1))
 	s.NoError(s.userRepo.CreateUser(context.Background(), u2))

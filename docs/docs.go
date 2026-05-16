@@ -1907,6 +1907,10 @@ const docTemplate = `{
                     "description": "Short summary",
                     "type": "string"
                 },
+                "trace_id": {
+                    "description": "Request ID for tracing",
+                    "type": "string"
+                },
                 "type": {
                     "description": "Error category URI",
                     "type": "string"
@@ -1922,6 +1926,9 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "integer"
+                },
+                "trace_id": {
+                    "type": "string"
                 }
             }
         },
@@ -2036,6 +2043,19 @@ const docTemplate = `{
                 "PaymentTypeWithdraw"
             ]
         },
+        "go-marketplace_internal_domain.UserRole": {
+            "type": "string",
+            "enum": [
+                "user",
+                "merchant",
+                "administrator"
+            ],
+            "x-enum-varnames": [
+                "RoleUser",
+                "RoleMerchant",
+                "RoleAdministrator"
+            ]
+        },
         "internal_core_auth.AuthResponse": {
             "type": "object",
             "properties": {
@@ -2050,6 +2070,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/go-marketplace_internal_domain.UserRole"
                 },
                 "username": {
                     "type": "string"

@@ -122,7 +122,7 @@ func (s *ApiTestSuite) JSONRequest(method, url string, body interface{}) *http.R
 }
 
 func (s *ApiTestSuite) GetAuthHeader(user *domain.User) string {
-	token, err := auth.GenerateAccessToken(user.ID, s.JwtSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Role, s.JwtSecret)
 	s.Require().NoError(err)
 	return "Bearer " + token
 }
@@ -140,17 +140,52 @@ func (s *ApiTestSuite) CreateSeedUser() (*domain.User, string) {
 		Password:     &hashedPassStr,
 		AuthProvider: domain.AuthProviderLocal,
 		IsVerified:   true,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now(),
 	}
 
 	_, err := s.DB.NamedExecContext(context.Background(), `
-		INSERT INTO users (id, full_name, username, email, password, auth_provider, is_verified, created_at)
-		VALUES (:id, :full_name, :username, :email, :password, :auth_provider, :is_verified, :created_at)
+		INSERT INTO users (id, full_name, username, email, password, auth_provider, is_verified, role, created_at)
+		VALUES (:id, :full_name, :username, :email, :password, :auth_provider, :is_verified, :role, :created_at)
 	`, u)
 	s.Require().NoError(err)
 
-	token, err := auth.GenerateAccessToken(u.ID, s.JwtSecret)
+	token, err := auth.GenerateAccessToken(u.ID, u.Role, s.JwtSecret)
 	s.Require().NoError(err)
 
 	return u, "Bearer " + token
+}
+
+func (s *ApiTestSuite) CreateSeedMerchant() (*domain.User, string, string) {
+	u, token := s.CreateSeedUser()
+
+	// Register merchant via API to trigger all logic (role promotion, wallet, etc)
+	merchReq := merchant.MerchantRegisterRequest{
+		Name:  "Test Shop " + uuid.New().String()[:8],
+		TaxID: "123456789",
+	}
+	req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
+	req.Header.Set("Authorization", token)
+	resp, err := s.App.Test(req)
+	s.Require().NoError(err)
+	s.Require().Equal(http.StatusCreated, resp.StatusCode)
+
+	result := s.DecodeSuccess(resp)
+	merchID := result.Data.(map[string]interface{})["id"].(string)
+
+	// Refresh token to get the Merchant role
+	u.Role = domain.RoleMerchant
+	token = s.GetAuthHeader(u)
+
+	return u, token, merchID
+}
+
+func (s *ApiTestSuite) DecodeResponse(resp *http.Response, target interface{}) {
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(target))
+}
+
+func (s *ApiTestSuite) DecodeSuccess(resp *http.Response) *common.SuccessResponse {
+	var result common.SuccessResponse
+	s.DecodeResponse(resp, &result)
+	return &result
 }

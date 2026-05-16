@@ -8,6 +8,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	sqlx "github.com/jmoiron/sqlx"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -610,6 +612,55 @@ func (_c *MockUserRepository_UpdateAddress_Call) Return(_a0 error) *MockUserRepo
 }
 
 func (_c *MockUserRepository_UpdateAddress_Call) RunAndReturn(run func(context.Context, *domain.UserAddress) error) *MockUserRepository_UpdateAddress_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateRoleTx provides a mock function with given fields: ctx, tx, id, role
+func (_m *MockUserRepository) UpdateRoleTx(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, role domain.UserRole) error {
+	ret := _m.Called(ctx, tx, id, role)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateRoleTx")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *sqlx.Tx, uuid.UUID, domain.UserRole) error); ok {
+		r0 = rf(ctx, tx, id, role)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockUserRepository_UpdateRoleTx_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateRoleTx'
+type MockUserRepository_UpdateRoleTx_Call struct {
+	*mock.Call
+}
+
+// UpdateRoleTx is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tx *sqlx.Tx
+//   - id uuid.UUID
+//   - role domain.UserRole
+func (_e *MockUserRepository_Expecter) UpdateRoleTx(ctx interface{}, tx interface{}, id interface{}, role interface{}) *MockUserRepository_UpdateRoleTx_Call {
+	return &MockUserRepository_UpdateRoleTx_Call{Call: _e.mock.On("UpdateRoleTx", ctx, tx, id, role)}
+}
+
+func (_c *MockUserRepository_UpdateRoleTx_Call) Run(run func(ctx context.Context, tx *sqlx.Tx, id uuid.UUID, role domain.UserRole)) *MockUserRepository_UpdateRoleTx_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*sqlx.Tx), args[2].(uuid.UUID), args[3].(domain.UserRole))
+	})
+	return _c
+}
+
+func (_c *MockUserRepository_UpdateRoleTx_Call) Return(_a0 error) *MockUserRepository_UpdateRoleTx_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockUserRepository_UpdateRoleTx_Call) RunAndReturn(run func(context.Context, *sqlx.Tx, uuid.UUID, domain.UserRole) error) *MockUserRepository_UpdateRoleTx_Call {
 	_c.Call.Return(run)
 	return _c
 }

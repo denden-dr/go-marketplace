@@ -19,6 +19,9 @@ definitions:
       title:
         description: Short summary
         type: string
+      trace_id:
+        description: Request ID for tracing
+        type: string
       type:
         description: Error category URI
         type: string
@@ -30,6 +33,8 @@ definitions:
         type: string
       status:
         type: integer
+      trace_id:
+        type: string
     type: object
   go-marketplace_internal_domain.AddressTag:
     enum:
@@ -114,6 +119,16 @@ definitions:
     - PaymentTypeOrder
     - PaymentTypeTopup
     - PaymentTypeWithdraw
+  go-marketplace_internal_domain.UserRole:
+    enum:
+    - user
+    - merchant
+    - administrator
+    type: string
+    x-enum-varnames:
+    - RoleUser
+    - RoleMerchant
+    - RoleAdministrator
   internal_core_auth.AuthResponse:
     properties:
       created_at:
@@ -124,6 +139,8 @@ definitions:
         type: string
       id:
         type: string
+      role:
+        $ref: '#/definitions/go-marketplace_internal_domain.UserRole'
       username:
         type: string
     type: object

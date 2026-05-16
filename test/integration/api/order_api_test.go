@@ -4,10 +4,8 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"go-marketplace/internal/common"
 	"go-marketplace/internal/core/cart"
-	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/core/order"
 	"go-marketplace/internal/core/product"
 	userPkg "go-marketplace/internal/core/user"
@@ -42,24 +40,7 @@ func (s *OrderApiTestSuite) TestCheckout() {
 			paymentMethod: domain.PaymentMethodWallet,
 			setup: func() (string, uuid.UUID) {
 				buyer, buyerToken := s.CreateSeedUser()
-				merchantUser, merchantToken := s.CreateSeedUser()
-
-				// Register Merchant
-				merchReq := merchant.MerchantRegisterRequest{Name: "Order Shop", TaxID: "111"}
-				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
-				req.Header.Set("Authorization", merchantToken)
-				resp, _ := s.App.Test(req)
-				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
-				merchID := result.Data.(map[string]interface{})["id"].(string)
-
-				// Merchant wallet
-				s.DB.ExecContext(context.Background(), `
-					INSERT INTO wallets (id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-				`, uuid.New(), merchantUser.ID, "W-MERCH", 0, 0, "IDR", "active", time.Now(), time.Now())
+				_, merchantToken, merchID := s.CreateSeedMerchant()
 
 				// Create Product
 				prodReq := product.ProductCreateRequest{
@@ -68,11 +49,11 @@ func (s *OrderApiTestSuite) TestCheckout() {
 					Price:   decimal.NewFromInt(100),
 					Stock:   100,
 				}
-				req = s.JSONRequest("POST", "/api/products", prodReq)
+				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", merchantToken)
-				resp, _ = s.App.Test(req)
+				resp, _ := s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 
 				// Create Address
@@ -84,8 +65,8 @@ func (s *OrderApiTestSuite) TestCheckout() {
 				req.Header.Set("Authorization", buyerToken)
 				resp, _ = s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-				json.NewDecoder(resp.Body).Decode(&result)
-				addrID := result.Data.(map[string]interface{})["id"].(string)
+				addrResult := s.DecodeSuccess(resp)
+				addrID := addrResult.Data.(map[string]interface{})["id"].(string)
 
 				// Buyer Wallet Balance
 				s.DB.ExecContext(context.Background(), `
@@ -108,24 +89,7 @@ func (s *OrderApiTestSuite) TestCheckout() {
 			paymentMethod: domain.PaymentMethodWallet,
 			setup: func() (string, uuid.UUID) {
 				buyer, buyerToken := s.CreateSeedUser()
-				merchantUser, merchantToken := s.CreateSeedUser()
-
-				// Register Merchant
-				merchReq := merchant.MerchantRegisterRequest{Name: "Order Shop", TaxID: "111"}
-				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
-				req.Header.Set("Authorization", merchantToken)
-				resp, _ := s.App.Test(req)
-				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
-				merchID := result.Data.(map[string]interface{})["id"].(string)
-
-				// Merchant wallet
-				s.DB.ExecContext(context.Background(), `
-					INSERT INTO wallets (id, user_id, wallet_number, balance, pending_balance, currency, status, created_at, updated_at)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-				`, uuid.New(), merchantUser.ID, "W-MERCH-FLOW", 0, 0, "IDR", "active", time.Now(), time.Now())
+				_, merchantToken, merchID := s.CreateSeedMerchant()
 
 				// Create Product
 				prodReq := product.ProductCreateRequest{
@@ -134,11 +98,11 @@ func (s *OrderApiTestSuite) TestCheckout() {
 					Price:   decimal.NewFromInt(100),
 					Stock:   100,
 				}
-				req = s.JSONRequest("POST", "/api/products", prodReq)
+				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", merchantToken)
-				resp, _ = s.App.Test(req)
+				resp, _ := s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 
 				// Create Address
@@ -150,8 +114,8 @@ func (s *OrderApiTestSuite) TestCheckout() {
 				req.Header.Set("Authorization", buyerToken)
 				resp, _ = s.App.Test(req)
 				s.Require().Equal(http.StatusCreated, resp.StatusCode)
-				json.NewDecoder(resp.Body).Decode(&result)
-				addrID := result.Data.(map[string]interface{})["id"].(string)
+				addrResult := s.DecodeSuccess(resp)
+				addrID := addrResult.Data.(map[string]interface{})["id"].(string)
 
 				// Buyer Wallet Balance (0 balance)
 				s.DB.ExecContext(context.Background(), `
@@ -188,14 +152,13 @@ func (s *OrderApiTestSuite) TestCheckout() {
 			s.Equal(tt.expectedStatus, resp.StatusCode)
 
 			if tt.expectedStatus == http.StatusCreated {
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				payRes := result.Data.(map[string]interface{})
 				orders := payRes["order_ids"].([]interface{})
 				s.Len(orders, 1)
 			} else if tt.expectedStatus >= 400 {
 				var pd common.ProblemDetails
-				json.NewDecoder(resp.Body).Decode(&pd)
+				s.DecodeResponse(resp, &pd)
 				s.Equal(tt.expectedStatus, pd.Status)
 				s.NotEmpty(pd.Title)
 				s.Contains(pd.Type, "/errors/")

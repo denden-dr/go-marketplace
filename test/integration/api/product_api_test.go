@@ -3,9 +3,7 @@
 package api
 
 import (
-	"encoding/json"
 	"go-marketplace/internal/common"
-	"go-marketplace/internal/core/merchant"
 	"go-marketplace/internal/core/product"
 	"go-marketplace/internal/testutil"
 	"net/http"
@@ -38,15 +36,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 			name:   "Create_Product_Success",
 			method: "POST",
 			setup: func() (string, string, string) {
-				_, token := s.CreateSeedUser()
-				// Register merchant first
-				merchReq := merchant.MerchantRegisterRequest{Name: "Shop", TaxID: "123"}
-				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
-				req.Header.Set("Authorization", token)
-				resp, _ := s.App.Test(req)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
-				merchID := result.Data.(map[string]interface{})["id"].(string)
+				_, token, merchID := s.CreateSeedMerchant()
 				return token, merchID, ""
 			},
 			body: func(merchID string) interface{} {
@@ -63,15 +53,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 			name:   "Search_Product_Success",
 			method: "GET",
 			setup: func() (string, string, string) {
-				_, token := s.CreateSeedUser()
-				// Setup merchant and product
-				merchReq := merchant.MerchantRegisterRequest{Name: "Shop", TaxID: "123"}
-				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
-				req.Header.Set("Authorization", token)
-				resp, _ := s.App.Test(req)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
-				merchID := result.Data.(map[string]interface{})["id"].(string)
+				_, token, merchID := s.CreateSeedMerchant()
 
 				prodReq := product.ProductCreateRequest{
 					StoreID: uuid.MustParse(merchID),
@@ -79,7 +61,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 					Price:   decimal.NewFromInt(100),
 					Stock:   10,
 				}
-				req = s.JSONRequest("POST", "/api/products", prodReq)
+				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", token)
 				s.App.Test(req)
 				return "", "", ""
@@ -87,8 +69,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 			query:          "q=Searchable",
 			expectedStatus: http.StatusOK,
 			verify: func(resp *http.Response) {
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
+				result := s.DecodeSuccess(resp)
 				products := result.Data.([]interface{})
 				s.NotEmpty(products)
 			},
@@ -97,14 +78,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 			name:   "Update_Product_Success",
 			method: "PUT",
 			setup: func() (string, string, string) {
-				_, token := s.CreateSeedUser()
-				merchReq := merchant.MerchantRegisterRequest{Name: "Shop", TaxID: "123"}
-				req := s.JSONRequest("POST", "/api/auth/register-merchant", merchReq)
-				req.Header.Set("Authorization", token)
-				resp, _ := s.App.Test(req)
-				var result common.SuccessResponse
-				json.NewDecoder(resp.Body).Decode(&result)
-				merchID := result.Data.(map[string]interface{})["id"].(string)
+				_, token, merchID := s.CreateSeedMerchant()
 
 				prodReq := product.ProductCreateRequest{
 					StoreID: uuid.MustParse(merchID),
@@ -112,10 +86,10 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 					Price:   decimal.NewFromInt(100),
 					Stock:   10,
 				}
-				req = s.JSONRequest("POST", "/api/products", prodReq)
+				req := s.JSONRequest("POST", "/api/products", prodReq)
 				req.Header.Set("Authorization", token)
-				resp, _ = s.App.Test(req)
-				json.NewDecoder(resp.Body).Decode(&result)
+				resp, _ := s.App.Test(req)
+				result := s.DecodeSuccess(resp)
 				prodID := result.Data.(map[string]interface{})["id"].(string)
 				return token, merchID, prodID
 			},
@@ -157,7 +131,7 @@ func (s *ProductApiTestSuite) TestProductEndpoints() {
 
 			if tt.expectedStatus >= 400 {
 				var pd common.ProblemDetails
-				json.NewDecoder(resp.Body).Decode(&pd)
+				s.DecodeResponse(resp, &pd)
 				s.Equal(tt.expectedStatus, pd.Status)
 				s.NotEmpty(pd.Title)
 				s.Contains(pd.Type, "/errors/")

@@ -46,6 +46,7 @@ func (s *OrderRepoSuite) TestOrderOperations() {
 		Username:     "orderuser",
 		Email:        "order@example.com",
 		AuthProvider: domain.AuthProviderLocal,
+		Role:         domain.RoleUser,
 		CreatedAt:    time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u))
@@ -156,6 +157,7 @@ func (s *OrderRepoSuite) TestUpdateOrderStatusByPaymentIDTX() {
 	u := &domain.User{
 		ID: uuid.New(), FullName: "Batch User", Username: "batchuser",
 		Email: "batch@example.com", AuthProvider: domain.AuthProviderLocal,
+		Role:  domain.RoleUser,
 		CreatedAt: time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u))
@@ -226,6 +228,7 @@ func (s *OrderRepoSuite) TestGetOrderItemsByOrderIDsTX() {
 	u := &domain.User{
 		ID: uuid.New(), FullName: "Items User", Username: "itemsuser",
 		Email: "items@example.com", AuthProvider: domain.AuthProviderLocal,
+		Role:  domain.RoleUser,
 		CreatedAt: time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u))
@@ -312,6 +315,7 @@ func (s *OrderRepoSuite) TestCreateOrderItemsBatchTX() {
 	u := &domain.User{
 		ID: uuid.New(), FullName: "Batch Items User", Username: "batchitemsuser",
 		Email: "batchitems@example.com", AuthProvider: domain.AuthProviderLocal,
+		Role:  domain.RoleUser,
 		CreatedAt: time.Now().Truncate(time.Microsecond),
 	}
 	s.NoError(s.userRepo.CreateUser(context.Background(), u))
